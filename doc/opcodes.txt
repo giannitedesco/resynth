@@ -1,0 +1,24 @@
+program header
+--------------
+ - strtab
+ - import relocs
+   - strtab offset for each entry in import block
+   - must support paths somehow
+ - number of registers required (max 256)
+
+runtime state
+-------------
+ - imports block, imports will be referred to in program by index in to this
+ - argument-building stack
+
+IR pass: #1
+-----------
+ x resolve imports
+   - include all implicit imports
+ - alloc separate registers for every variable
+ - unroll all nested structures
+   - creating temps as necessary
+ - remove any redundant statements
+
+IR pass: #2: Requires type signatures
+-------------------------------------

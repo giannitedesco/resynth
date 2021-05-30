@@ -1,0 +1,25 @@
+program := [ ( stmt | stmt program ) ]
+
+stmt := ( import | assignment | expr ) ";"
+
+import := "import" IDENTIFIER
+
+assignment := "let" IDENTIFIER "=" expr
+
+call := ref args_list
+
+ref := [ qname "." ] object
+
+qname := ( IDENTIFIER | IDENTIFIER "::" qname )
+
+object := ( IDENTIFIER | IDENTIFIER "." object )
+
+args_list := "(" args ")" ;
+
+args := [ ( expr | expr "," args ) ]
+
+expr := literal | ref | call
+
+literal := INTEGER | STRING | IPV4 | v4socket
+
+v4socket := IPV4 ":" INTEGER

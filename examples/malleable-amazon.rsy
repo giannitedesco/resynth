@@ -1,0 +1,31 @@
+import ipv4;
+import text;
+
+let conn = ipv4::tcp::flow(
+  192.168.238.112:13749,
+  172.16.239.127:80,
+);
+
+conn.open();
+
+conn.client_message(
+  text::crlflines(
+    "POST /N4215/adj/amzn.us.sr.aps HTTP/1.1",
+    "Host: amazon.com",
+    text::CRLF,
+  )
+);
+
+conn.server_message(
+  text::crlflines(
+    "HTTP/1.1 200 OK",
+    "Server: Server",
+    "x-amz-id-1: THK9YEZJCKPGY5T42OZT",
+    "X-Frame-Options: SAMEORIGIN",
+    "x-ua-compatible: IE=edge",
+    "Content-Length: 0",
+    text::CRLF,
+  ),
+);
+
+conn.close();

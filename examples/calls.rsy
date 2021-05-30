@@ -1,0 +1,8 @@
+func(
+  123,
+  "string",
+  1.1.1.1,
+  8.8.8.8:53,
+);
+nested(another::arg(), 1.2.3.4);
+with_refs(obj.prop, 123);

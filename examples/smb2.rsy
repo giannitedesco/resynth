@@ -1,0 +1,45 @@
+import ipv4;
+import ms;
+import smb;
+
+let conn = ipv4::tcp.flow(
+  src: 192.168.238.112:13749,
+  dst: 172.16.239.127:445,
+);
+
+conn.open();
+
+conn.client_message(
+  smb::req::TreeConnect(
+    mid: 1,
+    path: ms::utf16("\\SERVER\share"),
+  )
+);
+
+conn.server_message(
+  smb::res::TreeConnect(
+    mid: 1,
+    tid: 1,
+    type: smb::sharetype::FILE_SHARE,
+  )
+);
+
+conn.client_message(
+  smb::req::Create(
+    mid: 2,
+    tid: 1,
+    res: 0x00120196,
+    fileid: ms::utf16("filename.txt"),
+  )
+);
+
+conn.server_message(
+  smb::res::Create(
+    mid: 2,
+    tid: 1,
+    res: smb2::openresult::OVERWRITTEN,
+    fileid: "12345678-1234-5678-1234-567812345678",
+  )
+);
+
+conn.tcp.close();

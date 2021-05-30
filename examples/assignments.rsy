@@ -1,0 +1,7 @@
+let foo = "string";
+let bar = 123;
+let addr = 1.1.1.1;
+let sock = 1.1.1.1:53;
+let crlf = text::CRLF;
+let prop = obj.prop;
+let ret = module::obj.func();
