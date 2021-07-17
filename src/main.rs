@@ -35,6 +35,7 @@ fn process_file(inp: &Path, out: &Path) -> Result<(), Error> {
     let file = File::open(inp)?;
     let rd = io::BufReader::new(file);
     let wr = PcapWriter::create(out)?;
+    let mut prog = Program::with_pcap_writer(wr)?;
     let mut parse = Parser::new();
 
     for res in rd.lines() {
@@ -47,11 +48,12 @@ fn process_file(inp: &Path, out: &Path) -> Result<(), Error> {
         for tok in toks.into_iter() {
             parse.feed(tok)?;
         }
+
+        prog.add_stmts(parse.get_results())?;
     }
 
     parse.feed(EOF)?;
-
-    let _prog = Program::execute(parse.get_results(), wr)?;
+    prog.add_stmts(parse.get_results())?;
 
     Ok(())
 }

@@ -36,8 +36,11 @@ impl Program {
         })
     }
 
+    #[allow(unused)]
     pub fn execute(stmts: Vec<Stmt>, wr: PcapWriter) -> Result<Self, Error> {
-        Self::with_pcap_writer(wr)?.add_stmts(stmts)
+        let mut prog = Self::with_pcap_writer(wr)?;
+        prog.add_stmts(stmts)?;
+        Ok(prog)
     }
 
     fn import(&mut self, name: &str) -> Result<(), Error> {
@@ -206,31 +209,31 @@ impl Program {
         })
     }
 
-    pub fn add_stmts(mut self, stmts: Vec<Stmt>) -> Result<Self, Error> {
+    pub fn add_stmts(&mut self, stmts: Vec<Stmt>) -> Result<(), Error> {
         for stmt in stmts {
-            self = self.add_stmt(stmt)?;
+            self.add_stmt(stmt)?;
         }
 
-        Ok(self)
+        Ok(())
     }
 
-    pub fn add_stmt(mut self, stmt: Stmt) -> Result<Self, Error> {
+    pub fn add_stmt(&mut self, stmt: Stmt) -> Result<(), Error> {
         //println!("{:?}", stmt);
-        self = match stmt {
+        match stmt {
             //Stmt::Nop => self,
             Stmt::Import(import) => self.add_import(import)?,
             Stmt::Assign(assign) => self.add_assign(assign)?,
             Stmt::Expr(expr) => self.add_expr(expr)?,
         };
-        Ok(self)
+        Ok(())
     }
 
-    pub fn add_import(mut self, import: Import) -> Result<Self, Error> {
+    pub fn add_import(&mut self, import: Import) -> Result<(), Error> {
         let name = &import.module;
 
         if self.imports.get(name).is_some() {
             println!("Multiple imports of {:?}", name);
-            return Ok(self);
+            return Ok(());
         }
 
         if self.stdlib.lookup_toplevel(name).is_none() {
@@ -240,10 +243,10 @@ impl Program {
 
         self.import(name)?;
 
-        Ok(self)
+        Ok(())
     }
 
-    pub fn add_assign(mut self, assign: Assign) -> Result<Self, Error> {
+    pub fn add_assign(&mut self, assign: Assign) -> Result<(), Error> {
         let name = &assign.target;
 
         if self.regs.get(name).is_some() {
@@ -255,10 +258,10 @@ impl Program {
 
         self.store(name, val)?;
 
-        Ok(self)
+        Ok(())
     }
 
-    pub fn add_expr(mut self, expr: Expr) -> Result<Self, Error> {
+    pub fn add_expr(&mut self, expr: Expr) -> Result<(), Error> {
         let val = self.eval(expr)?;
         match val {
             Val::Void => {},
@@ -281,6 +284,6 @@ impl Program {
                 println!("warning: discarded {:?}", val);
             }
         };
-        Ok(self)
+        Ok(())
     }
 }
