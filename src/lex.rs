@@ -16,10 +16,6 @@ const LEX_REGEXP: &str = concat!(
     r"|",
     r"(?P<rparen>\))",
     r"|",
-    r"(?P<lt><)",
-    r"|",
-    r"(?P<gt>>)",
-    r"|",
     r"(?P<dot>\.)",
     r"|",
     r"(?P<colon>:)",
@@ -64,8 +60,6 @@ pub enum TokType {
 
     LParen,
     RParen,
-    Lt,
-    Gt,
     Dot,
     Colon,
     SemiColon,
@@ -94,8 +88,6 @@ impl TokType {
 
             TokType::LParen,
             TokType::RParen,
-            TokType::Lt,
-            TokType::Gt,
             TokType::Dot,
             TokType::Colon,
             TokType::SemiColon,
