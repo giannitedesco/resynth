@@ -1,4 +1,8 @@
 use crate::lex::{TokType, Token};
+use crate::err::Error;
+use crate::err::Error::{NameError, TypeError, ParseError};
+use crate::net::Packet;
+
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::fmt;
 use std::str::FromStr;
@@ -7,16 +11,11 @@ use std::cell::UnsafeCell;
 use std::ops::Drop;
 use std::vec;
 
-use crate::err::Error;
-use crate::err::Error::{NameError, TypeError, ParseError};
-use crate::net::Packet;
-
 #[cfg(debug_assertions)]
 use std::alloc::Layout;
 
 #[derive(Debug)]
 pub struct ValDef {
-    pub name: &'static str,
     pub val: &'static [u8],
 }
 
@@ -30,17 +29,18 @@ pub struct FuncDef {
 }
 
 #[derive(Debug)]
-pub struct ModuleDef {
-    pub name: &'static str,
-    pub subs: &'static [ModuleDef],
-    pub funcs: &'static [FuncDef],
-    pub vars: &'static [ValDef],
-}
-
-#[derive(Debug)]
 pub struct ClassDef {
     pub name: &'static str,
-    pub methods: &'static [FuncDef],
+    pub methods: phf::Map<&'static str, FuncDef>,
+}
+
+pub type Module = phf::Map<&'static str, Symbol>;
+
+#[derive(Debug)]
+pub enum Symbol {
+    Module(&'static Module),
+    Func(FuncDef),
+    Val(ValDef),
 }
 
 struct Opaque {
@@ -255,6 +255,18 @@ pub enum Val {
     PktGen(Rc<Vec<Packet>>),
 }
 
+impl From<&ValDef> for Val {
+    fn from(valdef: &ValDef) -> Self {
+        Val::Str(BytesObj::from(valdef.val))
+    }
+}
+
+impl From<&'static FuncDef> for Val {
+    fn from(fndef: &'static FuncDef) -> Self {
+        Val::Func(fndef)
+    }
+}
+
 impl From<SocketAddrV4> for Val {
     fn from(sock: SocketAddrV4) -> Self {
         Val::Sock4(sock)
@@ -318,15 +330,10 @@ impl Val {
             }
         };
 
-        let cls = obj.cls;
-
-        for method in cls.methods.iter() {
-            if method.name == name {
-                return Ok(Val::Method(obj.clone(), method))
-            }
+        match obj.cls.methods.get(name) {
+            Some(fndef) => Ok(Val::Method(obj.clone(), fndef)),
+            None => Err(NameError),
         }
-
-        Err(NameError)
     }
 }
 

@@ -1,18 +1,17 @@
 use crate::parse::{ObjectRef, Call, Expr, Import, Assign, Stmt};
 use crate::err::Error;
 use crate::err::Error::{ImportError, NameError, TypeError, MultipleAssignError};
-use crate::globals::Globals;
-use crate::val::{Val, FuncDef, ObjRef, Args};
+use crate::val::{Val, FuncDef, ObjRef, Args, Symbol, Module};
 use crate::pcap::PcapWriter;
+use crate::stdlib::toplevel_module;
 
 use std::rc::Rc;
 use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Program {
-    stdlib: Globals,
     regs: HashMap<String, Val>,
-    imports: HashMap<String, ()>,
+    imports: HashMap<String, &'static Module>,
     wr: Option<PcapWriter>,
 }
 
@@ -20,7 +19,6 @@ impl Program {
     #[allow(unused)]
     pub fn dummy() -> Result<Self, Error> {
         Ok(Program {
-            stdlib: Globals::from_builtins()?,
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: None,
@@ -29,7 +27,6 @@ impl Program {
 
     pub fn with_pcap_writer(wr: PcapWriter) -> Result<Self, Error> {
         Ok(Program {
-            stdlib: Globals::from_builtins()?,
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: Some(wr),
@@ -43,10 +40,10 @@ impl Program {
         Ok(prog)
     }
 
-    fn import(&mut self, name: &str) -> Result<(), Error> {
+    fn import(&mut self, name: &str, module: &'static Module) -> Result<(), Error> {
         self.imports.insert(
             name.to_owned(),
-            ()
+            module,
         );
         Ok(())
     }
@@ -66,36 +63,51 @@ impl Program {
 
         //println!("eval extern {:?}", obj);
 
-        if self.imports.get(toplevel).is_none() {
-            println!("You have not imported {}", toplevel);
-            return Err(NameError);
-        }
-
-        let mut qname = String::new();
-        for c in obj.modules.iter() {
-            qname.push_str("::");
-            qname.push_str(c);
-        }
-
-        if self.stdlib.lookup_module(&qname).is_none() {
-            println!("No such module: {:?}", qname);
-            return Err(NameError);
-        };
-
-        for c in obj.components.iter() {
-            qname.push('.');
-            qname.push_str(c);
-        }
-
-        let obj = match self.stdlib.lookup(&qname) {
-            Some(val) => val,
+        /* Lookup the first item in the imports table */
+        let mut top = match self.imports.get(toplevel) {
             None => {
-                println!("No such object: {:?}", qname);
+                println!("You have not imported {}", toplevel);
                 return Err(NameError);
-            }
+            },
+            Some(module) => module,
         };
 
-        Ok(obj)
+        /* All the double-colon components must be submodules */
+        for c in obj.modules.iter().skip(1) {
+            top = match top.get(c) {
+                Some(Symbol::Module(module)) => module,
+                None => {
+                    println!("Can't find module component: {}", c);
+                    return Err(NameError);
+                },
+                _ => {
+                    println!("Component is not module: {}", c);
+                    return Err(TypeError);
+                },
+            }
+        }
+
+        let topvar = &obj.components[0];
+        let ret: Val = match top.get(topvar) {
+            Some(Symbol::Val(valdef)) => valdef.into(),
+            Some(Symbol::Func(fndef)) => fndef.into(),
+            Some(Symbol::Module(_)) => {
+                println!("Component is a module, cannot be a variable: {}", topvar);
+                return Err(TypeError);
+            },
+            None => {
+                println!("Can't find ref component: {}", topvar);
+                return Err(NameError);
+            },
+        };
+
+        for c in obj.components.iter().skip(1) {
+            /* We only support functions and string variables in stdlib right now */
+            println!(" > comp: lookup {}", c);
+            unreachable!();
+        }
+
+        Ok(ret)
     }
 
     pub fn eval_local_ref(&self, obj: ObjectRef) -> Result<Val, Error> {
@@ -236,12 +248,15 @@ impl Program {
             return Ok(());
         }
 
-        if self.stdlib.lookup_toplevel(name).is_none() {
-            println!("No such module: {:?}", name);
-            return Err(ImportError);
+        match toplevel_module(name) {
+            None => {
+                println!("import: unknown module: {:?}", name);
+                return Err(ImportError);
+            }
+            Some(module) => {
+                self.import(name, module)?;
+            }
         }
-
-        self.import(name)?;
 
         Ok(())
     }

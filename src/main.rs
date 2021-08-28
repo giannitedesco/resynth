@@ -5,7 +5,6 @@ mod util;
 mod lex;
 mod parse;
 mod program;
-mod globals;
 mod stdlib;
 mod val;
 mod tcp4;
