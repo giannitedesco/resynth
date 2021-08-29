@@ -16,7 +16,7 @@ pub struct TcpFlow {
     sv_seq: u32,
 }
 
-const TCPSEG_OVERHEAD: usize = 54;
+const TCPSEG_OVERHEAD: usize = 14 + 20 + 20;
 
 /// Helper for creating TCP segments
 struct TcpSeg {

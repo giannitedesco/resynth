@@ -139,3 +139,20 @@ impl tcp_hdr {
         self
     }
 }
+
+impl udp_hdr {
+    pub fn sport(&mut self, sport: u16) -> &mut Self {
+        self.sport = sport.to_be();
+        self
+    }
+
+    pub fn dport(&mut self, dport: u16) -> &mut Self {
+        self.dport = dport.to_be();
+        self
+    }
+
+    pub fn len(&mut self, len: u16) -> &mut Self {
+        self.len = len.to_be();
+        self
+    }
+}

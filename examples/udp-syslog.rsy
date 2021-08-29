@@ -1,0 +1,10 @@
+import ipv4;
+
+let conn = ipv4::udp::flow(
+  192.168.238.112:13749,
+  172.16.239.127:514,
+);
+
+conn.client_message(
+  "<164>This is a syslog message|0a|",
+);

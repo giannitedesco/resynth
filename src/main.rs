@@ -8,6 +8,7 @@ mod program;
 mod stdlib;
 mod val;
 mod tcp4;
+mod udp4;
 mod net;
 mod pcap;
 

@@ -4,6 +4,7 @@ use crate::err::Error;
 use crate::err::Error::RuntimeError;
 use crate::val::{Symbol, Val, ValType, FuncDef, ValDef, ClassDef, ObjRef, BytesObj, Args, Module};
 use crate::tcp4::TcpFlow;
+use crate::udp4::UdpFlow;
 
 #[allow(unused)]
 fn unimplemented(mut args: Args) -> Result<Val, Error> {
@@ -82,14 +83,6 @@ fn tcp_flow(mut args: Args) -> Result<Val, Error> {
     Ok(Val::Obj(obj))
 }
 
-fn text_crlflines(mut args: Args) -> Result<Val, Error> {
-    let mut ret: Vec<u8> = Vec::new();
-    for s in args.collect().map(|x| x.into()).intersperse(BytesObj::from(b"\r\n")) {
-        ret.extend(s.as_ref());
-    }
-    Ok(Val::Str(BytesObj::new(ret)))
-}
-
 const TCP4: phf::Map<&'static str, Symbol> = phf_map! {
     "flow" => Symbol::Func(FuncDef {
         name: "flow",
@@ -100,7 +93,58 @@ const TCP4: phf::Map<&'static str, Symbol> = phf_map! {
     }),
 };
 
+fn udp_client_message(mut args: Args) -> Result<Val, Error> {
+    let mut obj: ObjRef = args.take().into();
+    let bytes: BytesObj = args.take().into();
+    let this = unsafe { ObjRef::get_mut_obj::<UdpFlow>(&mut obj) };
+    this.client_message(bytes.as_ref())
+}
+
+fn udp_server_message(mut args: Args) -> Result<Val, Error> {
+    let mut obj: ObjRef = args.take().into();
+    let bytes: BytesObj = args.take().into();
+    let this = unsafe { ObjRef::get_mut_obj::<UdpFlow>(&mut obj) };
+    this.server_message(bytes.as_ref())
+}
+
+const UDP4_FLOW_CLASS: ClassDef = ClassDef {
+    name: "ipv4::tcp4.flow",
+    methods: phf_map! {
+        "client_message" => FuncDef {
+            name: "ipv4::tcp::flow.client_message",
+            return_type: ValType::Pkt,
+            args: &[ ValType::Str ],
+            collect_type: ValType::Void,
+            exec: udp_client_message,
+        },
+        "server_message" => FuncDef {
+            name: "ipv4::tcp::flow.server_message",
+            return_type: ValType::Pkt,
+            args: &[ ValType::Str ],
+            collect_type: ValType::Void,
+            exec: udp_server_message,
+        },
+    }
+};
+
+fn udp_flow(mut args: Args) -> Result<Val, Error> {
+    let cl = args.take();
+    let sv = args.take();
+    let obj: ObjRef = ObjRef::new(
+        &UDP4_FLOW_CLASS,
+        UdpFlow::new(cl.into(), sv.into())
+    );
+    Ok(Val::Obj(obj))
+}
+
 const UDP4: phf::Map<&'static str, Symbol> = phf_map! {
+    "flow" => Symbol::Func(FuncDef {
+        name: "flow",
+        return_type: ValType::Obj,
+        args: &[ ValType::Sock4, ValType::Sock4 ],
+        collect_type: ValType::Str,
+        exec: udp_flow,
+    }),
 };
 
 const ICMP4: phf::Map<&'static str, Symbol> = phf_map! {
@@ -111,6 +155,14 @@ const IPV4: phf::Map<&'static str, Symbol> = phf_map! {
     "udp" => Symbol::Module(&UDP4),
     "icmp" => Symbol::Module(&ICMP4),
 };
+
+fn text_crlflines(mut args: Args) -> Result<Val, Error> {
+    let mut ret: Vec<u8> = Vec::new();
+    for s in args.collect().map(|x| x.into()).intersperse(BytesObj::from(b"\r\n")) {
+        ret.extend(s.as_ref());
+    }
+    Ok(Val::Str(BytesObj::new(ret)))
+}
 
 const TEXT: phf::Map<&'static str, Symbol> = phf_map! {
     "crlflines" => Symbol::Func(FuncDef {
