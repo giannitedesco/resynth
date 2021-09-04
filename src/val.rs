@@ -1,7 +1,7 @@
 use crate::lex::{TokType, Token};
 use crate::err::Error;
 use crate::err::Error::{NameError, TypeError, ParseError};
-use crate::net::Packet;
+use crate::pkt::Packet;
 
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::fmt;

@@ -1,7 +1,13 @@
 #![allow(unused)]
 
+mod util;
+
 pub mod eth;
 pub mod ipv4;
+
+mod pcap;
+
+pub use pcap::PcapWriter;
 
 use std::fmt;
 use std::fmt::Write;
@@ -222,6 +228,12 @@ impl From<Packet> for BytesObj {
 
 impl From<Packet> for Val {
     fn from(pkt: Packet) -> Self {
-        Self::Str(pkt.into())
+        Self::Pkt(pkt.into())
+    }
+}
+
+impl From<Vec<Packet>> for Val {
+    fn from(pkts: Vec<Packet>) -> Self {
+        Self::PktGen(pkts.into())
     }
 }

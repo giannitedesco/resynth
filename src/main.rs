@@ -1,22 +1,19 @@
 #![feature(iter_intersperse)]
 
 mod err;
-mod util;
 mod lex;
 mod parse;
 mod program;
 mod stdlib;
 mod val;
-mod tcp4;
-mod udp4;
-mod net;
-mod pcap;
+mod pkt;
+mod ezpkt;
 
 use err::Error;
 use lex::{lex, EOF};
 use parse::Parser;
 use program::Program;
-use pcap::PcapWriter;
+use pkt::PcapWriter;
 
 use std::env;
 use std::path::{Path, PathBuf};

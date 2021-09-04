@@ -1,12 +1,10 @@
 use std::net::SocketAddrV4;
-use std::rc::Rc;
 
-use crate::err::Error;
 use crate::val::Val;
 
-use crate::net::eth::eth_hdr;
-use crate::net::ipv4::{ip_hdr, tcp_hdr};
-use crate::net::{Packet, Hdr};
+use super::pkt::eth::eth_hdr;
+use super::pkt::ipv4::{ip_hdr, tcp_hdr};
+use super::pkt::{Packet, Hdr};
 
 #[derive(Debug)]
 pub struct TcpFlow {
@@ -121,12 +119,6 @@ impl From<TcpSeg> for Packet {
     }
 }
 
-impl From<TcpSeg> for Val {
-    fn from(seg: TcpSeg) -> Self {
-        Val::Pkt(Rc::new(seg.into()))
-    }
-}
-
 impl TcpFlow {
     pub fn new(cl: SocketAddrV4, sv: SocketAddrV4) -> Self {
         println!("trace: tcp:flow({:?}, {:?})", cl, sv);
@@ -147,9 +139,8 @@ impl TcpFlow {
         TcpSeg::new(&self.sv, &self.cl)
     }
 
-    pub fn open(&mut self) -> Result<Val, Error> {
-        let mut ret: Rc<Vec<Packet>> = Rc::new(Vec::with_capacity(3));
-        let pkts = Rc::get_mut(&mut ret).unwrap();
+    pub fn open(&mut self) -> Vec<Packet> {
+        let mut pkts: Vec<Packet> = Vec::with_capacity(3);
 
         println!("trace: tcp:open()");
 
@@ -163,12 +154,11 @@ impl TcpFlow {
         let pkt = self.clnt().ack(self.cl_seq, self.sv_seq - 1);
         pkts.push(pkt.into());
 
-        Ok(Val::PktGen(ret))
+        pkts
     }
 
-    pub fn close(&mut self) -> Result<Val, Error> {
-        let mut ret: Rc<Vec<Packet>> = Rc::new(Vec::with_capacity(3));
-        let pkts = Rc::get_mut(&mut ret).unwrap();
+    pub fn close(&mut self) -> Vec<Packet> {
+        let mut pkts: Vec<Packet> = Vec::with_capacity(3);
 
         println!("trace: tcp:close()");
 
@@ -184,22 +174,16 @@ impl TcpFlow {
         let pkt = self.clnt().ack(self.cl_seq, self.sv_seq - 1);
         pkts.push(pkt.into());
 
-        Ok(Val::PktGen(ret))
+        pkts
     }
 
-    pub fn client_message(&mut self, bytes: &[u8]) -> Result<Val, Error> {
+    pub fn client_message(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: tcp:client({} bytes)", bytes.len());
-
-        let pkt: Packet = self.clnt().push(&mut self.cl_seq, self.sv_seq - 1, bytes).into();
-
-        Ok(Val::Pkt(Rc::new(pkt)))
+        self.clnt().push(&mut self.cl_seq, self.sv_seq - 1, bytes).into()
     }
 
-    pub fn server_message(&mut self, bytes: &[u8]) -> Result<Val, Error> {
+    pub fn server_message(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: tcp:server({} bytes)", bytes.len());
-
-        let pkt: Packet = self.srvr().push(&mut self.sv_seq, self.cl_seq - 1, bytes).into();
-
-        Ok(Val::Pkt(Rc::new(pkt)))
+        self.srvr().push(&mut self.sv_seq, self.cl_seq - 1, bytes).into()
     }
 }

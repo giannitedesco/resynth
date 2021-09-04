@@ -2,7 +2,7 @@ use crate::parse::{ObjectRef, Call, Expr, Import, Assign, Stmt};
 use crate::err::Error;
 use crate::err::Error::{ImportError, NameError, TypeError, MultipleAssignError};
 use crate::val::{Val, FuncDef, ObjRef, Args, Symbol, Module};
-use crate::pcap::PcapWriter;
+use crate::pkt::PcapWriter;
 use crate::stdlib::toplevel_module;
 
 use std::rc::Rc;
@@ -196,6 +196,7 @@ impl Program {
         let ret = (func.exec)(Args::from(pos_args, collect))?;
 
         /* This is an assert because the stdlib is not user-defined */
+        println!("{:?} {:?}", ret.val_type(), func.return_type);
         debug_assert!(ret.val_type() == func.return_type);
         println!();
 

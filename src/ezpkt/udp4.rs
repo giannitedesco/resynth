@@ -1,12 +1,8 @@
 use std::net::SocketAddrV4;
-use std::rc::Rc;
 
-use crate::err::Error;
-use crate::val::Val;
-
-use crate::net::eth::eth_hdr;
-use crate::net::ipv4::{ip_hdr, udp_hdr};
-use crate::net::{Packet, Hdr};
+use super::pkt::eth::eth_hdr;
+use super::pkt::ipv4::{ip_hdr, udp_hdr};
+use super::pkt::{Packet, Hdr};
 
 #[derive(Debug)]
 pub struct UdpFlow {
@@ -89,12 +85,6 @@ impl From<UdpDgram> for Packet {
     }
 }
 
-impl From<UdpDgram> for Val {
-    fn from(seg: UdpDgram) -> Self {
-        Val::Pkt(Rc::new(seg.into()))
-    }
-}
-
 impl UdpFlow {
     pub fn new(cl: SocketAddrV4, sv: SocketAddrV4) -> Self {
         println!("trace: udp:flow({:?}, {:?})", cl, sv);
@@ -112,19 +102,13 @@ impl UdpFlow {
         UdpDgram::new(&self.sv, &self.cl)
     }
 
-    pub fn client_message(&mut self, bytes: &[u8]) -> Result<Val, Error> {
+    pub fn client_message(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: udp:client({} bytes)", bytes.len());
-
-        let pkt: Packet = self.clnt().push(bytes).into();
-
-        Ok(Val::Pkt(Rc::new(pkt)))
+        self.clnt().push(bytes).into()
     }
 
-    pub fn server_message(&mut self, bytes: &[u8]) -> Result<Val, Error> {
+    pub fn server_message(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: udp:server({} bytes)", bytes.len());
-
-        let pkt: Packet = self.srvr().push(bytes).into();
-
-        Ok(Val::Pkt(Rc::new(pkt)))
+        self.srvr().push(bytes).into()
     }
 }

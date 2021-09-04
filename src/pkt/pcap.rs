@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io;
 use std::io::Write;
 
-use crate::net::{Hdr, Packet};
-use crate::util::{Serialize, AsBytes};
+use super::{Hdr, Packet};
+use super::util::{Serialize, AsBytes};
 
 #[allow(unused)]
 enum LinkType {
