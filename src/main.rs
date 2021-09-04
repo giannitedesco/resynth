@@ -65,7 +65,7 @@ fn prog_invocation_name() -> Option<String> {
 }
 
 fn main() {
-    let matches = App::new("Resynth")
+    let matches = App::new("resynth")
         .version("0.1")
         .author("Gianni Teesco <gianni@scaramanga.co.uk>")
         .about("Packet synthesis language")
