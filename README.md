@@ -1,8 +1,8 @@
 # resynth: A Network Packet Synthesis Language
 
 ## About
-Resynth is a packet synthesis language. It produces network traffic (in the form
-of pcap files) from textual descriptions of traffic. It enables
+Resynth is a packet synthesis language. It produces network traffic (in the
+form of pcap files) from textual descriptions of traffic. It enables
 version-controlled packets-as-code workflows which can be useful for various
 packet processing, or security research applications such as DPI engines, or
 network intrusion detection systems.
