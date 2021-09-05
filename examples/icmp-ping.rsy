@@ -1,0 +1,9 @@
+import ipv4;
+
+let conn = ipv4::icmp::flow(
+  192.168.238.112,
+  172.16.239.127,
+);
+
+conn.echo("ABCDEFG");
+conn.echo_reply("ABCDEFG");

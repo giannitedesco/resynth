@@ -282,6 +282,15 @@ impl From<Val> for SocketAddrV4 {
     }
 }
 
+impl From<Val> for Ipv4Addr {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Ip4(a) => a,
+            _ => unreachable!()
+        }
+    }
+}
+
 impl From<Val> for BytesObj {
     fn from(v: Val) -> Self {
         match v {

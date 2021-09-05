@@ -156,3 +156,78 @@ impl udp_hdr {
         self
     }
 }
+
+pub const ICMP_ECHOREPLY: u8 = 0;       /* Echo Reply */
+pub const ICMP_DEST_UNREACH: u8 = 3;    /* Destination Unreachable */
+pub const ICMP_SOURCE_QUENCH: u8 = 4;   /* Source Quench */
+pub const ICMP_REDIRECT: u8 = 5;        /* Redirect (change route) */
+pub const ICMP_ECHO: u8 = 8;            /* Echo Request */
+pub const ICMP_TIME_EXCEEDED: u8 = 11;  /* Time Exceeded */
+pub const ICMP_PARAMETERPROB: u8 = 12;  /* Parameter Problem */
+pub const ICMP_TIMESTAMP: u8 = 13;      /* Timestamp Request */
+pub const ICMP_TIMESTAMPREPLY: u8 = 14; /* Timestamp Reply */
+pub const ICMP_INFO_REQUEST: u8 = 15;   /* Information Request */
+pub const ICMP_INFO_REPLY: u8 = 16;     /* Information Reply */
+pub const ICMP_ADDRESS: u8 = 17;        /* Address Mask Request */
+pub const ICMP_ADDRESSREPLY: u8 = 18;   /* Address Mask Reply */
+
+/* For ICMP_DEST_UNREACH */
+pub const ICMP_NET_UNREACH: u8 = 0;
+pub const ICMP_HOST_UNREACH: u8 = 1;
+pub const ICMP_PROT_UNREACH: u8 = 2;
+pub const ICMP_PORT_UNREACH: u8 = 3;
+pub const ICMP_FRAG_NEEDED: u8 = 4;
+pub const ICMP_SR_FAILED: u8 = 5;
+pub const ICMP_NET_UNKNOWN: u8 = 7;
+pub const ICMP_HOST_UNKNOWN: u8 = 8;
+pub const ICMP_NET_ANO: u8 = 9;
+pub const ICMP_HOST_ANO: u8 = 10;
+pub const ICMP_NET_UNR_TOS: u8 = 11;
+pub const ICMP_HOST_UNR_TOS: u8 = 12;
+pub const ICMP_PKT_FILTERED: u8 = 13;
+pub const ICMP_PREC_VIOLATION: u8 = 14;
+pub const ICMP_PREC_CUTOFF: u8 = 15;
+
+#[repr(C, packed(1))]
+#[derive(Debug, Copy, Clone)]
+pub struct icmp_hdr {
+    pub typ: u8,
+    pub code: u8,
+    pub csum: u16,
+}
+
+impl icmp_hdr {
+    pub fn typ(&mut self, typ: u8) -> &mut Self {
+        self.typ = typ;
+        self
+    }
+
+    pub fn code(&mut self, code: u8) -> &mut Self {
+        self.code = code;
+        self
+    }
+
+    pub fn csum(&mut self, csum: u16) -> &mut Self {
+        self.csum = csum.to_be();
+        self
+    }
+}
+
+#[repr(C, packed(1))]
+#[derive(Debug, Copy, Clone)]
+pub struct icmp_echo_hdr {
+    pub id: u16,
+    pub seq: u16,
+}
+
+impl icmp_echo_hdr {
+    pub fn id(&mut self, id: u16) -> &mut Self {
+        self.id = id.to_be();
+        self
+    }
+
+    pub fn seq(&mut self, seq: u16) -> &mut Self {
+        self.seq = seq.to_be();
+        self
+    }
+}
