@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 
 use super::pkt::eth::eth_hdr;
-use super::pkt::ipv4::{ip_hdr, icmp_hdr, icmp_echo_hdr, ICMP_ECHOREPLY, ICMP_ECHO};
+use super::pkt::ipv4::{ip_hdr, icmp_hdr, icmp_echo_hdr, ip_csum, ICMP_ECHOREPLY, ICMP_ECHO};
 use super::pkt::{Packet, Hdr};
 
 #[derive(Debug)]
@@ -49,7 +49,7 @@ impl IcmpDgram {
 
         let echo: Hdr<icmp_echo_hdr> = pkt.push_hdr();
 
-        let tot_len = ip.len() + icmp.len();
+        let tot_len = ip.len() + icmp.len() + echo.len();
 
         let ret = Self {
             pkt,
@@ -74,23 +74,33 @@ impl IcmpDgram {
         self
     }
 
-    fn ping(mut self, id: u16, seq: u16) -> Self {
+    fn ping(mut self, id: u16, seq: u16, bytes: &[u8]) -> Self {
+        self = self.push(bytes);
         self.pkt.get_mut_hdr(&self.icmp)
-            .csum(0x6189) // FIXME
             .typ(ICMP_ECHO);
         self.pkt.get_mut_hdr(&self.echo)
             .id(id)
             .seq(seq);
+
+        let bytes = self.pkt.bytes_after(&self.ip, self.tot_len);
+        let csum = ip_csum(bytes);
+        self.pkt.get_mut_hdr(&self.icmp).csum(csum);
+
         self
     }
 
-    fn pong(mut self, id: u16, seq: u16) -> Self {
+    fn pong(mut self, id: u16, seq: u16, bytes: &[u8]) -> Self {
+        self = self.push(bytes);
         self.pkt.get_mut_hdr(&self.icmp)
-            .csum(0x6989) // FIXME
             .typ(ICMP_ECHOREPLY);
         self.pkt.get_mut_hdr(&self.echo)
             .id(id)
             .seq(seq);
+
+        let bytes = self.pkt.bytes_after(&self.ip, self.tot_len);
+        let csum = ip_csum(bytes);
+        self.pkt.get_mut_hdr(&self.icmp).csum(csum);
+
         self
     }
 }
@@ -123,14 +133,14 @@ impl IcmpFlow {
 
     pub fn echo(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: icmp:ping({} bytes)", bytes.len());
-        let ret = self.clnt().ping(self.id, self.ping_seq).push(bytes).into();
+        let ret = self.clnt().ping(self.id, self.ping_seq, bytes).into();
         self.ping_seq += 1;
         ret
     }
 
     pub fn echo_reply(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: icmp:pong({} bytes)", bytes.len());
-        let ret = self.srvr().pong(self.id, self.pong_seq).push(bytes).into();
+        let ret = self.srvr().pong(self.id, self.pong_seq, bytes).into();
         self.pong_seq += 1;
         ret
     }

@@ -231,3 +231,8 @@ impl icmp_echo_hdr {
         self
     }
 }
+
+pub fn ip_csum(buf: &[u8]) -> u16 {
+    println!("{:?}", buf);
+    0xffff
+}

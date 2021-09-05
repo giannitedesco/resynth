@@ -162,6 +162,34 @@ impl Packet {
         }
     }
 
+    pub fn get_mut_slice<'a>(&'a mut self, off: usize, len: usize) -> Option<&'a mut [u8]> {
+        let end = off + len;
+        if off < self.headroom {
+            return None
+        }
+        if off > self.buf.len() {
+            return None
+        }
+        let bytes = &mut self.buf[off..end];
+        Some(bytes)
+    }
+
+    pub fn get_buf<'a>(&'a mut self, off: usize, len: usize) -> &mut [u8] {
+        &mut self.buf[off..off + len]
+    }
+
+    pub fn bytes_from<T>(&mut self, hdr: &Hdr<T>, len: usize) -> &mut [u8] {
+        let off = hdr.off();
+        &mut self.buf[off..off + len]
+    }
+
+    pub fn bytes_after<T>(&mut self, hdr: &Hdr<T>, len: usize) -> &mut [u8] {
+        let off = hdr.off();
+        let start = off + hdr.len();
+        let end = off + len;
+        &mut self.buf[start..end]
+    }
+
     pub fn hex_dump_line(&self, pos: usize, width: usize) -> String {
         let mut s = String::new();
         let valid = if pos + width < self.buf.len() {
