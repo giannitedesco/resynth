@@ -4,8 +4,29 @@ version = "0.1.0"
 authors = ["Gianni Tedesco <gianni@scaramanga.co.uk>"]
 edition = "2018"
 license = "GPLv3"
+homepage = "https://github.com/giannitedesci/resynth"
+repository = "https://github.com/giannitedesci/resynth"
+readme = "README.md"
+keywords = [
+ "packets",
+ "traffic-generation",
+ "networking",
+ "pcap",
+]
+categories = [
+ "command-line-utilities",
+ "compilers",
+ "network programming",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+lto = true
+panic = "abort"
+incremental = true
+codegen-units = 8
+
+[profile.bench]
+lto = true
 
 [dependencies]
 regex = "1.5"
