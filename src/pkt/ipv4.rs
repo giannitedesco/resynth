@@ -233,6 +233,23 @@ impl icmp_echo_hdr {
 }
 
 pub fn ip_csum(buf: &[u8]) -> u16 {
-    println!("{:?}", buf);
-    0xffff
+    use std::convert::TryInto;
+
+    let mut sum: u32 = 0;
+
+    let it = buf.chunks_exact(2);
+    let remainder = it.remainder();
+
+    for chunk in it {
+        let val = u16::from_be_bytes(chunk.try_into().unwrap());
+        sum += val as u32;
+    }
+
+    sum += (remainder[0] as u32) << 8;
+
+    sum = (sum & 0xffffu32) + (sum >> 16);
+    sum = (sum & 0xffffu32) + (sum >> 16);
+    sum = !sum & 0xffffu32;
+
+    sum as u16
 }
