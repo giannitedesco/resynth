@@ -42,7 +42,7 @@ fn process_file(inp: &Path, out: &Path) -> Result<(), Error> {
             _ => return Err(Error::LexError),
         };
 
-        for tok in toks.into_iter() {
+        for tok in toks {
             parse.feed(tok)?;
         }
 

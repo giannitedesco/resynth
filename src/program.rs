@@ -154,7 +154,7 @@ impl Program {
 
         /* Now evaluate all args */
         let mut args_vec = Vec::new();
-        for expr in arg_exprs.into_iter() {
+        for expr in arg_exprs {
             let arg = self.eval(expr)?;
             args_vec.push(arg);
         }
