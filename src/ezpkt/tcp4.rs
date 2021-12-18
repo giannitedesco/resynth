@@ -148,10 +148,10 @@ impl TcpFlow {
         let pkt = self.clnt().syn(&mut self.cl_seq);
         pkts.push(pkt.into());
 
-        let pkt = self.srvr().syn_ack(&mut self.sv_seq, self.cl_seq - 1);
+        let pkt = self.srvr().syn_ack(&mut self.sv_seq, self.cl_seq);
         pkts.push(pkt.into());
 
-        let pkt = self.clnt().ack(self.cl_seq, self.sv_seq - 1);
+        let pkt = self.clnt().ack(self.cl_seq, self.sv_seq);
         pkts.push(pkt.into());
 
         pkts
@@ -165,13 +165,13 @@ impl TcpFlow {
         let pkt = self.clnt().fin(&mut self.cl_seq);
         pkts.push(pkt.into());
 
-        let pkt = self.srvr().ack(self.sv_seq, self.cl_seq - 1);
+        let pkt = self.srvr().ack(self.sv_seq, self.cl_seq);
         pkts.push(pkt.into());
 
         let pkt = self.srvr().fin(&mut self.sv_seq);
         pkts.push(pkt.into());
 
-        let pkt = self.clnt().ack(self.cl_seq, self.sv_seq - 1);
+        let pkt = self.clnt().ack(self.cl_seq, self.sv_seq);
         pkts.push(pkt.into());
 
         pkts
@@ -179,11 +179,11 @@ impl TcpFlow {
 
     pub fn client_message(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: tcp:client({} bytes)", bytes.len());
-        self.clnt().push(&mut self.cl_seq, self.sv_seq - 1, bytes).into()
+        self.clnt().push(&mut self.cl_seq, self.sv_seq, bytes).into()
     }
 
     pub fn server_message(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: tcp:server({} bytes)", bytes.len());
-        self.srvr().push(&mut self.sv_seq, self.cl_seq - 1, bytes).into()
+        self.srvr().push(&mut self.sv_seq, self.cl_seq, bytes).into()
     }
 }
