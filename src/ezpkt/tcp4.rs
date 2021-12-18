@@ -106,6 +106,15 @@ impl TcpSeg {
         self
     }
 
+    fn fin_ack(mut self, seq: &mut u32, ack: u32) -> Self {
+        self.pkt.get_mut_hdr(&self.tcp)
+            .seq(*seq)
+            .fin()
+            .ack(ack);
+        *seq += 1;
+        self
+    }
+
     fn update_tot_len(mut self) -> Self {
         self.pkt.get_mut_hdr(&self.ip)
             .tot_len(self.tot_len as u16);
@@ -162,13 +171,10 @@ impl TcpFlow {
 
         println!("trace: tcp:close()");
 
-        let pkt = self.clnt().fin(&mut self.cl_seq);
+        let pkt = self.clnt().fin_ack(&mut self.cl_seq, self.sv_seq);
         pkts.push(pkt.into());
 
-        let pkt = self.srvr().ack(self.sv_seq, self.cl_seq);
-        pkts.push(pkt.into());
-
-        let pkt = self.srvr().fin(&mut self.sv_seq);
+        let pkt = self.srvr().fin_ack(&mut self.sv_seq, self.cl_seq);
         pkts.push(pkt.into());
 
         let pkt = self.clnt().ack(self.cl_seq, self.sv_seq);
