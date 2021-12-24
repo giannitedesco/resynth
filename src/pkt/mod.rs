@@ -162,7 +162,7 @@ impl Packet {
         }
     }
 
-    pub fn get_mut_slice<'a>(&'a mut self, off: usize, len: usize) -> Option<&'a mut [u8]> {
+    pub fn get_mut_slice(&mut self, off: usize, len: usize) -> Option<&mut [u8]> {
         let end = off + len;
         if off < self.headroom {
             return None
@@ -174,7 +174,7 @@ impl Packet {
         Some(bytes)
     }
 
-    pub fn get_buf<'a>(&'a mut self, off: usize, len: usize) -> &mut [u8] {
+    pub fn get_buf(&mut self, off: usize, len: usize) -> &mut [u8] {
         &mut self.buf[off..off + len]
     }
 
