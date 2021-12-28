@@ -1,5 +1,3 @@
-#![feature(iter_intersperse)]
-
 mod err;
 mod lex;
 mod parse;

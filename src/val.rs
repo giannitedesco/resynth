@@ -3,6 +3,7 @@ use crate::err::Error;
 use crate::err::Error::{NameError, TypeError, ParseError};
 use crate::pkt::Packet;
 
+use std::iter::FromIterator;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::fmt;
 use std::str::FromStr;
@@ -348,14 +349,14 @@ impl Val {
 
 pub struct Args {
     it: vec::IntoIter<Val>,
-    collect: vec::IntoIter<Val>,
+    extra_args: vec::IntoIter<Val>,
 }
 
 impl Args {
-    pub fn from(args: Vec<Val>, collect: Vec<Val>) -> Self {
+    pub fn from(args: Vec<Val>, extra_args: Vec<Val>) -> Self {
         Self {
             it: args.into_iter(),
-            collect: collect.into_iter(),
+            extra_args: extra_args.into_iter(),
         }
     }
 
@@ -363,8 +364,13 @@ impl Args {
         self.it.next().unwrap()
     }
 
-    pub fn collect(&mut self) -> vec::IntoIter<Val> {
-        std::mem::replace(&mut self.collect, Vec::new().into_iter())
+    pub fn extra_args(&mut self) -> vec::IntoIter<Val> {
+        std::mem::replace(&mut self.extra_args, Vec::new().into_iter())
+    }
+
+    // Collect all extra args into a vec of the given type
+    pub fn collect_extra_args<T>(&mut self) -> Vec<T> where T: From<Val> {
+        Vec::from_iter(self.extra_args().map(|x| -> T { x.into() } ))
     }
 
     /// Dumps all remaining, untaken args
@@ -375,7 +381,7 @@ impl Args {
             }
         }
         loop {
-            if self.collect.next().is_none() {
+            if self.extra_args.next().is_none() {
                 break;
             }
         }
@@ -385,6 +391,6 @@ impl Args {
 impl Drop for Args {
     fn drop(&mut self) {
         assert!(self.it.next().is_none());
-        assert!(self.collect.next().is_none());
+        assert!(self.extra_args.next().is_none());
     }
 }

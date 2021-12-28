@@ -187,13 +187,13 @@ impl Program {
             (&mut arg_vals).take(func.args.len()).collect()
         };
 
-        let collect: Vec<Val> = arg_vals.collect();
+        let extra: Vec<Val> = arg_vals.collect();
 
         //dbg!(&pos_args);
-        //dbg!(&collect);
+        //dbg!(&extra);
 
         /* Finally, we're ready to make the call */
-        let ret = (func.exec)(Args::from(pos_args, collect))?;
+        let ret = (func.exec)(Args::from(pos_args, extra))?;
 
         /* This is an assert because the stdlib is not user-defined */
         println!("{:?} {:?}", ret.val_type(), func.return_type);
