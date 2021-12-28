@@ -28,4 +28,4 @@ conn.server_message(
   ),
 );
 
-conn.close();
+conn.server_close();

@@ -166,10 +166,10 @@ impl TcpFlow {
         pkts
     }
 
-    pub fn close(&mut self) -> Vec<Packet> {
+    pub fn client_close(&mut self) -> Vec<Packet> {
         let mut pkts: Vec<Packet> = Vec::with_capacity(3);
 
-        println!("trace: tcp:close()");
+        println!("trace: tcp:client_close()");
 
         let pkt = self.clnt().fin_ack(&mut self.cl_seq, self.sv_seq);
         pkts.push(pkt.into());
@@ -182,6 +182,24 @@ impl TcpFlow {
 
         pkts
     }
+
+    pub fn server_close(&mut self) -> Vec<Packet> {
+        let mut pkts: Vec<Packet> = Vec::with_capacity(3);
+
+        println!("trace: tcp:server_close()");
+
+        let pkt = self.srvr().fin_ack(&mut self.sv_seq, self.cl_seq);
+        pkts.push(pkt.into());
+
+        let pkt = self.clnt().fin_ack(&mut self.cl_seq, self.sv_seq);
+        pkts.push(pkt.into());
+
+        let pkt = self.srvr().ack(self.sv_seq, self.cl_seq);
+        pkts.push(pkt.into());
+
+        pkts
+    }
+
 
     pub fn client_message(&mut self, bytes: &[u8]) -> Packet {
         println!("trace: tcp:client({} bytes)", bytes.len());

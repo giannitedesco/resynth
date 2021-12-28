@@ -18,10 +18,16 @@ fn tcp_open(mut args: Args) -> Result<Val, Error> {
     Ok(this.open().into())
 }
 
-fn tcp_close(mut args: Args) -> Result<Val, Error> {
+fn tcp_client_close(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take().into();
     let this = unsafe { ObjRef::get_mut_obj::<TcpFlow>(&mut obj) };
-    Ok(this.close().into())
+    Ok(this.client_close().into())
+}
+
+fn tcp_server_close(mut args: Args) -> Result<Val, Error> {
+    let mut obj: ObjRef = args.take().into();
+    let this = unsafe { ObjRef::get_mut_obj::<TcpFlow>(&mut obj) };
+    Ok(this.server_close().into())
 }
 
 fn tcp_client_message(mut args: Args) -> Result<Val, Error> {
@@ -48,12 +54,19 @@ const TCP4_FLOW_CLASS: ClassDef = ClassDef {
             collect_type: ValType::Void,
             exec: tcp_open,
         },
-        "close" => FuncDef {
-            name: "ipv4::tcp::flow.close",
+        "client_close" => FuncDef {
+            name: "ipv4::tcp::flow.client_close",
             return_type: ValType::PktGen,
             args: &[],
             collect_type: ValType::Void,
-            exec: tcp_close,
+            exec: tcp_client_close,
+        },
+        "server_close" => FuncDef {
+            name: "ipv4::tcp::flow.server_close",
+            return_type: ValType::PktGen,
+            args: &[],
+            collect_type: ValType::Void,
+            exec: tcp_server_close,
         },
         "client_message" => FuncDef {
             name: "ipv4::tcp::flow.client_message",
