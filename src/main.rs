@@ -24,8 +24,6 @@ use clap::{Arg, App};
 #[macro_use]
 extern crate lazy_static;
 
-const PROGRAM_NAME: &str = "resynth";
-
 fn process_file(inp: &Path, out: &Path, verbose: bool) -> Result<(), Error> {
     let file = File::open(inp)?;
     let rd = io::BufReader::new(file);
@@ -60,13 +58,13 @@ fn process_file(inp: &Path, out: &Path, verbose: bool) -> Result<(), Error> {
     Ok(())
 }
 
-fn prog_invocation_name() -> Option<String> {
-    env::current_exe()
-            .ok()?
-            .file_name()?
-            .to_str()?
-            .to_owned()
-            .into()
+const PROGRAM_NAME: &str = "resynth";
+
+// An inefficiency of rust is that we cannot seem to obtain a static reference to argv[0],
+// presumably because calls to C libraries could modify the contents? This means that when argv[0]
+// isn't present or valid then we have to malloc the const string "resynth" in case of an error.
+fn prog_invocation_name(dfl: &str) -> String {
+    env::args().next().unwrap_or_else(|| dfl.to_owned())
 }
 
 fn main() {
@@ -93,11 +91,7 @@ fn main() {
             .index(1))
         .get_matches();
 
-    let prog = match prog_invocation_name() {
-        Some(ret) => ret,
-        None => String::from(PROGRAM_NAME),
-    };
-
+    let mut prog: Option<String> = None;
     let verbose = matches.is_present("verbose");
 
     let mut out = matches.value_of("out").map_or(
@@ -113,7 +107,11 @@ fn main() {
 
         println!("Processing: {:?} -> {:?}", p, out);
         if let Err(error) = process_file(p, &out, verbose) {
-            println!("{}: error: {:?}: {:?}", prog, p, error);
+            if prog.is_none() {
+                prog = Some(prog_invocation_name(PROGRAM_NAME));
+            }
+
+            println!("{}: error: {:?}: {:?}", prog.as_ref().unwrap(), p, error);
         }
     }
 }
