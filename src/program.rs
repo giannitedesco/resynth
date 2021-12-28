@@ -266,8 +266,7 @@ impl Program {
         let name = &assign.target;
 
         if self.regs.get(name).is_some() {
-            println!("Reassigning {:?}", name);
-            return Err(MultipleAssignError);
+            return Err(MultipleAssignError(name.to_owned()));
         }
 
         let val = self.eval(assign.rvalue)?;

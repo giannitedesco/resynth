@@ -111,7 +111,10 @@ fn main() {
                 prog = Some(prog_invocation_name(PROGRAM_NAME));
             }
 
-            println!("{}: error: {:?}: {:?}", prog.as_ref().unwrap(), p, error);
+            println!("{}: error: {}: {}",
+                     prog.as_ref().unwrap(),
+                     p.display(),
+                     error);
         }
     }
 }
