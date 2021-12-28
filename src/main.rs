@@ -26,10 +26,17 @@ extern crate lazy_static;
 
 const PROGRAM_NAME: &str = "resynth";
 
-fn process_file(inp: &Path, out: &Path) -> Result<(), Error> {
+fn process_file(inp: &Path, out: &Path, verbose: bool) -> Result<(), Error> {
     let file = File::open(inp)?;
     let rd = io::BufReader::new(file);
-    let wr = PcapWriter::create(out)?;
+    let wr = {
+        let wr = PcapWriter::create(out)?;
+        if verbose {
+            wr.debug()
+        } else {
+            wr
+        }
+    };
     let mut prog = Program::with_pcap_writer(wr)?;
     let mut parse = Parser::new();
 
@@ -67,6 +74,10 @@ fn main() {
         .version("0.1")
         .author("Gianni Teesco <gianni@scaramanga.co.uk>")
         .about("Packet synthesis language")
+        .arg(Arg::new("verbose")
+            .short('v')
+            .long("verbose")
+            .about("Print packets"))
         .arg(Arg::new("out")
             .short('o')
             .long("out-dir")
@@ -87,6 +98,8 @@ fn main() {
         None => String::from(PROGRAM_NAME),
     };
 
+    let verbose = matches.is_present("verbose");
+
     let mut out = matches.value_of("out").map_or(
         PathBuf::new(),
         PathBuf::from,
@@ -99,7 +112,7 @@ fn main() {
         out.set_extension("pcap");
 
         println!("Processing: {:?} -> {:?}", p, out);
-        if let Err(error) = process_file(p, &out) {
+        if let Err(error) = process_file(p, &out, verbose) {
             println!("{}: error: {:?}: {:?}", prog, p, error);
         }
     }

@@ -58,6 +58,7 @@ impl pcap_hdr {
 pub struct PcapWriter {
     wr: io::BufWriter<File>,
     cnt: usize,
+    dbg: bool,
 }
 
 impl PcapWriter {
@@ -66,11 +67,17 @@ impl PcapWriter {
         let mut ret = Self {
             wr: io::BufWriter::new(f),
             cnt: 0,
+            dbg: false,
         };
 
         ret.write_header()?;
 
         Ok(ret)
+    }
+
+    pub fn debug(mut self) -> Self {
+        self.dbg = true;
+        self
     }
 
     fn write_header(&mut self) -> Result<(), io::Error> {
@@ -82,7 +89,9 @@ impl PcapWriter {
     pub fn write_packet(&mut self, pkt: &mut Packet) -> Result<(), io::Error> {
         let len = pkt.len() as u32;
 
-        println!("pcap: writing {:#?}", pkt);
+        if self.dbg {
+            println!("pcap: writing {:#?}", pkt);
+        }
 
         let hdr: Hdr<pcap_pkt> = pkt.lower_headroom();
         let mut pcap_hdr = pkt.get_mut_hdr(&hdr);
