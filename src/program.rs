@@ -132,7 +132,7 @@ impl Program {
             self.eval_extern_ref(obj)
         }else if obj.components.len() > 0 {
             self.eval_local_ref(obj)
-        }else{
+        } else {
             unreachable!();
         }
     }
@@ -183,7 +183,7 @@ impl Program {
             let mut v: Vec<Val> = vec!(Val::Obj(this.clone()));
             v.extend((&mut arg_vals).take(func.args.len()));
             v
-        }else{
+        } else {
             (&mut arg_vals).take(func.args.len()).collect()
         };
 

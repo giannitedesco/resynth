@@ -52,7 +52,7 @@ impl fmt::Debug for Packet {
                 f.write_str(&line)?;
                 f.write_str("\n")?;
             }
-        }else{
+        } else {
             f.write_str("Packet<>")?;
         }
         Ok(())
@@ -194,14 +194,12 @@ impl Packet {
         let mut s = String::new();
         let valid = if pos + width < self.buf.len() {
             width
-        }else{
+        } else {
             self.buf.len() - pos
         };
         let bytes = &self.buf[pos..pos + valid];
 
         write!(s, "{:05x} |", pos);
-
-        let mut i = 0;
 
         for b in bytes[0..valid].iter() {
             write!(s, " {:02x}", b);
@@ -218,7 +216,7 @@ impl Packet {
 
             if chr.is_ascii_graphic() {
                 write!(s, "{}", chr);
-            }else{
+            } else {
                 write!(s, ".");
             }
         }

@@ -193,7 +193,7 @@ impl FromStr for BytesObj {
                     continue;
                 }
                 v.push(chr as u8);
-            }else{
+            } else {
                 if chr.is_whitespace() {
                     continue;
                 }
