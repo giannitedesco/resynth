@@ -49,8 +49,8 @@ impl Program {
     }
 
     fn store(&mut self, name: &str, val: Val) -> Result<(), Error> {
-        println!("let {} := {:?}", name, val);
-        println!();
+        //println!("let {} := {:?}", name, val);
+        //println!();
         self.regs.insert(
             name.to_owned(),
             val
@@ -196,9 +196,9 @@ impl Program {
         let ret = (func.exec)(Args::from(pos_args, extra))?;
 
         /* This is an assert because the stdlib is not user-defined */
-        println!("{:?} {:?}", ret.val_type(), func.return_type);
+        //println!("{:?} {:?}", ret.val_type(), func.return_type);
         debug_assert!(ret.val_type() == func.return_type);
-        println!();
+        //println!();
 
         Ok(ret)
     }

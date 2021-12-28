@@ -113,7 +113,7 @@ impl From<IcmpDgram> for Packet {
 
 impl IcmpFlow {
     pub fn new(cl: Ipv4Addr, sv: Ipv4Addr) -> Self {
-        println!("trace: icmp:flow({:?}, {:?})", cl, sv);
+        //println!("trace: icmp:flow({:?}, {:?})", cl, sv);
         Self {
             cl,
             sv,
@@ -132,14 +132,14 @@ impl IcmpFlow {
     }
 
     pub fn echo(&mut self, bytes: &[u8]) -> Packet {
-        println!("trace: icmp:ping({} bytes)", bytes.len());
+        //println!("trace: icmp:ping({} bytes)", bytes.len());
         let ret = self.clnt().ping(self.id, self.ping_seq, bytes).into();
         self.ping_seq += 1;
         ret
     }
 
     pub fn echo_reply(&mut self, bytes: &[u8]) -> Packet {
-        println!("trace: icmp:pong({} bytes)", bytes.len());
+        //println!("trace: icmp:pong({} bytes)", bytes.len());
         let ret = self.srvr().pong(self.id, self.pong_seq, bytes).into();
         self.pong_seq += 1;
         ret

@@ -87,7 +87,7 @@ impl From<UdpDgram> for Packet {
 
 impl UdpFlow {
     pub fn new(cl: SocketAddrV4, sv: SocketAddrV4) -> Self {
-        println!("trace: udp:flow({:?}, {:?})", cl, sv);
+        //println!("trace: udp:flow({:?}, {:?})", cl, sv);
         Self {
             cl,
             sv,
@@ -103,12 +103,12 @@ impl UdpFlow {
     }
 
     pub fn client_message(&mut self, bytes: &[u8]) -> Packet {
-        println!("trace: udp:client({} bytes)", bytes.len());
+        //println!("trace: udp:client({} bytes)", bytes.len());
         self.clnt().push(bytes).into()
     }
 
     pub fn server_message(&mut self, bytes: &[u8]) -> Packet {
-        println!("trace: udp:server({} bytes)", bytes.len());
+        //println!("trace: udp:server({} bytes)", bytes.len());
         self.srvr().push(bytes).into()
     }
 }

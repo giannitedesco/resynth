@@ -130,7 +130,7 @@ impl From<TcpSeg> for Packet {
 
 impl TcpFlow {
     pub fn new(cl: SocketAddrV4, sv: SocketAddrV4) -> Self {
-        println!("trace: tcp:flow({:?}, {:?})", cl, sv);
+        //println!("trace: tcp:flow({:?}, {:?})", cl, sv);
         Self {
             cl,
             sv,
@@ -151,7 +151,7 @@ impl TcpFlow {
     pub fn open(&mut self) -> Vec<Packet> {
         let mut pkts: Vec<Packet> = Vec::with_capacity(3);
 
-        println!("trace: tcp:open()");
+        //println!("trace: tcp:open()");
 
         /* TODO: We could have a method to update state rather than keep passing these borrows? */
         let pkt = self.clnt().syn(&mut self.cl_seq);
@@ -169,7 +169,7 @@ impl TcpFlow {
     pub fn client_close(&mut self) -> Vec<Packet> {
         let mut pkts: Vec<Packet> = Vec::with_capacity(3);
 
-        println!("trace: tcp:client_close()");
+        //println!("trace: tcp:client_close()");
 
         let pkt = self.clnt().fin_ack(&mut self.cl_seq, self.sv_seq);
         pkts.push(pkt.into());
@@ -186,7 +186,7 @@ impl TcpFlow {
     pub fn server_close(&mut self) -> Vec<Packet> {
         let mut pkts: Vec<Packet> = Vec::with_capacity(3);
 
-        println!("trace: tcp:server_close()");
+        //println!("trace: tcp:server_close()");
 
         let pkt = self.srvr().fin_ack(&mut self.sv_seq, self.cl_seq);
         pkts.push(pkt.into());
@@ -202,12 +202,12 @@ impl TcpFlow {
 
 
     pub fn client_message(&mut self, bytes: &[u8]) -> Packet {
-        println!("trace: tcp:client({} bytes)", bytes.len());
+        //println!("trace: tcp:client({} bytes)", bytes.len());
         self.clnt().push(&mut self.cl_seq, self.sv_seq, bytes).into()
     }
 
     pub fn server_message(&mut self, bytes: &[u8]) -> Packet {
-        println!("trace: tcp:server({} bytes)", bytes.len());
+        //println!("trace: tcp:server({} bytes)", bytes.len());
         self.srvr().push(&mut self.sv_seq, self.cl_seq, bytes).into()
     }
 }
