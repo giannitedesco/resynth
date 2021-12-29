@@ -251,8 +251,7 @@ impl Program {
 
         match toplevel_module(name) {
             None => {
-                println!("import: unknown module: {:?}", name);
-                return Err(ImportError);
+                return Err(ImportError(name.to_owned()));
             }
             Some(module) => {
                 self.import(name, module)?;
