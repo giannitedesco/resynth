@@ -16,8 +16,11 @@ use std::vec;
 use std::alloc::Layout;
 
 #[derive(Debug)]
-pub struct ValDef {
-    pub val: &'static [u8],
+pub enum ValDef {
+    Ip4(Ipv4Addr),
+    Sock4(SocketAddrV4),
+    U64(u64),
+    Str(&'static [u8]),
 }
 
 #[derive(Debug)]
@@ -258,7 +261,14 @@ pub enum Val {
 
 impl From<&ValDef> for Val {
     fn from(valdef: &ValDef) -> Self {
-        Val::Str(BytesObj::from(valdef.val))
+        use ValDef::*;
+
+        match valdef {
+            Ip4(ip) => Val::Ip4(*ip),
+            Sock4(sock) => Val::Sock4(*sock),
+            U64(uint) => Val::U64(*uint),
+            Str(s) => Val::Str(BytesObj::from(s)),
+        }
     }
 }
 

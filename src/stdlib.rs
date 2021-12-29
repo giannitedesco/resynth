@@ -248,9 +248,7 @@ const TEXT: phf::Map<&'static str, Symbol> = phf_map! {
         collect_type: ValType::Str,
         exec: text_crlflines,
     }),
-    "CRLF" => Symbol::Val(ValDef {
-        val: b"\r\n",
-    }),
+    "CRLF" => Symbol::Val(ValDef::Str(b"\r\n")),
 };
 
 const STDLIB: phf::Map<&'static str, Symbol> = phf_map! {
