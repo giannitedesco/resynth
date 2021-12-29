@@ -55,7 +55,6 @@ enum State {
     Assign,
 
     RefComponent,
-    RefColon,
     ReduceModule,
     RefModule,
     ReduceObject,
@@ -456,7 +455,7 @@ impl Parser {
 
     fn state_ref_component(&mut self, tok: Token) -> Result<Action, Error> {
         match tok.typ {
-            TokType::Colon => Ok(Action::Discard(State::RefColon)),
+            TokType::DoubleColon => Ok(Action::Discard(State::ReduceModule)),
             TokType::Dot => Ok(Action::Discard(State::ReduceObject)),
             TokType::LParen => Ok(Action::Discard(State::ReduceRefCall)),
             _ => Ok(Action::Goto(State::ReduceRefNaked))
@@ -477,13 +476,6 @@ impl Parser {
     fn state_reduce_ref_naked(&mut self, _tok: Token) -> Result<Action, Error> {
         self.reduce_ref();
         Ok(Action::Goto(State::ReduceRefExpr))
-    }
-
-    fn state_ref_colon(&mut self, tok: Token) -> Result<Action, Error> {
-        match tok.typ {
-            TokType::Colon => Ok(Action::Discard(State::ReduceModule)),
-            _ => Err(ParseError)
-        }
     }
 
     fn state_reduce_module(&mut self, _tok: Token) -> Result<Action, Error> {
@@ -682,7 +674,6 @@ impl Parser {
             State::Assign => self.state_assign(tok),
 
             State::RefComponent => self.state_ref_component(tok),
-            State::RefColon => self.state_ref_colon(tok),
             State::ReduceModule => self.state_reduce_module(tok),
             State::RefModule => self.state_ref_module(tok),
             State::ReduceObject => self.state_reduce_object(tok),

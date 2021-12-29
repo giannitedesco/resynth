@@ -22,7 +22,8 @@ digraph {
 
 	// ref
 
-	ref_component -> ref_colon [label="discard\n\":\""];
+	ref_component -> reduce_module [label="discard\n\"::\""];
+
 	ref_component -> reduce_object [label="discard\n\".\""];
 	ref_component -> reduce_ref_call [label="discard\n\"(\""];
 	ref_component -> reduce_ref_naked [label="*" color=green];
@@ -33,7 +34,6 @@ digraph {
 	reduce_ref_call -> expr_arg [color=red]
 	reduce_ref_call [label="reduce\nref\nnew arglist" shape=box3d];
 
-	ref_colon -> reduce_module [label="discard\n\":\""];
 
 	reduce_module -> ref_module [color=red]
 	reduce_module [label="reduce\nmodule" shape=box3d];
