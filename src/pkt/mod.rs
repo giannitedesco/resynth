@@ -12,7 +12,8 @@ pub use pcap::PcapWriter;
 use std::fmt;
 use std::fmt::Write;
 
-use crate::val::{BytesObj, Val};
+use crate::val::Val;
+use crate::str::BytesObj;
 
 #[derive(Debug)]
 pub struct Hdr<T> {

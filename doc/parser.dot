@@ -1,7 +1,22 @@
 digraph {
+	/* Key:
+	 *
+	 * blue edges indicate consuming a token
+	 * green edges indicate non-consuming catchall transitions
+	 *
+	 * 3dbox nodes indicate a reduction step
+	 * red edges indicate non-consuming GOTO transitions
+	 *
+	 * filled nodes indicate pushing a state transition to the stack
+	 * magenta edges represent popping a state from the stack and transitioning to it
+	 */
 	graph [rankdir=LR]
 	node [shape=rectangle]
 	edge [color=blue]
+
+	arg_val [style=filled];
+	expr_stmt [style=filled];
+	expr_rvalue [style=filled];
 
 	initial [shape="circle"];
 	accept [shape="doublecircle"];
@@ -49,12 +64,17 @@ digraph {
 	arg_next -> expr_arg [label="discard\n\",\""];
 	arg_next -> reduce_call [label="discard\n\")\""];
 
-	expr_arg -> reduce_literal_expr [label="shift\nSTRING"];
-	expr_arg -> reduce_literal_expr [label="shift\nINTEGER"];
-	expr_arg -> ipv4 [label="shift\nIPV4"];
-	expr_arg -> ref_component [label="shift\nPathBuilder\nIDENTIFIER"];
+	expr_arg -> arg_name [label="shift\nIDENTIFIER"];
+	expr_arg -> arg_val [label="*" color=green];
+	arg_name -> arg_val [label="discard\n\":\""];
+	arg_name -> ref_component [label="*" color=green];
 
-	expr_arg -> reduce_call [label="discard\n\")\""];
+	arg_val -> reduce_literal_expr [label="shift\nSTRING"];
+	arg_val -> reduce_literal_expr [label="shift\nINTEGER"];
+	arg_val -> ipv4 [label="shift\nIPV4"];
+	arg_val -> ref_component [label="shift\nPathBuilder\nIDENTIFIER"];
+
+	arg_val -> reduce_call [label="discard\n\")\""];
 
 	expr_stmt -> reduce_literal_expr [label="shift\nSTRING"];
 	expr_stmt -> reduce_literal_expr [label="shift\nINTEGER"];

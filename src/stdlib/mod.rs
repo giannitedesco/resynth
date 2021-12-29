@@ -2,7 +2,9 @@ use phf::phf_map;
 
 use crate::err::Error;
 use crate::err::Error::RuntimeError;
-use crate::val::{Symbol, Val, Args, Module};
+use crate::libapi::{Symbol, Module};
+use crate::val::Val;
+use crate::args::Args;
 
 #[allow(unused)]
 fn unimplemented(mut args: Args) -> Result<Val, Error> {

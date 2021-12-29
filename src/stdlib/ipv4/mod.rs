@@ -1,6 +1,6 @@
 use phf::phf_map;
 
-use crate::val::Symbol;
+use crate::libapi::Symbol;
 
 mod tcp;
 mod udp;

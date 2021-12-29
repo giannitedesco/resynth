@@ -1,9 +1,70 @@
+macro_rules! replace_expr {
+    ($_t:tt $sub:expr) => {$sub};
+}
+
+#[macro_export]
+macro_rules! func_def {
+    (
+        $name:expr
+        ;
+        $return_type:expr
+        ;
+        $($arg_name:expr => $arg_val:expr),+ $(,)*
+        =>
+        $($dfl_name:expr => $dfl_val:expr),* $(,)*
+        =>
+        $collect_type:expr
+        ;
+        $exec:expr
+    ) => {
+        FuncDef {
+            name: $name,
+            return_type: $return_type,
+            args: phf_ordered_map!(
+                $($arg_name => ArgDecl::Positional($arg_val)),*
+                ,
+                $($dfl_name => ArgDecl::Named($dfl_val)),*
+            ),
+            min_args: {<[()]>::len(&[$(replace_expr!($arg_name ())),*])},
+            collect_type: $collect_type,
+            exec: $exec,
+        }
+    };
+    (
+        $name:expr
+        ;
+        $return_type:expr
+        ;
+        =>
+        $($dfl_name:expr => $dfl_val:expr),* $(,)*
+        =>
+        $collect_type:expr
+        ;
+        $exec:expr
+    ) => {
+        FuncDef {
+            name: $name,
+            return_type: $return_type,
+            args: phf_ordered_map!(
+                $($dfl_name => ArgDecl::Named($dfl_val)),*
+            ),
+            min_args: 0,
+            collect_type: $collect_type,
+            exec: $exec,
+        }
+    };
+}
+
 mod err;
 mod lex;
 mod parse;
 mod program;
 mod stdlib;
 mod val;
+mod libapi;
+mod str;
+mod object;
+mod args;
 mod pkt;
 mod ezpkt;
 

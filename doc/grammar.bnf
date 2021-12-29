@@ -16,7 +16,9 @@ object := ( IDENTIFIER | IDENTIFIER "." object )
 
 args_list := "(" args ")" ;
 
-args := [ ( expr | expr "," args ) ]
+arg := ( IDENTIFIER ":" expr ) | expr
+
+args := [ ( arg | arg "," args ) ]
 
 expr := literal | ref | call
 

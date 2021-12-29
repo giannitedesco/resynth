@@ -2,6 +2,7 @@ use crate::lex::{TokType, Token};
 use crate::err::Error;
 use crate::err::Error::ParseError;
 use crate::val::Val;
+use crate::args::ArgExpr;
 
 use std::net::{Ipv4Addr, SocketAddrV4};
 
@@ -14,14 +15,21 @@ pub struct ObjectRef {
 #[derive(Debug)]
 pub struct Call {
     pub obj: ObjectRef,
-    pub args: Vec<Expr>
+    pub args: Vec<ArgExpr>
 }
 
 #[derive(Debug)]
 pub enum Expr {
+    Nil,
     Literal(Val),
     ObjectRef(ObjectRef),
     Call(Call),
+}
+
+impl Default for Expr {
+    fn default() -> Self {
+        Expr::Nil
+    }
 }
 
 #[derive(Debug)]
@@ -69,6 +77,8 @@ enum State {
     ArgNext,
 
     ExprArg,
+    ArgName,
+    ArgVal,
     ExprStmt,
     ExprRvalue,
 
@@ -122,7 +132,8 @@ enum Node {
     AssignTo(String),
     Component(String),
 
-    ArgList(Vec<Expr>),
+    ArgName(Option<String>),
+    ArgList(Vec<ArgExpr>),
 
     Path(PathBuilder),
 
@@ -173,7 +184,16 @@ impl From<Node> for String {
     }
 }
 
-impl From<Node> for Vec<Expr> {
+impl From<Node> for Option<String> {
+    fn from(node: Node) -> Self {
+        match node {
+            Node::ArgName(s) => s,
+            _ => unreachable!()
+        }
+    }
+}
+
+impl From<Node> for Vec<ArgExpr> {
     fn from(node: Node) -> Self {
         match node {
             Node::ArgList(list) => list,
@@ -342,16 +362,19 @@ impl Parser {
 
     fn reduce_arg(&mut self) {
         let arg = self.pop();
-        let mut list: Vec<Expr> = self.pop().into();
+        let arg_name = self.pop();
+        let def = ArgExpr::new(arg_name.into(), arg.into());
 
-        //println!("reduce arg: {:?} + {:?}", list, arg);
+        let mut list: Vec<ArgExpr> = self.pop().into();
 
-        list.push(arg.into());
+        //println!("reduce arg: {:?} + {:?}", list, def);
+
+        list.push(def);
         self.push(Node::ArgList(list));
     }
 
     fn reduce_call(&mut self) {
-        let args: Vec<Expr> = self.pop().into();
+        let args: Vec<ArgExpr> = self.pop().into();
         let obj = self.pop();
 
         let call = Call {
@@ -532,6 +555,30 @@ impl Parser {
     }
 
     fn state_expr_arg(&mut self, tok: Token) -> Result<Action, Error> {
+        Ok(match tok.typ {
+            TokType::Identifier => Action::Shift(State::ArgName, Node::ArgName(Some(tok.into()))),
+            _ => {
+                self.push(Node::ArgName(None));
+                Action::Goto(State::ArgVal)
+            }
+        })
+    }
+
+    fn state_arg_name(&mut self, tok: Token) -> Result<Action, Error> {
+        Ok(match tok.typ {
+            TokType::Colon => Action::Discard(State::ArgVal),
+            _ => {
+                let component: Option<String> = self.pop().into();
+                self.push(Node::ArgName(None));
+                self.push_goto(State::ReduceArg);
+                self.push(Node::Path(PathBuilder::new()));
+                self.push(Node::Component(component.unwrap()));
+                Action::Goto(State::RefComponent)
+            }
+        })
+    }
+
+    fn state_arg_val(&mut self, tok: Token) -> Result<Action, Error> {
         self.push_goto(State::ReduceArg);
         match tok.typ {
             TokType::Identifier => {
@@ -541,7 +588,12 @@ impl Parser {
             TokType::StringLiteral
             | TokType::IntegerLiteral
             | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
-            TokType::RParen => Ok(Action::Discard(State::ReduceCall)),
+            TokType::RParen => {
+                let st = self.pop();
+                let _ = self.pop();
+                self.push(st);
+                Ok(Action::Discard(State::ReduceCall))
+            },
             _ => Err(ParseError)
         }
     }
@@ -687,6 +739,8 @@ impl Parser {
             State::ReduceCall => self.state_reduce_call(tok),
 
             State::ExprArg => self.state_expr_arg(tok),
+            State::ArgName => self.state_arg_name(tok),
+            State::ArgVal => self.state_arg_val(tok),
             State::ExprStmt => self.state_expr_stmt(tok),
             State::ExprRvalue => self.state_expr_rvalue(tok),
 

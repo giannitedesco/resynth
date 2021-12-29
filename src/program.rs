@@ -1,7 +1,10 @@
 use crate::parse::{ObjectRef, Call, Expr, Import, Assign, Stmt};
 use crate::err::Error;
 use crate::err::Error::{ImportError, NameError, TypeError, MultipleAssignError};
-use crate::val::{Val, FuncDef, ObjRef, Args, Symbol, Module};
+use crate::val::Val;
+use crate::object::ObjRef;
+use crate::args::{ArgExpr, ArgSpec};
+use crate::libapi::{FuncDef, Symbol, Module};
 use crate::pkt::PcapWriter;
 use crate::stdlib::toplevel_module;
 
@@ -90,7 +93,7 @@ impl Program {
         let topvar = &obj.components[0];
         let ret: Val = match top.get(topvar) {
             Some(Symbol::Val(valdef)) => valdef.into(),
-            Some(Symbol::Func(fndef)) => fndef.into(),
+            Some(Symbol::Func(fndef)) => (*fndef).into(),
             Some(Symbol::Module(_)) => {
                 println!("Component is a module, cannot be a variable: {}", topvar);
                 return Err(TypeError);
@@ -137,63 +140,38 @@ impl Program {
         }
     }
 
+    fn eval_args(&self, argexprs: Vec<ArgExpr>) -> Result<Vec<ArgSpec>, Error> {
+        let mut ret = Vec::new();
+
+        for x in argexprs {
+            match x {
+                ArgExpr {name, expr} => {
+                    let val = self.eval(expr)?;
+                    ret.push(ArgSpec::new(name, val));
+                },
+            }
+        }
+
+        ret.shrink_to_fit();
+        Ok(ret)
+    }
+
     fn eval_callable(&self,
                      func: &'static FuncDef,
-                     obj: Option<&ObjRef>,
-                     arg_exprs: Vec<Expr>,
+                     this: Option<ObjRef>,
+                     argexprs: Vec<ArgExpr>,
                      ) -> Result<Val, Error> {
         //dbg!(func);
-        //dbg!(&arg_exprs);
+        //dbg!(&argexprs);
 
-        /* First check we have at least enough positiuonal args */
-        if arg_exprs.len() < func.args.len() {
-            println!("{}: Not enough arguments: expected {}, got {}",
-                     func.name, func.args.len(), arg_exprs.len());
-            return Err(TypeError);
-        }
+        let argvals = self.eval_args(argexprs)?;
+        //dbg!(&argvals);
 
-        /* Now evaluate all args */
-        let mut args_vec = Vec::new();
-        for expr in arg_exprs {
-            let arg = self.eval(expr)?;
-            args_vec.push(arg);
-        }
-
-        /* Check the types of the positional args */
-        for (arg, expected_type) in args_vec.iter().zip(func.args.iter()) {
-            if arg.val_type() != *expected_type {
-                println!("Got {:?} but expected {:?}", &arg.val_type(), expected_type);
-                return Err(TypeError);
-            }
-        }
-
-        /* Check the types of the remaining args */
-        for arg in args_vec[func.args.len()..].iter() {
-            if arg.val_type() != func.collect_type {
-                println!("Got {:?} but expected {:?}", &arg.val_type(), func.collect_type);
-                return Err(TypeError);
-            }
-        }
-
-        /* We're going to consume the args in to two new vecs now: positional and collect */
-        let mut arg_vals = args_vec.into_iter();
-
-        /* For positional, prepend the 'self' pointer if this is a method call */
-        let pos_args = if let Some(this) = obj {
-            let mut v: Vec<Val> = vec!(Val::Obj(this.clone()));
-            v.extend((&mut arg_vals).take(func.args.len()));
-            v
-        } else {
-            (&mut arg_vals).take(func.args.len()).collect()
-        };
-
-        let extra: Vec<Val> = arg_vals.collect();
-
-        //dbg!(&pos_args);
-        //dbg!(&extra);
+        let args = func.args(this, argvals)?;
+        //dbg!(&args);
 
         /* Finally, we're ready to make the call */
-        let ret = (func.exec)(Args::from(pos_args, extra))?;
+        let ret = (func.exec)(args)?;
 
         /* This is an assert because the stdlib is not user-defined */
         //println!("{:?} {:?}", ret.val_type(), func.return_type);
@@ -206,7 +184,7 @@ impl Program {
     pub fn eval_call(&self, call: Call) -> Result<Val, Error> {
         match self.eval_obj_ref(call.obj)? {
             Val::Func(f) => self.eval_callable(f, None, call.args),
-            Val::Method(obj, f) => self.eval_callable(f, Some(&obj), call.args),
+            Val::Method(obj, f) => self.eval_callable(f, Some(obj), call.args),
             other => {
                 println!("Not callable: {:?}", other);
                 Err(TypeError)
@@ -216,6 +194,7 @@ impl Program {
 
     pub fn eval(&self, expr: Expr) -> Result<Val, Error> {
         Ok(match expr {
+            Expr::Nil => Val::Void,
             Expr::Literal(lit) => lit,
             Expr::ObjectRef(obj) => self.eval_obj_ref(obj)?,
             Expr::Call(call) => self.eval_call(call)?,
