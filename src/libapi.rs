@@ -36,14 +36,25 @@ pub enum Symbol {
     Val(ValDef),
 }
 
+struct ArgVec {
+    anon: Vec<Val>,
+    named: Vec<NamedArg>,
+    extra: Vec<Val>,
+}
+
+struct NamedArg {
+    name: String,
+    val: Val,
+}
+
 impl FuncDef {
     pub fn is_collect(&self) -> bool {
         self.collect_type != ValType::Void
     }
 
-    pub fn split_args(&self,
+    fn split_args(&self,
                       args: Vec<ArgSpec>,
-                      ) -> Result<(Vec<Val>, Vec<ArgSpec>, Vec<Val>), Error> {
+                      ) -> Result<ArgVec, Error> {
         enum State {
             Anon,
             Named,
@@ -52,11 +63,11 @@ impl FuncDef {
         }
 
         let mut anon: Vec<Val> = Vec::new();
-        let mut named: Vec<ArgSpec> = Vec::new();
+        let mut named: Vec<NamedArg> = Vec::new();
         let mut extra: Vec<Val> = Vec::new();
         let mut state = State::Anon;
 
-        for mut arg in args {
+        for arg in args {
             loop {
                 match state {
                     State::Anon => {
@@ -67,17 +78,18 @@ impl FuncDef {
                             state = State::Extra;
                             continue;
                         } else {
-                            anon.push(arg.take_val());
+                            let ArgSpec { name: _, val } = arg;
+                            anon.push(val);
                             break;
                         }
                     },
                     State::Named => {
-                        if !arg.is_named() {
+                        if let ArgSpec { name: Some(name), val } = arg {
+                            named.push(NamedArg { name, val });
+                            break;
+                        } else {
                             state = State::Extra;
                             continue;
-                        } else {
-                            named.push(arg);
-                            break;
                         }
                     },
                     State::Extra => {
@@ -88,7 +100,8 @@ impl FuncDef {
                             state = State::Unexpected;
                             continue;
                         } else {
-                            extra.push(arg.take_val());
+                            let ArgSpec { name: _, val } = arg;
+                            extra.push(val);
                             break;
                         }
                     },
@@ -104,11 +117,11 @@ impl FuncDef {
         named.shrink_to_fit();
         extra.shrink_to_fit();
 
-        return Ok((anon, named, extra))
+        Ok(ArgVec {anon, named, extra})
     }
 
     pub fn args(&self, this: Option<ObjRef>, args: Vec<ArgSpec>) -> Result<Args, Error> {
-        let (anon, named, extra) = self.split_args(args)?;
+        let ArgVec {anon, named, extra} = self.split_args(args)?;
         let nr_anon = anon.len();
         let nr_named = named.len();
         let nr_specified = nr_anon + nr_named;
@@ -130,11 +143,9 @@ impl FuncDef {
             return Err(TypeError);
         }
 
-        if self.is_collect() {
-            if extra.iter().any(|x| !x.is_type(self.collect_type)) {
-                println!("ERR: Collect argument of wrong type");
-                return Err(TypeError);
-            }
+        if self.is_collect() && extra.iter().any(|x| !x.is_type(self.collect_type)) {
+            println!("ERR: Collect argument of wrong type");
+            return Err(TypeError);
         }
 
         // Now we actually start building the args struct
@@ -161,12 +172,13 @@ impl FuncDef {
 
         // 4. Go over named arguments using map.get_index() to overwrite vals
         for spec in named {
-            let (arg_name, val) = spec.named_destructure();
-            if let Some(i) = self.args.get_index(&arg_name) {
+            let NamedArg {name, val} = spec;
+
+            if let Some(i) = self.args.get_index(&name) {
                 args[i] = val;
             } else {
-                    println!("ERR: Unknown arg: {}", &arg_name);
-                    return Err(TypeError);
+                println!("ERR: Unknown arg: {}", &name);
+                return Err(TypeError);
             }
         }
 

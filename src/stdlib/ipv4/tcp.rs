@@ -64,17 +64,16 @@ const TCP_CL_MSG: FuncDef = func_def!(
     "ipv4::tcp::flow.client_message";
     ValType::Pkt;
 
-    "msg" => ValType::Str,
     =>
     =>
-    ValType::Void;
+    ValType::Str;
 
     tcp_client_message
 );
 
 fn tcp_client_message(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.take().into();
+    let bytes: BytesObj = args.join_extra(b"").into();
     let this = unsafe { ObjRef::get_mut_obj::<TcpFlow>(&mut obj) };
     Ok(this.client_message(bytes.as_ref()).into())
 }
@@ -83,17 +82,16 @@ const TCP_SV_MSG: FuncDef = func_def!(
     "ipv4::tcp::flow.server_message";
     ValType::Pkt;
 
-    "msg" => ValType::Str,
     =>
     =>
-    ValType::Void;
+    ValType::Str;
 
     tcp_server_message
 );
 
 fn tcp_server_message(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.take().into();
+    let bytes: BytesObj = args.join_extra(b"").into();
     let this = unsafe { ObjRef::get_mut_obj::<TcpFlow>(&mut obj) };
     Ok(this.server_message(bytes.as_ref()).into())
 }

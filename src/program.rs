@@ -144,12 +144,9 @@ impl Program {
         let mut ret = Vec::new();
 
         for x in argexprs {
-            match x {
-                ArgExpr {name, expr} => {
-                    let val = self.eval(expr)?;
-                    ret.push(ArgSpec::new(name, val));
-                },
-            }
+            let ArgExpr {name, expr} = x;
+            let val = self.eval(expr)?;
+            ret.push(ArgSpec::new(name, val));
         }
 
         ret.shrink_to_fit();

@@ -149,10 +149,7 @@ impl Val {
     }
 
     pub fn is_nil(&self) -> bool {
-        match self {
-            Val::Void => true,
-            _ => false,
-        }
+        matches!(self, Val::Void)
     }
 
     pub fn method_lookup(&self, name: &str) -> Result<Self, Error> {

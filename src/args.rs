@@ -24,7 +24,7 @@ impl Args {
     }
 
     pub fn take_this(&mut self) -> ObjRef {
-        return self.this.take().unwrap();
+        self.this.take().unwrap()
     }
 
     pub fn take(&mut self) -> Val {
@@ -99,20 +99,12 @@ impl ArgExpr {
             expr,
         }
     }
-
-    pub fn take_name(&mut self) -> Option<String> {
-        return self.name.take();
-    }
-
-    pub fn take_expr(&mut self) -> Expr {
-        return std::mem::take(&mut self.expr);
-    }
 }
 
 #[derive(Debug)]
 pub struct ArgSpec {
-    name: Option<String>,
-    val: Val,
+    pub name: Option<String>,
+    pub val: Val,
 }
 
 impl ArgSpec {
@@ -128,21 +120,5 @@ impl ArgSpec {
 
     pub fn is_named(&self) -> bool {
         self.name.is_some()
-    }
-
-    pub fn take_name(&mut self) -> Option<String> {
-        self.name.take()
-    }
-
-    pub fn take_val(&mut self) -> Val {
-        std::mem::take(&mut self.val)
-    }
-
-    pub fn destructure(self) -> (Option<String>, Val) {
-        (self.name, self.val)
-    }
-
-    pub fn named_destructure(self) -> (String, Val) {
-        (self.name.unwrap(), self.val)
     }
 }

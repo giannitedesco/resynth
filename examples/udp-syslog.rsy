@@ -5,6 +5,6 @@ let conn = ipv4::udp::flow(
   172.16.239.127:514,
 );
 
-conn.client_message(
+conn.client_dgram(
   "<164>This is a syslog message|0a|",
 );

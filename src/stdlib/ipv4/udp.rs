@@ -10,48 +10,46 @@ use crate::ezpkt::UdpFlow;
 use crate::func_def;
 
 const UDP_CL_DGRAM: FuncDef = func_def!(
-    "ipv4::tcp::flow.client_message";
+    "ipv4::tcp::flow.client_dgram";
     ValType::Pkt;
 
-    "dgram" => ValType::Str
     =>
     =>
-    ValType::Void;
+    ValType::Str;
 
-    udp_client_message
+    udp_client_dgram
 );
 
-fn udp_client_message(mut args: Args) -> Result<Val, Error> {
+fn udp_client_dgram(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.take().into();
+    let bytes: BytesObj = args.join_extra(b"").into();
     let this = unsafe { ObjRef::get_mut_obj::<UdpFlow>(&mut obj) };
-    Ok(this.client_message(bytes.as_ref()).into())
+    Ok(this.client_dgram(bytes.as_ref()).into())
 }
 
 const UDP_SV_DGRAM: FuncDef = func_def!(
-    "ipv4::tcp::flow.server_message";
+    "ipv4::tcp::flow.server_dgram";
     ValType::Pkt;
 
-    "dgram" => ValType::Str,
     =>
     =>
-    ValType::Void;
+    ValType::Str;
 
-    udp_server_message
+    udp_server_dgram
 );
 
-fn udp_server_message(mut args: Args) -> Result<Val, Error> {
+fn udp_server_dgram(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.take().into();
+    let bytes: BytesObj = args.join_extra(b"").into();
     let this = unsafe { ObjRef::get_mut_obj::<UdpFlow>(&mut obj) };
-    Ok(this.server_message(bytes.as_ref()).into())
+    Ok(this.server_dgram(bytes.as_ref()).into())
 }
 
 const UDP4_FLOW_CLASS: ClassDef = ClassDef {
     name: "ipv4::udp4.flow",
     methods: phf_map! {
-        "client_message" => &UDP_CL_DGRAM,
-        "server_message" => &UDP_SV_DGRAM,
+        "client_dgram" => &UDP_CL_DGRAM,
+        "server_dgram" => &UDP_SV_DGRAM,
     }
 };
 

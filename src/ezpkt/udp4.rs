@@ -102,12 +102,12 @@ impl UdpFlow {
         UdpDgram::new(&self.sv, &self.cl)
     }
 
-    pub fn client_message(&mut self, bytes: &[u8]) -> Packet {
+    pub fn client_dgram(&mut self, bytes: &[u8]) -> Packet {
         //println!("trace: udp:client({} bytes)", bytes.len());
         self.clnt().push(bytes).into()
     }
 
-    pub fn server_message(&mut self, bytes: &[u8]) -> Packet {
+    pub fn server_dgram(&mut self, bytes: &[u8]) -> Packet {
         //println!("trace: udp:server({} bytes)", bytes.len());
         self.srvr().push(bytes).into()
     }
