@@ -21,7 +21,7 @@ const TEXT_CRLFLINES: FuncDef = func_def!(
     text_crlflines
 );
 
-pub const TEXT: phf::Map<&'static str, Symbol> = phf_map! {
+pub(crate) const TEXT: phf::Map<&'static str, Symbol> = phf_map! {
     "crlflines" => Symbol::Func(&TEXT_CRLFLINES),
     "CRLF" => Symbol::Val(ValDef::Str(b"\r\n")),
 };

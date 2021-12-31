@@ -8,7 +8,7 @@ use std::ops::Drop;
 use std::vec;
 
 #[derive(Debug)]
-pub struct Args {
+pub(crate) struct Args {
     this: Option<ObjRef>,
     it: vec::IntoIter<Val>,
     extra_args: vec::IntoIter<Val>,
@@ -87,7 +87,7 @@ impl Drop for Args {
 }
 
 #[derive(Debug)]
-pub struct ArgExpr {
+pub(crate) struct ArgExpr {
     pub name: Option<String>,
     pub expr: Expr,
 }
@@ -102,7 +102,7 @@ impl ArgExpr {
 }
 
 #[derive(Debug)]
-pub struct ArgSpec {
+pub(crate) struct ArgSpec {
     pub name: Option<String>,
     pub val: Val,
 }
@@ -114,11 +114,8 @@ impl ArgSpec {
             val,
         }
     }
+
     pub fn is_anon(&self) -> bool {
         self.name.is_none()
-    }
-
-    pub fn is_named(&self) -> bool {
-        self.name.is_some()
     }
 }

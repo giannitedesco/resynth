@@ -2,12 +2,12 @@
 
 mod util;
 
-pub mod eth;
-pub mod ipv4;
+pub(crate) mod eth;
+pub(crate) mod ipv4;
 
 mod pcap;
 
-pub use pcap::PcapWriter;
+pub(crate) use pcap::PcapWriter;
 
 use std::fmt;
 use std::fmt::Write;
@@ -16,7 +16,7 @@ use crate::val::Val;
 use crate::str::BytesObj;
 
 #[derive(Debug)]
-pub struct Hdr<T> {
+pub(crate) struct Hdr<T> {
     off: u16,
     len: u16,
     phantom: std::marker::PhantomData<T>,
@@ -40,7 +40,7 @@ impl<T> Hdr<T> {
     }
 }
 
-pub struct Packet {
+pub(crate) struct Packet {
     buf: Vec<u8>,
     headroom: usize,
 }

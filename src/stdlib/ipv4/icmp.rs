@@ -78,6 +78,6 @@ fn icmp_flow(mut args: Args) -> Result<Val, Error> {
     Ok(Val::Obj(obj))
 }
 
-pub const ICMP4: phf::Map<&'static str, Symbol> = phf_map! {
+pub(crate) const ICMP4: phf::Map<&'static str, Symbol> = phf_map! {
     "flow" => Symbol::Func(&ICMP_FLOW),
 };

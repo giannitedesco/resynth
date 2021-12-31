@@ -76,7 +76,7 @@ fn udp_flow(mut args: Args) -> Result<Val, Error> {
     Ok(Val::Obj(obj))
 }
 
-pub const UDP4: phf::Map<&'static str, Symbol> = phf_map! {
+pub(crate) const UDP4: phf::Map<&'static str, Symbol> = phf_map! {
     "flow" => Symbol::Func(&UDP_FLOW),
 };
 

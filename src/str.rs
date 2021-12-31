@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 #[derive(Clone)]
-pub struct BytesObj {
+pub(crate) struct BytesObj {
     inner: Rc<Vec<u8>>,
 }
 
@@ -39,7 +39,7 @@ impl fmt::Debug for BytesObj {
     }
 }
 
-pub struct StringLiteralParseError {
+pub(crate) struct StringLiteralParseError {
 }
 
 fn hex_decode(chr: char) -> u8 {

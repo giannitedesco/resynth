@@ -55,7 +55,7 @@ impl pcap_hdr {
 }
 
 #[derive(Debug)]
-pub struct PcapWriter {
+pub(crate) struct PcapWriter {
     wr: io::BufWriter<File>,
     cnt: usize,
     dbg: bool,

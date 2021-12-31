@@ -10,7 +10,8 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 use std::rc::Rc;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum ValDef {
+#[allow(unused)]
+pub(crate) enum ValDef {
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
     U64(u64),
@@ -19,7 +20,7 @@ pub enum ValDef {
 
 #[allow(unused)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum ValType {
+pub(crate) enum ValType {
     Void,
     Ip4,
     Sock4,
@@ -34,7 +35,7 @@ pub enum ValType {
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
-pub enum Val {
+pub(crate) enum Val {
     Void,
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),

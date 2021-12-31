@@ -6,13 +6,14 @@ use crate::args::{Args, ArgSpec};
 
 /// Argument declarator
 #[derive(Debug)]
-pub enum ArgDecl {
+pub(crate) enum ArgDecl {
     Positional(ValType),
     Named(ValDef),
 }
 
 #[derive(Debug)]
-pub struct FuncDef {
+pub(crate) struct FuncDef {
+    #[allow(unused)]
     pub name: &'static str,
     pub return_type: ValType,
     pub args: phf::OrderedMap<&'static str, ArgDecl>,
@@ -22,15 +23,15 @@ pub struct FuncDef {
 }
 
 #[derive(Debug)]
-pub struct ClassDef {
+pub(crate) struct ClassDef {
     pub name: &'static str,
     pub methods: phf::Map<&'static str, &'static FuncDef>,
 }
 
-pub type Module = phf::Map<&'static str, Symbol>;
+pub(crate) type Module = phf::Map<&'static str, Symbol>;
 
 #[derive(Debug)]
-pub enum Symbol {
+pub(crate) enum Symbol {
     Module(&'static Module),
     Func(&'static FuncDef),
     Val(ValDef),

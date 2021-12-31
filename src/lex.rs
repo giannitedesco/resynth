@@ -53,7 +53,7 @@ lazy_static! {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub enum TokType {
+pub(crate) enum TokType {
     Eof,
 
     Whitespace,
@@ -146,7 +146,7 @@ impl TokType {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Token<'a> {
+pub(crate) struct Token<'a> {
     pub typ: TokType,
     pub val: Option<&'a str>,
 }
@@ -157,12 +157,12 @@ impl From<Token<'_>> for String {
     }
 }
 
-pub const EOF: Token = Token {
+pub(crate) const EOF: Token = Token {
     typ: TokType::Eof,
     val: None,
 };
 
-pub fn lex(line: &str) -> Result<Vec<Token>, ()> {
+pub(crate) fn lex(line: &str) -> Result<Vec<Token>, ()> {
     let mut ret = Vec::new();
     let mut pos = 0_usize;
     let mut caps = LEX_RE.capture_locations();

@@ -3,7 +3,7 @@ use std::fmt;
 
 #[allow(unused, clippy::enum_variant_names)]
 #[derive(Debug)]
-pub enum Error {
+pub(crate) enum Error {
     IoError(io::Error),
     LexError,
     ParseError,

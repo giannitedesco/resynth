@@ -7,19 +7,19 @@ use crate::args::ArgExpr;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
 #[derive(Debug)]
-pub struct ObjectRef {
+pub(crate) struct ObjectRef {
     pub modules: Box<[String]>,
     pub components: Box<[String]>,
 }
 
 #[derive(Debug)]
-pub struct Call {
+pub(crate) struct Call {
     pub obj: ObjectRef,
     pub args: Vec<ArgExpr>
 }
 
 #[derive(Debug)]
-pub enum Expr {
+pub(crate) enum Expr {
     Nil,
     Literal(Val),
     ObjectRef(ObjectRef),
@@ -33,18 +33,18 @@ impl Default for Expr {
 }
 
 #[derive(Debug)]
-pub struct Import {
+pub(crate) struct Import {
     pub module: String,
 }
 
 #[derive(Debug)]
-pub struct Assign {
+pub(crate) struct Assign {
     pub target: String,
     pub rvalue: Expr,
 }
 
 #[derive(Debug)]
-pub enum Stmt {
+pub(crate) enum Stmt {
     //Nop,
     Import(Import),
     Assign(Assign),
@@ -265,7 +265,7 @@ impl From<Node> for Stmt {
     }
 }
 
-pub struct Parser {
+pub(crate) struct Parser {
     state: State,
     stack: Vec<Node>,
 

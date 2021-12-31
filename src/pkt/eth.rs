@@ -4,13 +4,13 @@ use std::net::Ipv4Addr;
 
 #[repr(C, packed(1))]
 #[derive(Debug, Copy, Clone)]
-pub struct eth_addr {
+pub(crate) struct eth_addr {
     octets: [u8; 6],
 }
 
 #[repr(C, packed(1))]
 #[derive(Debug, Copy, Clone)]
-pub struct eth_hdr {
+pub(crate) struct eth_hdr {
     pub dst: eth_addr,
     pub src: eth_addr,
     pub proto: u16,

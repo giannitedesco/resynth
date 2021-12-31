@@ -24,7 +24,7 @@ const STDLIB: phf::Map<&'static str, Symbol> = phf_map! {
     "text" => Symbol::Module(&TEXT),
 };
 
-pub fn toplevel_module(name: &str) -> Option<&'static Module> {
+pub(crate) fn toplevel_module(name: &str) -> Option<&'static Module> {
     match STDLIB.get(name) {
         None => None,
         Some(Symbol::Module(module)) => Some(module),

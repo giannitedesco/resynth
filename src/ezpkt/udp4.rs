@@ -5,7 +5,7 @@ use super::pkt::ipv4::{ip_hdr, udp_hdr};
 use super::pkt::{Packet, Hdr};
 
 #[derive(Debug)]
-pub struct UdpFlow {
+pub(crate) struct UdpFlow {
     cl: SocketAddrV4,
     sv: SocketAddrV4,
 }

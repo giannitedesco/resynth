@@ -7,7 +7,7 @@ use super::pkt::ipv4::{ip_hdr, tcp_hdr};
 use super::pkt::{Packet, Hdr};
 
 #[derive(Debug)]
-pub struct TcpFlow {
+pub(crate) struct TcpFlow {
     cl: SocketAddrV4,
     sv: SocketAddrV4,
     cl_seq: u32,

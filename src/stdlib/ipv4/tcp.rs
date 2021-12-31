@@ -131,6 +131,6 @@ fn tcp_flow(mut args: Args) -> Result<Val, Error> {
 }
 
 
-pub const TCP4: phf::Map<&'static str, Symbol> = phf_map! {
+pub(crate) const TCP4: phf::Map<&'static str, Symbol> = phf_map! {
     "flow" => Symbol::Func(&TCP_FLOW),
 };

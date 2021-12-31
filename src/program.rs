@@ -12,7 +12,7 @@ use std::rc::Rc;
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub struct Program {
+pub(crate) struct Program {
     regs: HashMap<String, Val>,
     imports: HashMap<String, &'static Module>,
     wr: Option<PcapWriter>,

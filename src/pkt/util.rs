@@ -1,10 +1,10 @@
 /// Allow conversion of above structs in to byte slices
-pub trait AsBytes {
+pub(crate) trait AsBytes {
     /* I can't believe this isn't in std somewhere? */
     fn as_bytes(&self) -> &[u8];
 }
 
-pub trait Serialize {
+pub(crate) trait Serialize {
 }
 
 impl<T> AsBytes for T where T: Serialize {

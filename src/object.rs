@@ -12,7 +12,7 @@ struct Opaque {
 }
 
 #[derive(Clone)]
-pub struct ObjRef {
+pub(crate) struct ObjRef {
     pub cls: &'static ClassDef,
     rc: Rc<UnsafeCell<Opaque>>,
 
