@@ -36,7 +36,7 @@ pub(crate) enum ValType {
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub(crate) enum Val {
-    Void,
+    Nil,
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
     U64(u64),
@@ -50,7 +50,7 @@ pub(crate) enum Val {
 
 impl Default for Val {
     fn default() -> Self {
-        Val::Void
+        Val::Nil
     }
 }
 
@@ -132,7 +132,7 @@ impl Val {
     pub fn val_type(&self) -> ValType {
         use ValType::*;
         match self {
-            Val::Void => Void,
+            Val::Nil => Void,
             Val::Ip4(..) => Ip4,
             Val::Sock4(..) => Sock4,
             Val::U64(..) => U64,
@@ -150,7 +150,7 @@ impl Val {
     }
 
     pub fn is_nil(&self) -> bool {
-        matches!(self, Val::Void)
+        matches!(self, Val::Nil)
     }
 
     pub fn method_lookup(&self, name: &str) -> Result<Self, Error> {

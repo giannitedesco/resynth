@@ -159,7 +159,7 @@ impl FuncDef {
 
         // 2. Fill in up to min_args with voids
         for _ in nr_anon..self.min_args {
-            args.push(Val::Void);
+            args.push(Val::Nil);
         }
 
         // 3. Fill in defaults for named args

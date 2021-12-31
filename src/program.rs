@@ -191,7 +191,7 @@ impl Program {
 
     pub fn eval(&self, expr: Expr) -> Result<Val, Error> {
         Ok(match expr {
-            Expr::Nil => Val::Void,
+            Expr::Nil => Val::Nil,
             Expr::Literal(lit) => lit,
             Expr::ObjectRef(obj) => self.eval_obj_ref(obj)?,
             Expr::Call(call) => self.eval_call(call)?,
@@ -254,7 +254,7 @@ impl Program {
     pub fn add_expr(&mut self, expr: Expr) -> Result<(), Error> {
         let val = self.eval(expr)?;
         match val {
-            Val::Void => {},
+            Val::Nil => {},
             Val::Pkt(mut ptr) => {
                 if let Some(ref mut wr) = self.wr {
                     /* FIXME: error handling */
