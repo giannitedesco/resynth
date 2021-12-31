@@ -1,7 +1,6 @@
 #![allow(unused)]
 
-mod util;
-
+pub(crate) mod util;
 pub(crate) mod eth;
 pub(crate) mod ipv4;
 

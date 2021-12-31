@@ -15,13 +15,16 @@ fn unimplemented(mut args: Args) -> Result<Val, Error> {
 
 mod text;
 mod ipv4;
+mod dns;
 
 use text::TEXT;
 use ipv4::IPV4;
+use dns::DNS;
 
 const STDLIB: phf::Map<&'static str, Symbol> = phf_map! {
-    "ipv4" => Symbol::Module(&IPV4),
     "text" => Symbol::Module(&TEXT),
+    "ipv4" => Symbol::Module(&IPV4),
+    "dns" => Symbol::Module(&DNS),
 };
 
 pub(crate) fn toplevel_module(name: &str) -> Option<&'static Module> {

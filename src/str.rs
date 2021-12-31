@@ -27,6 +27,10 @@ impl BytesObj {
             inner: Rc::new(s.to_owned()),
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
 }
 
 impl fmt::Debug for BytesObj {
