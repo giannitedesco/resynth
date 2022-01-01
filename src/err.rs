@@ -21,6 +21,42 @@ impl From<io::Error> for Error {
     }
 }
 
+impl Eq for Error {}
+impl PartialEq for Error {
+    fn eq(&self, other: &Self) -> bool {
+        use Error::*;
+
+        match self {
+            IoError(a) => {
+                if let IoError(b) = other {
+                    a.kind() == b.kind()
+                } else {
+                    false
+                }
+            }
+            LexError => matches!(other, LexError),
+            ParseError => matches!(other, ParseError),
+            MemoryError => matches!(other, MemoryError),
+            ImportError(a) => {
+                if let ImportError(b) = other {
+                    a == b
+                } else {
+                    false
+                }
+            },
+            NameError => matches!(other, NameError),
+            TypeError => matches!(other, TypeError),
+            RuntimeError => matches!(other, RuntimeError),
+            MultipleAssignError(a) => {
+                if let MultipleAssignError(b) = other {
+                    a == b
+                } else {
+                    false
+                }
+            },
+        }
+    }
+}
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {

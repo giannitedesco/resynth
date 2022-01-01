@@ -1,4 +1,4 @@
-use crate::libapi::FuncDef;
+use crate::libapi::{Obj, FuncDef, Dispatchable, Symbol};
 use crate::lex::{TokType, Token};
 use crate::err::Error;
 use crate::err::Error::{NameError, TypeError, ParseError};
@@ -9,16 +9,6 @@ use crate::object::ObjRef;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::rc::Rc;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[allow(unused)]
-pub(crate) enum ValDef {
-    Ip4(Ipv4Addr),
-    Sock4(SocketAddrV4),
-    U64(u64),
-    Str(&'static [u8]),
-}
-
-#[allow(unused)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum ValType {
     Void,
@@ -33,8 +23,67 @@ pub(crate) enum ValType {
     PktGen,
 }
 
+pub(crate) trait Typed {
+    fn val_type(&self) -> ValType;
+
+    fn is_type(&self, typ: ValType) -> bool {
+        self.val_type() == typ
+    }
+
+    fn is_nil(&self) -> bool {
+        self.is_type(ValType::Void)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[allow(unused)]
-#[derive(Debug, Clone)]
+pub(crate) enum ValDef {
+    Nil,
+    Ip4(Ipv4Addr),
+    Sock4(SocketAddrV4),
+    U64(u64),
+    Str(&'static [u8]),
+}
+
+impl Typed for ValDef {
+    fn val_type(&self) -> ValType {
+        use ValType::*;
+        match self {
+            ValDef::Nil => Void,
+            ValDef::Ip4(..) => Ip4,
+            ValDef::Sock4(..) => Sock4,
+            ValDef::U64(..) => U64,
+            ValDef::Str(..) => Str,
+        }
+    }
+}
+
+impl From<Ipv4Addr> for ValDef {
+    fn from(val: Ipv4Addr) -> Self {
+        Self::Ip4(val)
+    }
+}
+
+impl From<SocketAddrV4> for ValDef {
+    fn from(val: SocketAddrV4) -> Self {
+        Self::Sock4(val)
+    }
+}
+
+impl From<u64> for ValDef {
+    fn from(val: u64) -> Self {
+        Self::U64(val)
+    }
+}
+
+impl<T> From<&'static T> for ValDef where T: AsRef<[u8]> + ? Sized {
+    fn from(s: &'static T) -> Self {
+        Self::Str(s.as_ref())
+    }
+}
+
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Val {
     Nil,
     Ip4(Ipv4Addr),
@@ -54,14 +103,15 @@ impl Default for Val {
     }
 }
 
-impl From<&ValDef> for Val {
-    fn from(valdef: &ValDef) -> Self {
+impl From<ValDef> for Val {
+    fn from(valdef: ValDef) -> Self {
         use ValDef::*;
 
         match valdef {
-            Ip4(ip) => Val::Ip4(*ip),
-            Sock4(sock) => Val::Sock4(*sock),
-            U64(uint) => Val::U64(*uint),
+            Nil => Val::Nil,
+            Ip4(ip) => Val::Ip4(ip),
+            Sock4(sock) => Val::Sock4(sock),
+            U64(uint) => Val::U64(uint),
             Str(s) => Val::Str(Buf::from(s)),
         }
     }
@@ -115,6 +165,30 @@ impl From<Val> for Buf {
     }
 }
 
+impl<T: 'static + Obj> From<T> for Val {
+    fn from(obj: T) -> Self {
+        Val::Obj(ObjRef::from(obj))
+    }
+}
+
+impl Typed for Val {
+    fn val_type(&self) -> ValType {
+        use ValType::*;
+        match self {
+            Val::Nil => Void,
+            Val::Ip4(..) => Ip4,
+            Val::Sock4(..) => Sock4,
+            Val::U64(..) => U64,
+            Val::Str(..) => Str,
+            Val::Obj(..) => Obj,
+            Val::Func(..) => Func,
+            Val::Method(..) => Method,
+            Val::Pkt(..) => Pkt,
+            Val::PktGen(..) => PktGen,
+        }
+    }
+}
+
 impl Val {
     pub fn from_token(tok: Token) -> Result<Self, Error> {
         use Val::*;
@@ -136,42 +210,34 @@ impl Val {
         }
     }
 
-    pub fn val_type(&self) -> ValType {
-        use ValType::*;
-        match self {
-            Val::Nil => Void,
-            Val::Ip4(..) => Ip4,
-            Val::Sock4(..) => Sock4,
-            Val::U64(..) => U64,
-            Val::Str(..) => Str,
-            Val::Obj(..) => Obj,
-            Val::Func(..) => Func,
-            Val::Method(..) => Method,
-            Val::Pkt(..) => Pkt,
-            Val::PktGen(..) => PktGen,
-        }
-    }
-
-    pub fn is_type(&self, typ: ValType) -> bool {
-        self.val_type() == typ
-    }
-
-    pub fn is_nil(&self) -> bool {
-        matches!(self, Val::Nil)
-    }
-
     pub fn method_lookup(&self, name: &str) -> Result<Self, Error> {
-        let obj = match self {
-            Val::Obj(val) => val,
-            _ => {
+		let obj = match self {
+			Val::Obj(obj) => obj,
+			_ => {
                 println!("no methods for non-object: {:?}", self.val_type());
                 return Err(TypeError);
             }
-        };
+		};
 
-        match obj.cls.methods.get(name) {
-            Some(fndef) => Ok(Val::Method(obj.clone(), fndef)),
-            None => Err(NameError),
+        let sym = obj.lookup_symbol(name).ok_or(NameError)?;
+
+        match sym {
+            Symbol::Func(fndef) => Ok(Val::Method(obj.clone(), fndef)),
+            _ => {
+                println!("calling non-func symbol: {}: {:?}", name, sym);
+                Err(TypeError)
+            }
         }
     }
+
+    #[allow(dead_code)]
+    pub fn lookup_symbol(&self, name: &str) -> Result<Symbol, Error> {
+		match self {
+			Val::Obj(obj) => obj.lookup_symbol(name).ok_or(NameError),
+			_ => {
+                println!("no symbols for non-object: {:?}", self.val_type());
+                Err(TypeError)
+            }
+		}
+	}
 }

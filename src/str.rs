@@ -2,7 +2,7 @@ use std::fmt;
 use std::rc::Rc;
 use std::str::FromStr;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct Buf {
     inner: Rc<Vec<u8>>,
 }
@@ -40,7 +40,7 @@ impl From<Vec<u8>> for Buf {
     }
 }
 
-impl<T> From<&T> for Buf where T: AsRef<[u8]> + ? Sized {
+impl<T> From<&T> for Buf where T: AsRef<[u8]> + ?Sized {
     #[inline]
     fn from(s: &T) -> Self {
         Self {
@@ -51,7 +51,7 @@ impl<T> From<&T> for Buf where T: AsRef<[u8]> + ? Sized {
 
 impl fmt::Debug for Buf {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        /* TODO: allow printing of hex crap, data here does not have to be utf-8, and printing it
+        /* FIXME: allow printing of hex crap, data here does not have to be utf-8, and printing it
          * like this could panic.
          */
         let s = std::str::from_utf8(self.inner.as_ref()).unwrap();

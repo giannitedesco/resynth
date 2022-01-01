@@ -6,7 +6,7 @@ use super::pkt::eth::eth_hdr;
 use super::pkt::ipv4::{ip_hdr, tcp_hdr};
 use super::pkt::{Packet, Hdr};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct TcpFlow {
     cl: SocketAddrV4,
     sv: SocketAddrV4,
@@ -153,7 +153,7 @@ impl TcpFlow {
 
         //println!("trace: tcp:open()");
 
-        /* TODO: We could have a method to update state rather than keep passing these borrows? */
+        /* XXX: We could have a method to update state rather than keep passing these borrows? */
         let pkt = self.clnt().syn(&mut self.cl_seq);
         pkts.push(pkt.into());
 

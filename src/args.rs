@@ -1,25 +1,48 @@
-use crate::val::Val;
+use crate::val::{Val, ValDef};
 use crate::parse::Expr;
 use crate::object::ObjRef;
 use crate::str::Buf;
 
-use std::iter::FromIterator;
 use std::ops::Drop;
 use std::vec;
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct ArgVec {
+    this: Option<ObjRef>,
+    args: Vec<Val>,
+    extra: Vec<Val>,
+}
+
+impl ArgVec {
+    pub fn new(this: Option<ObjRef>, args: Vec<Val>, extra: Vec<Val>) -> Self {
+        Self {
+            this,
+            args,
+            extra,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub(crate) struct Args {
     this: Option<ObjRef>,
     it: vec::IntoIter<Val>,
-    extra_args: vec::IntoIter<Val>,
+    extra_args: Vec<Val>,
+}
+
+impl From<ArgVec> for Args {
+    fn from(v: ArgVec) -> Self {
+        let ArgVec { this, args, extra } = v;
+        Self::new(this, args, extra)
+    }
 }
 
 impl Args {
-    pub fn from(this: Option<ObjRef>, args: Vec<Val>, extra_args: Vec<Val>) -> Self {
+    pub fn new(this: Option<ObjRef>, args: Vec<Val>, extra_args: Vec<Val>) -> Self {
         Self {
             this,
             it: args.into_iter(),
-            extra_args: extra_args.into_iter(),
+            extra_args: extra_args,
         }
     }
 
@@ -27,17 +50,17 @@ impl Args {
         self.this.take().unwrap()
     }
 
-    pub fn take(&mut self) -> Val {
+    pub fn next(&mut self) -> Val {
         self.it.next().unwrap()
     }
 
-    pub fn extra_args(&mut self) -> vec::IntoIter<Val> {
-        std::mem::replace(&mut self.extra_args, vec!().into_iter())
+    pub fn extra_args(&mut self) -> Vec<Val> {
+        std::mem::take(&mut self.extra_args)
     }
 
     // Collect all extra args into a vec of the given type
     pub fn collect_extra_args<T>(&mut self) -> Vec<T> where T: From<Val> {
-        Vec::from_iter(self.extra_args().map(|x| -> T { x.into() } ))
+        self.extra_args().into_iter().map(|x| -> T { x.into() } ).collect()
     }
 
     pub fn join_extra(&mut self, j: &[u8]) -> Val {
@@ -59,7 +82,7 @@ impl Args {
         // Finally we can do the join in to a byte vector
         let ret = strs.join(j);
 
-        // Which we can then convert in to a :1
+        // Which we can then convert into a buf
         Val::Str(Buf::from(ret))
     }
 
@@ -70,11 +93,7 @@ impl Args {
                 break;
             }
         }
-        loop {
-            if self.extra_args.next().is_none() {
-                break;
-            }
-        }
+        self.extra_args = vec!();
     }
 }
 
@@ -82,7 +101,7 @@ impl Drop for Args {
     fn drop(&mut self) {
         assert!(self.this.is_none());
         assert!(self.it.next().is_none());
-        assert!(self.extra_args.next().is_none());
+        assert!(self.extra_args.len() > 0);
     }
 }
 
@@ -117,5 +136,41 @@ impl ArgSpec {
 
     pub fn is_anon(&self) -> bool {
         self.name.is_none()
+    }
+}
+
+impl From<ValDef> for ArgSpec {
+    fn from(val: ValDef) -> Self {
+        Self {
+            name: None,
+            val: Val::from(val),
+        }
+    }
+}
+
+impl From<u64> for ArgSpec {
+    fn from(val: u64) -> Self {
+        Self {
+            name: None,
+            val: Val::U64(val),
+        }
+    }
+}
+
+impl<T> From<&T> for ArgSpec where T: AsRef<[u8]> + ? Sized {
+    fn from(s: &T) -> Self {
+        Self {
+            name: None,
+            val: Val::Str(Buf::from(s)),
+        }
+    }
+}
+
+impl From<(&str, ValDef)> for ArgSpec {
+    fn from((name, val): (&str, ValDef)) -> Self {
+        Self {
+            name: Some(name.to_owned()),
+            val: Val::from(val),
+        }
     }
 }

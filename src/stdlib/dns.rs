@@ -1,10 +1,8 @@
 use phf::{phf_map, phf_ordered_map};
 
-use crate::err::Error;
 use crate::val::{ValType, Val, ValDef};
 use crate::libapi::{Symbol, FuncDef, ArgDecl};
 use crate::str::Buf;
-use crate::args::Args;
 use crate::func_def;
 use crate::pkt::util::{Serialize, AsBytes};
 
@@ -60,23 +58,21 @@ const DNS_NAME: FuncDef = func_def! (
     =>
     ValType::Str;
 
-    dns_name
-);
+    |mut args| {
+        let mut ret: Vec<u8> = Vec::new();
 
-fn dns_name(mut args: Args) -> Result<Val, Error> {
-    let mut ret: Vec<u8> = Vec::new();
+        for arg in args.extra_args() {
+            let c: Buf = arg.into();
+            let clen = c.len();
+            ret.push(clen as u8);
+            ret.extend(c.as_ref());
+        }
 
-    for arg in args.extra_args() {
-        let c: Buf = arg.into();
-        let clen = c.len();
-        ret.push(clen as u8);
-        ret.extend(c.as_ref());
+        ret.push(0u8);
+
+        Ok(Val::Str(Buf::from(ret)))
     }
-
-    ret.push(0u8);
-
-    Ok(Val::Str(Buf::from(ret)))
-}
+);
 
 #[allow(unused)]
 #[repr(C, packed(1))]
@@ -107,37 +103,35 @@ const DNS_HDR: FuncDef = func_def!(
     =>
     ValType::Void;
 
-    dns_hdr
-);
+    |mut args| {
+        let id: u64 = args.next().into();
+        let opcode: u64 = args.next().into();
+        let response: u64 = args.next().into();
+        let qdcount: u64 = args.next().into();
+        let ancount: u64 = args.next().into();
+        let nscount: u64 = args.next().into();
+        let arcount: u64 = args.next().into();
 
-fn dns_hdr(mut args: Args) -> Result<Val, Error> {
-    let id: u64 = args.take().into();
-    let opcode: u64 = args.take().into();
-    let response: u64 = args.take().into();
-    let qdcount: u64 = args.take().into();
-    let ancount: u64 = args.take().into();
-    let nscount: u64 = args.take().into();
-    let arcount: u64 = args.take().into();
+        let mut flags: u16 = 0;
 
-    let mut flags: u16 = 0;
+        if response != 0 {
+            flags |= 0x8000;
+        }
 
-    if response != 0 {
-        flags |= 0x8000;
+        flags |= ((opcode & 7) << 14) as u16;
+
+        let hdr = dns_hdr {
+            id: (id as u16).to_be(),
+            flags: flags.to_be(),
+            qdcount: (qdcount as u16).to_be(),
+            ancount: (ancount as u16).to_be(),
+            nscount: (nscount as u16).to_be(),
+            arcount: (arcount as u16).to_be(),
+        };
+
+        Ok(Val::Str(Buf::from(hdr.as_bytes())))
     }
-
-    flags |= ((opcode & 7) << 14) as u16;
-
-    let hdr = dns_hdr {
-        id: (id as u16).to_be(),
-        flags: flags.to_be(),
-        qdcount: (qdcount as u16).to_be(),
-        ancount: (ancount as u16).to_be(),
-        nscount: (nscount as u16).to_be(),
-        arcount: (arcount as u16).to_be(),
-    };
-
-    Ok(Val::Str(Buf::from(hdr.as_bytes())))
-}
+);
 
 const DNS_QUESTION: FuncDef = func_def!(
     "dns::question";
@@ -150,22 +144,20 @@ const DNS_QUESTION: FuncDef = func_def!(
     =>
     ValType::Void;
 
-    dns_question
+    |mut args| {
+        let name: Buf = args.next().into();
+        let qtype: u64 = args.next().into();
+        let qclass: u64 = args.next().into();
+
+        let mut q: Vec<u8> = Vec::new();
+
+        q.extend(name.as_ref());
+        q.extend((qtype as u16).to_be_bytes());
+        q.extend((qclass as u16).to_be_bytes());
+
+        Ok(Val::Str(Buf::from(q)))
+    }
 );
-
-fn dns_question(mut args: Args) -> Result<Val, Error> {
-    let name: Buf = args.take().into();
-    let qtype: u64 = args.take().into();
-    let qclass: u64 = args.take().into();
-
-    let mut q: Vec<u8> = Vec::new();
-
-    q.extend(name.as_ref());
-    q.extend((qtype as u16).to_be_bytes());
-    q.extend((qclass as u16).to_be_bytes());
-
-    Ok(Val::Str(Buf::from(q)))
-}
 
 const DNS_ANSWER: FuncDef = func_def!(
     "dns::answer";
@@ -180,27 +172,25 @@ const DNS_ANSWER: FuncDef = func_def!(
     =>
     ValType::Void;
 
-    dns_answer
+    |mut args| {
+        let name: Buf = args.next().into();
+        let data: Ipv4Addr = args.next().into();
+        let atype: u64 = args.next().into();
+        let aclass: u64 = args.next().into();
+        let ttl: u64 = args.next().into();
+
+        let mut a: Vec<u8> = Vec::new();
+
+        a.extend(name.as_ref());
+        a.extend((atype as u16).to_be_bytes());
+        a.extend((aclass as u16).to_be_bytes());
+        a.extend((ttl as u32).to_be_bytes());
+        a.extend((4u16).to_be_bytes()); // dsize
+        a.extend(u32::from(data).to_be_bytes()); // ip
+
+        Ok(Val::Str(Buf::from(a)))
+    }
 );
-
-fn dns_answer(mut args: Args) -> Result<Val, Error> {
-    let name: Buf = args.take().into();
-    let data: Ipv4Addr = args.take().into();
-    let atype: u64 = args.take().into();
-    let aclass: u64 = args.take().into();
-    let ttl: u64 = args.take().into();
-
-    let mut a: Vec<u8> = Vec::new();
-
-    a.extend(name.as_ref());
-    a.extend((atype as u16).to_be_bytes());
-    a.extend((aclass as u16).to_be_bytes());
-    a.extend((ttl as u32).to_be_bytes());
-    a.extend((4u16).to_be_bytes()); // dsize
-    a.extend(u32::from(data).to_be_bytes()); // ip
-
-    Ok(Val::Str(Buf::from(a)))
-}
 
 const DNS_HOST: FuncDef = func_def!(
     "dns::host";
@@ -212,17 +202,16 @@ const DNS_HOST: FuncDef = func_def!(
     =>
     ValType::Ip4;
 
-    dns_host
+    |mut args| {
+        let _name: Buf = args.next().into();
+        let _ns: Ipv4Addr = args.next().into();
+        let _results = args.extra_args();
+
+        // TODO: This should be a one-stop shop for generating DNS queries
+        Ok(Val::Str(Buf::from(b"TODO: dns::host()")))
+    }
 );
 
-fn dns_host(mut args: Args) -> Result<Val, Error> {
-    let _name: Buf = args.take().into();
-    let _ns: Ipv4Addr = args.take().into();
-    let _results = args.extra_args();
-
-    // TODO: This should be a one-stop shop for generating DNS queries
-    Ok(Val::Str(Buf::from(b"TODO: dns::host()")))
-}
 
 pub(crate) const DNS: phf::Map<&'static str, Symbol> = phf_map! {
     "opcode" => Symbol::Module(&OPCODE),

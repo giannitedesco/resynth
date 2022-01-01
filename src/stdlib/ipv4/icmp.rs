@@ -1,11 +1,8 @@
 use phf::{phf_map, phf_ordered_map};
 
-use crate::err::Error;
 use crate::val::{ValType, Val};
-use crate::object::ObjRef;
 use crate::str::Buf;
-use crate::libapi::{Symbol, FuncDef, ClassDef, ArgDecl};
-use crate::args::Args;
+use crate::libapi::{Symbol, FuncDef, ArgDecl, Class};
 use crate::ezpkt::IcmpFlow;
 use crate::func_def;
 
@@ -18,15 +15,14 @@ const ICMP_ECHO: FuncDef = func_def!(
     =>
     ValType::Void;
 
-    icmp_echo
+    |mut args| {
+        let obj = args.take_this();
+        let mut r = obj.borrow_mut();
+        let this: &mut IcmpFlow = r.as_mut_any().downcast_mut().unwrap();
+        let bytes: Buf = args.next().into();
+        Ok(this.echo(bytes.as_ref()).into())
+    }
 );
-
-fn icmp_echo(mut args: Args) -> Result<Val, Error> {
-    let mut obj: ObjRef = args.take_this();
-    let bytes: Buf = args.take().into();
-    let this = unsafe { ObjRef::get_mut_obj::<IcmpFlow>(&mut obj) };
-    Ok(this.echo(bytes.as_ref()).into())
-}
 
 const ICMP_ECHO_REPLY: FuncDef = func_def!(
     "ipv4::tcp::flow.echo_reply";
@@ -37,23 +33,27 @@ const ICMP_ECHO_REPLY: FuncDef = func_def!(
     =>
     ValType::Void;
 
-    icmp_echo_reply
+    |mut args| {
+        let obj = args.take_this();
+        let mut r = obj.borrow_mut();
+        let this: &mut IcmpFlow = r.as_mut_any().downcast_mut().unwrap();
+        let bytes: Buf = args.next().into();
+        Ok(this.echo_reply(bytes.as_ref()).into())
+    }
 );
 
-fn icmp_echo_reply(mut args: Args) -> Result<Val, Error> {
-    let mut obj: ObjRef = args.take_this();
-    let bytes: Buf = args.take().into();
-    let this = unsafe { ObjRef::get_mut_obj::<IcmpFlow>(&mut obj) };
-    Ok(this.echo_reply(bytes.as_ref()).into())
-}
-
-const ICMP4_FLOW_CLASS: ClassDef = ClassDef {
-    name: "ipv4::icmp4.flow",
-    methods: phf_map! {
-        "echo" => &ICMP_ECHO,
-        "echo_reply" => &ICMP_ECHO_REPLY,
+impl Class for IcmpFlow {
+    fn symbols(&self) -> phf::Map<&'static str, Symbol> {
+        phf_map! {
+            "echo" => Symbol::Func(&ICMP_ECHO),
+            "echo_reply" => Symbol::Func(&ICMP_ECHO_REPLY),
+        }
     }
-};
+
+    fn class_name(&self) -> &'static str {
+        "ipv4::icmp4.flow"
+    }
+}
 
 const ICMP_FLOW: FuncDef = func_def!(
     "flow";
@@ -65,18 +65,12 @@ const ICMP_FLOW: FuncDef = func_def!(
     =>
     ValType::Void;
 
-    icmp_flow
+    |mut args| {
+        let cl = args.next();
+        let sv = args.next();
+        Ok(Val::from(IcmpFlow::new(cl.into(), sv.into())))
+    }
 );
-
-fn icmp_flow(mut args: Args) -> Result<Val, Error> {
-    let cl = args.take();
-    let sv = args.take();
-    let obj: ObjRef = ObjRef::new(
-        &ICMP4_FLOW_CLASS,
-        IcmpFlow::new(cl.into(), sv.into())
-    );
-    Ok(Val::Obj(obj))
-}
 
 pub(crate) const ICMP4: phf::Map<&'static str, Symbol> = phf_map! {
     "flow" => Symbol::Func(&ICMP_FLOW),

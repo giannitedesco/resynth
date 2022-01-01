@@ -1,11 +1,14 @@
 use crate::err::Error;
 use crate::err::Error::{TypeError};
-use crate::val::{Val, ValType, ValDef};
+use crate::val::{Val, ValType, ValDef, Typed};
 use crate::object::ObjRef;
-use crate::args::{Args, ArgSpec};
+use crate::args::{Args, ArgVec, ArgSpec};
+
+use std::any::Any;
+use std::fmt::Debug;
 
 /// Argument declarator
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ArgDecl {
     Positional(ValType),
     Named(ValDef),
@@ -22,30 +25,60 @@ pub(crate) struct FuncDef {
     pub exec: fn(args: Args) -> Result<Val, Error>,
 }
 
-#[derive(Debug)]
-pub(crate) struct ClassDef {
-    pub name: &'static str,
-    pub methods: phf::Map<&'static str, &'static FuncDef>,
+impl Eq for FuncDef {}
+impl PartialEq for FuncDef {
+    fn eq(&self, other: &FuncDef) -> bool {
+        self as *const FuncDef == other as *const FuncDef
+    }
 }
 
 pub(crate) type Module = phf::Map<&'static str, Symbol>;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum Symbol {
     Module(&'static Module),
     Func(&'static FuncDef),
     Val(ValDef),
 }
 
-struct ArgVec {
-    anon: Vec<Val>,
-    named: Vec<NamedArg>,
-    extra: Vec<Val>,
+impl Eq for Symbol {}
+impl PartialEq for Symbol {
+    fn eq(&self, other: &Symbol) -> bool {
+        match self {
+            Symbol::Module(a) => {
+                if let Symbol::Module(b) = other {
+                    (*a) as *const Module == (*b) as *const Module
+                } else {
+                    false
+                }
+            },
+            Symbol::Func(a) => {
+                if let Symbol::Func(b) = other {
+                    (*a) as *const FuncDef == (*b) as *const FuncDef
+                } else {
+                    false
+                }
+            },
+            Symbol::Val(a) => {
+                if let Symbol::Val(b) = other {
+                    a == b
+                } else {
+                    false
+                }
+            },
+        }
+    }
 }
 
 struct NamedArg {
     name: String,
     val: Val,
+}
+
+struct ArgPrep {
+    anon: Vec<Val>,
+    named: Vec<NamedArg>,
+    extra: Vec<Val>,
 }
 
 impl FuncDef {
@@ -55,7 +88,7 @@ impl FuncDef {
 
     fn split_args(&self,
                       args: Vec<ArgSpec>,
-                      ) -> Result<ArgVec, Error> {
+                      ) -> Result<ArgPrep, Error> {
         enum State {
             Anon,
             Named,
@@ -118,11 +151,11 @@ impl FuncDef {
         named.shrink_to_fit();
         extra.shrink_to_fit();
 
-        Ok(ArgVec {anon, named, extra})
+        Ok(ArgPrep {anon, named, extra})
     }
 
-    pub fn args(&self, this: Option<ObjRef>, args: Vec<ArgSpec>) -> Result<Args, Error> {
-        let ArgVec {anon, named, extra} = self.split_args(args)?;
+    pub fn argvec(&self, this: Option<ObjRef>, args: Vec<ArgSpec>) -> Result<ArgVec, Error> {
+        let ArgPrep {anon, named, extra} = self.split_args(args)?;
         let nr_anon = anon.len();
         let nr_named = named.len();
         let nr_specified = nr_anon + nr_named;
@@ -165,7 +198,7 @@ impl FuncDef {
         // 3. Fill in defaults for named args
         for dfl in self.args.values().skip(self.min_args) {
             if let ArgDecl::Named(val) = dfl {
-                args.push(val.into());
+                args.push((*val).into());
             } else {
                 unreachable!();
             }
@@ -191,6 +224,56 @@ impl FuncDef {
             }
         }
 
-        Ok(Args::from(this, args, extra))
+        // 6. Final type-check of all positional args
+        for (spec, arg) in self.args.values().zip(args.iter()) {
+            if !match spec {
+                ArgDecl::Positional(typ) => { arg.val_type() == *typ },
+                ArgDecl::Named(dfl) => { arg.val_type() == dfl.val_type() },
+            } {
+                println!("ERR: Argument type-check failed");
+                return Err(TypeError);
+            }
+        }
+
+        Ok(ArgVec::new(this, args, extra))
+    }
+
+    pub fn args(&self, this: Option<ObjRef>, args: Vec<ArgSpec>) -> Result<Args, Error> {
+        Ok(self.argvec(this, args)?.into())
+    }
+}
+
+pub(crate) trait Dispatchable {
+    fn lookup_symbol(&self, name: &str) -> Option<Symbol>;
+}
+
+pub(crate) trait Class {
+    fn symbols(&self) -> phf::Map<&'static str, Symbol>;
+    fn class_name(&self) -> &'static str;
+}
+
+pub(crate) trait Obj: Class + Debug + Dispatchable {
+    fn as_any(&self) -> &dyn Any;
+    fn as_mut_any(&mut self) -> &mut dyn Any;
+    fn equals_obj(&self, _: &dyn Obj) -> bool;
+}
+
+impl<T: 'static + PartialEq + Eq + Class + Debug> Obj for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_mut_any(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn equals_obj(&self, other: &dyn Obj) -> bool {
+        other.as_any().downcast_ref::<T>().map_or(false, |a| self == a)
+    }
+}
+
+impl<T: Obj> Dispatchable for T {
+    fn lookup_symbol(&self, name: &str) -> Option<Symbol> {
+        self.symbols().get(name).map_or(None, |x| Some(*x))
     }
 }

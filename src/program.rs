@@ -1,7 +1,7 @@
 use crate::parse::{ObjectRef, Call, Expr, Import, Assign, Stmt};
 use crate::err::Error;
 use crate::err::Error::{ImportError, NameError, TypeError, MultipleAssignError};
-use crate::val::Val;
+use crate::val::{Val, Typed};
 use crate::object::ObjRef;
 use crate::args::{ArgExpr, ArgSpec};
 use crate::libapi::{FuncDef, Symbol, Module};
@@ -100,7 +100,7 @@ impl Program {
 
         let topvar = &obj.components[0];
         let ret: Val = match top.get(topvar) {
-            Some(Symbol::Val(valdef)) => valdef.into(),
+            Some(Symbol::Val(valdef)) => (*valdef).into(),
             Some(Symbol::Func(fndef)) => (*fndef).into(),
             Some(Symbol::Module(_)) => {
                 println!("Component is a module, cannot be a variable: {}", topvar);

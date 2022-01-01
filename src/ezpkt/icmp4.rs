@@ -4,7 +4,7 @@ use super::pkt::eth::eth_hdr;
 use super::pkt::ipv4::{ip_hdr, icmp_hdr, icmp_echo_hdr, ip_csum, ICMP_ECHOREPLY, ICMP_ECHO};
 use super::pkt::{Packet, Hdr};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct IcmpFlow {
     cl: Ipv4Addr,
     sv: Ipv4Addr,
