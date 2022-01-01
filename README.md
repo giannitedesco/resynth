@@ -31,7 +31,7 @@ dns.client_dgram(
       qname: dns::name("www", "scaramanga", "co", "uk"),
       qtype: dns::type::A,
       qclass: dns::class::IN,
-    )
+    ),
 );
 
 dns.client_dgram(
@@ -40,12 +40,19 @@ dns.client_dgram(
       response: 1,
       opcode: dns::opcode::QUERY,
       qdcount: 1,
+      ancount: 1,
     ),
     dns::question(
       qname: dns::name("www", "scaramanga", "co", "uk"),
       qtype: dns::type::A,
       qclass: dns::class::IN,
-    )
+    ),
+    dns::answer(
+      aname: dns::name("www", "scaramanga", "co", "uk"),
+      data: 109.107.38.8,
+      atype: dns::type::A,
+      aclass: dns::class::IN,
+    ),
 );
 
 let http = ipv4::tcp::flow(

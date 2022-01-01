@@ -101,6 +101,9 @@ const DNS_HDR: FuncDef = func_def!(
     =>
     "response" => ValDef::U64(0),
     "qdcount" => ValDef::U64(0),
+    "ancount" => ValDef::U64(0),
+    "nscount" => ValDef::U64(0),
+    "arcount" => ValDef::U64(0),
     =>
     ValType::Void;
 
@@ -112,6 +115,9 @@ fn dns_hdr(mut args: Args) -> Result<Val, Error> {
     let opcode: u64 = args.take().into();
     let response: u64 = args.take().into();
     let qdcount: u64 = args.take().into();
+    let ancount: u64 = args.take().into();
+    let nscount: u64 = args.take().into();
+    let arcount: u64 = args.take().into();
 
     let mut flags: u16 = 0;
 
@@ -125,9 +131,9 @@ fn dns_hdr(mut args: Args) -> Result<Val, Error> {
         id: (id as u16).to_be(),
         flags: flags.to_be(),
         qdcount: (qdcount as u16).to_be(),
-        ancount: 0,
-        nscount: 0,
-        arcount: 0,
+        ancount: (ancount as u16).to_be(),
+        nscount: (nscount as u16).to_be(),
+        arcount: (arcount as u16).to_be(),
     };
 
     Ok(Val::Str(Buf::from(hdr.as_bytes())))
@@ -161,6 +167,41 @@ fn dns_question(mut args: Args) -> Result<Val, Error> {
     Ok(Val::Str(Buf::new(q)))
 }
 
+const DNS_ANSWER: FuncDef = func_def!(
+    "dns::answer";
+    ValType::Str;
+
+    "aname" => ValType::Str,
+    "data" => ValType::Ip4,
+    =>
+    "atype" => ValDef::U64(1),
+    "aclass" => ValDef::U64(1),
+    "ttl" => ValDef::U64(229),
+    =>
+    ValType::Void;
+
+    dns_answer
+);
+
+fn dns_answer(mut args: Args) -> Result<Val, Error> {
+    let name: Buf = args.take().into();
+    let data: Ipv4Addr = args.take().into();
+    let atype: u64 = args.take().into();
+    let aclass: u64 = args.take().into();
+    let ttl: u64 = args.take().into();
+
+    let mut a: Vec<u8> = Vec::new();
+
+    a.extend(name.as_ref());
+    a.extend((atype as u16).to_be_bytes());
+    a.extend((aclass as u16).to_be_bytes());
+    a.extend((ttl as u32).to_be_bytes());
+    a.extend((4u16).to_be_bytes()); // dsize
+    a.extend(u32::from(data).to_be_bytes()); // ip
+
+    Ok(Val::Str(Buf::new(a)))
+}
+
 const DNS_HOST: FuncDef = func_def!(
     "dns::host";
     ValType::Str;
@@ -190,5 +231,6 @@ pub(crate) const DNS: phf::Map<&'static str, Symbol> = phf_map! {
     "hdr" => Symbol::Func(&DNS_HDR),
     "name" => Symbol::Func(&DNS_NAME),
     "question" => Symbol::Func(&DNS_QUESTION),
+    "answer" => Symbol::Func(&DNS_ANSWER),
     "host" => Symbol::Func(&DNS_HOST),
 };
