@@ -177,5 +177,7 @@ fn main() {
                      p.display(),
                      error);
         }
+
+        out.pop();
     }
 }
