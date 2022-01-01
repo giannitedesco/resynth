@@ -110,7 +110,12 @@ addresses and port numbers) modulated. This would move all of the expensive
 work out of the packet transmit mainloop and allow us to generate traffic at
 upwards of 20Gbps per CPU.
 
-The language is pretty bare-bones right now. But I plan to add first-class support for:
+The language is pretty bare-bones right now. But I plan to add:
+- More builtin types: eg. signed integers, booleans, integers of various widths
+- An operator to concatenate ip/port into a sockaddr
+- An operator for concatenating buffers
+
+I plan to add support for the following protocols to the standard library:
 - TLS
 - HTTP
 - ARP
