@@ -166,7 +166,7 @@ fn main() {
         out.push(p.file_stem().unwrap());
         out.set_extension("pcap");
 
-        println!("Processing: {:?} -> {:?}", p, out);
+        println!("Processing: {} -> {}", p.display(), out.display());
         if let Err(error) = process_file(p, &out, verbose) {
             if prog.is_none() {
                 prog = Some(prog_invocation_name(PROGRAM_NAME));
