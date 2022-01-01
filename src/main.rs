@@ -138,9 +138,6 @@ use clap::{Arg, App};
 use termcolor::{ColorChoice, StandardStream, Color, ColorSpec, WriteColor};
 use atty;
 
-#[macro_use]
-extern crate lazy_static;
-
 fn process_file(color: ColorChoice,
                 inp: &Path,
                 out: &Path,

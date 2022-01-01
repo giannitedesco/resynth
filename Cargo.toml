@@ -29,8 +29,8 @@ codegen-units = 8
 lto = true
 
 [dependencies]
-regex = "1.5"
-lazy_static = "1.4.0"
+lazy-regex = "2.2.2"
+regex = "1.5.4"
 phf = { version = "0.10.1", features = ["macros"] }
 clap = "3.0.0"
 atty = "0.2.14"

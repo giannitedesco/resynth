@@ -1,56 +1,50 @@
 use std::slice::Iter;
 
-use regex::{Regex, CaptureLocations};
+use lazy_regex::*;
+use regex::CaptureLocations;
 
-const LEX_REGEXP: &str = concat!(
-    r"^",
-    r"(?:",
-    r"(?P<whitespace>[^\S\n][^\S\n]*)", // non-newline whitespace
-    r"|",
-    r"(?P<comment>#[^\n]*)",         // up to but not including newline
-    r"|",
-    r"(?P<newline>\n)",
-
-    r"|",
-    r"(?P<lparen>\()",
-    r"|",
-    r"(?P<rparen>\))",
-    r"|",
-    r"(?P<dot>\.)",
-    r"|",
-    r"(?P<doublecolon>::)",
-    r"|",
-    r"(?P<colon>:)",
-    r"|",
-    r"(?P<semicolon>;)",
-    r"|",
-    r"(?P<equals>=)",
-    r"|",
-    r"(?P<comma>,)",
-    r"|",
-
-    r"(?P<import_keyword>\bimport\b)",
-    r"|",
-    r"(?P<let_keyword>\blet\b)",
-    r"|",
-    r"(?P<identifier>[a-zA-Z_][a-zA-Z0-9_]*)",
-    r"|",
-    r"(?P<ipv4_literal>",
-        r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}",
-        r"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",
-    r")",
-    r"|",
-    r#"(?P<string_literal>"(?:\\.|[^"\\])*")"#,
-    r"|",
-    r"(?P<hex_integer_literal>0x[0-9a-fA-F][0-9a-fA-F]*)",
-    r"|",
-    r"(?P<integer_literal>[-]?[0-9][0-9]*)",
-    r")",
-);
-
-lazy_static! {
-    static ref LEX_RE: Regex = Regex::new(LEX_REGEXP).unwrap();
-}
+static LEX_RE: Lazy<Regex> = lazy_regex!("^\
+    (?:\
+    (?P<whitespace>[^\\S\n][^\\S\n]*)\
+    |\
+    (?P<comment>#[^\\n]*)\
+    |\
+    (?P<newline>\\n)\
+    |\
+    (?P<lparen>\\()\
+    |\
+    (?P<rparen>\\))\
+    |\
+    (?P<dot>\\.)\
+    |\
+    (?P<doublecolon>::)\
+    |\
+    (?P<colon>:)\
+    |\
+    (?P<semicolon>;)\
+    |\
+    (?P<equals>=)\
+    |\
+    (?P<comma>,)\
+    |\
+    (?P<import_keyword>\\bimport\\b)\
+    |\
+    (?P<let_keyword>\\blet\\b)\
+    |\
+    (?P<identifier>[a-zA-Z_][a-zA-Z0-9_]*)\
+    |\
+    (?P<ipv4_literal>\
+        (?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}\
+        (?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\
+    )\
+    |\
+    (?P<string_literal>\"(?:\\\\.|[^\"\\\\])*\")\
+    |\
+    (?P<hex_integer_literal>0x[0-9a-fA-F][0-9a-fA-F]*)\
+    |\
+    (?P<integer_literal>[-]?[0-9][0-9]*)\
+    )\
+");
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum TokType {
