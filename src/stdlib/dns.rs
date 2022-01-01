@@ -75,7 +75,7 @@ fn dns_name(mut args: Args) -> Result<Val, Error> {
 
     ret.push(0u8);
 
-    Ok(Val::Str(Buf::new(ret)))
+    Ok(Val::Str(Buf::from(ret)))
 }
 
 #[allow(unused)]
@@ -164,7 +164,7 @@ fn dns_question(mut args: Args) -> Result<Val, Error> {
     q.extend((qtype as u16).to_be_bytes());
     q.extend((qclass as u16).to_be_bytes());
 
-    Ok(Val::Str(Buf::new(q)))
+    Ok(Val::Str(Buf::from(q)))
 }
 
 const DNS_ANSWER: FuncDef = func_def!(
@@ -199,7 +199,7 @@ fn dns_answer(mut args: Args) -> Result<Val, Error> {
     a.extend((4u16).to_be_bytes()); // dsize
     a.extend(u32::from(data).to_be_bytes()); // ip
 
-    Ok(Val::Str(Buf::new(a)))
+    Ok(Val::Str(Buf::from(a)))
 }
 
 const DNS_HOST: FuncDef = func_def!(

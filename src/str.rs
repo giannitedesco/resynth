@@ -7,6 +7,13 @@ pub(crate) struct Buf {
     inner: Rc<Vec<u8>>,
 }
 
+impl Buf {
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
 impl AsRef<[u8]> for Buf {
     #[inline]
     fn as_ref(&self) -> &[u8] {
@@ -14,22 +21,31 @@ impl AsRef<[u8]> for Buf {
     }
 }
 
-impl Buf {
-    pub fn new(mut s: Vec<u8>) -> Self {
+impl Default for Buf {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            inner: Rc::new(vec!()),
+        }
+    }
+}
+
+impl From<Vec<u8>> for Buf {
+    #[inline]
+    fn from(mut s: Vec<u8>) -> Self {
         s.shrink_to_fit();
         Self {
             inner: Rc::new(s),
         }
     }
+}
 
-    pub fn from(s: &[u8]) -> Self {
+impl<T> From<&T> for Buf where T: AsRef<[u8]> + ? Sized {
+    #[inline]
+    fn from(s: &T) -> Self {
         Self {
-            inner: Rc::new(s.to_owned()),
+            inner: Rc::new(s.as_ref().to_owned()),
         }
-    }
-
-    pub fn len(&self) -> usize {
-        self.inner.len()
     }
 }
 
@@ -103,6 +119,6 @@ impl FromStr for Buf {
             }
         }
 
-        Ok(Buf::new(v))
+        Ok(Buf::from(v))
     }
 }

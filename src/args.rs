@@ -60,7 +60,7 @@ impl Args {
         let ret = strs.join(j);
 
         // Which we can then convert in to a :1
-        Val::Str(Buf::new(ret))
+        Val::Str(Buf::from(ret))
     }
 
     /// Dumps all remaining, untaken args

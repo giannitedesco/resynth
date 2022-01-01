@@ -247,8 +247,8 @@ impl Packet {
 }
 
 impl From<Packet> for Buf {
-    fn from (pkt: Packet) -> Self {
-        Self::new(pkt.buf)
+    fn from(pkt: Packet) -> Self {
+        Self::from(pkt.buf)
     }
 }
 
