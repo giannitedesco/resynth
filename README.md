@@ -9,20 +9,53 @@ network intrusion detection systems.
 
 
 ## Examples
-Here is how you might represent an HTTP request and response in esynth:
+Here is how you might represent an HTTP request and response in resynth:
 
 ```
 import ipv4;
+import dns;
 import text;
 
-let conn = ipv4::tcp::flow(
+let dns = ipv4::udp::flow(
+  192.168.238.112:13749,
+  172.16.239.127:53,
+);
+
+dns.client_dgram(
+    dns::hdr(
+      id: 0x1234,
+      opcode: dns::opcode::QUERY,
+      qdcount: 1,
+    ),
+    dns::question(
+      qname: dns::name("www", "scaramanga", "co", "uk"),
+      qtype: dns::type::A,
+      qclass: dns::class::IN,
+    )
+);
+
+dns.client_dgram(
+    dns::hdr(
+      id: 0x1234,
+      response: 1,
+      opcode: dns::opcode::QUERY,
+      qdcount: 1,
+    ),
+    dns::question(
+      qname: dns::name("www", "scaramanga", "co", "uk"),
+      qtype: dns::type::A,
+      qclass: dns::class::IN,
+    )
+);
+
+let http = ipv4::tcp::flow(
   192.168.0.1:32768,
   109.107.38.8:80,
 );
 
-conn.open();
+http.open();
 
-conn.client_message(
+http.client_message(
   text::crlflines(
     "GET / HTTP/1.1",
     "Host: www.scaramanga.co.uk",
@@ -30,7 +63,7 @@ conn.client_message(
   )
 );
 
-conn.server_message(
+http.server_message(
   text::crlflines(
     "HTTP/1.1 301 Moved Permanently",
     "Date: Sat, 17 Jul 2021 02:55:05 GMT",
@@ -41,10 +74,10 @@ conn.server_message(
   ),
 );
 
-conn.close();
+http.server_close();
 ```
 
-You can compile this to a pcap file with the command `resynth http.rsy` - a
+You can compile this to a pcap file with the command `resynth http.rsyn` - a
 file called `http.pcap` will be created.
 
 
@@ -70,9 +103,7 @@ addresses and port numbers) modulated. This would move all of the expensive
 work out of the packet transmit mainloop and allow us to generate traffic at
 upwards of 20Gbps per CPU.
 
-The language is incredibly bare-bones right now. But I plan to add first-class support for:
-- DNS
-- ICMP
+The language is pretty bare-bones right now. But I plan to add first-class support for:
 - TLS
 - HTTP
 - ARP

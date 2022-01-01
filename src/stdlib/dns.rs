@@ -78,6 +78,20 @@ fn dns_name(mut args: Args) -> Result<Val, Error> {
     Ok(Val::Str(Buf::new(ret)))
 }
 
+#[allow(unused)]
+#[repr(C, packed(1))]
+struct dns_hdr {
+    id: u16,
+    flags: u16,
+    qdcount: u16,
+    ancount: u16,
+    nscount: u16,
+    arcount: u16,
+}
+
+impl Serialize for dns_hdr {
+}
+
 const DNS_HDR: FuncDef = func_def!(
     "dns::hdr";
     ValType::Str;
@@ -93,25 +107,10 @@ const DNS_HDR: FuncDef = func_def!(
     dns_hdr
 );
 
-#[allow(unused)]
-#[repr(C, packed(1))]
-struct dns_hdr {
-    id: u16,
-    flags: u16,
-    qdcount: u16,
-    ancount: u16,
-    nscount: u16,
-    arcount: u16,
-}
-
-impl Serialize for dns_hdr {
-}
-
-
 fn dns_hdr(mut args: Args) -> Result<Val, Error> {
     let id: u64 = args.take().into();
-    let response: u64 = args.take().into();
     let opcode: u64 = args.take().into();
+    let response: u64 = args.take().into();
     let qdcount: u64 = args.take().into();
 
     let mut flags: u16 = 0;
