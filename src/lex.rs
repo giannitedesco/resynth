@@ -7,7 +7,9 @@ static LEX_RE: Lazy<Regex> = lazy_regex!("^\
     (?:\
     (?P<whitespace>[^\\S\n][^\\S\n]*)\
     |\
-    (?P<comment>#[^\\n]*)\
+    (?P<hashcomment>#[^\\n]*)\
+    |\
+    (?P<cppcomment>//[^\\n]*)\
     |\
     (?P<newline>\\n)\
     |\
@@ -51,7 +53,8 @@ pub(crate) enum TokType {
     Eof,
 
     Whitespace,
-    Comment,
+    HashComment,
+    CppComment,
     NewLine,
 
     LParen,
@@ -80,7 +83,8 @@ impl TokType {
             TokType::Eof,
 
             TokType::Whitespace,
-            TokType::Comment,
+            TokType::HashComment,
+            TokType::CppComment,
             TokType::NewLine,
 
             TokType::LParen,
@@ -123,7 +127,8 @@ impl TokType {
     pub fn ignore(self) -> bool {
         matches!(self,
             TokType::Whitespace
-            | TokType::Comment
+            | TokType::HashComment
+            | TokType::CppComment
             | TokType::NewLine
         )
     }

@@ -20,4 +20,4 @@ conn.client_dgram(
 );
 
 let server = 142.250.207.36;
-dns::host("www.google.com", ns: 8.8.8.8, server);
+//dns::host("www.google.com", ns: 8.8.8.8, server);
