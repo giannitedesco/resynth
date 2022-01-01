@@ -55,6 +55,61 @@ macro_rules! func_def {
     };
 }
 
+#[macro_export]
+macro_rules! ok {
+    ($st:expr, $fmt:expr $(, $($arg:expr),*)*) => {{
+        $st.set_color(ColorSpec::new()
+            .set_fg(Some(Color::Green))
+            .set_bold(true)
+            .set_intense(true)
+        ).unwrap();
+        let ret = print!($fmt, $($arg),*);
+        $st.set_color(&ColorSpec::default()).unwrap();
+        ret
+    }
+}}
+
+#[macro_export]
+macro_rules! warn {
+    ($st:expr, $fmt:expr $(, $($arg:expr),*)*) => {{
+        $st.set_color(ColorSpec::new()
+            .set_fg(Some(Color::Yellow))
+            .set_bold(true)
+            .set_intense(true)
+        ).unwrap();
+        let ret = print!($fmt, $($arg),*);
+        $st.set_color(&ColorSpec::default()).unwrap();
+        ret
+    }
+}}
+
+#[macro_export]
+macro_rules! error {
+    ($st:expr, $fmt:expr $(, $($arg:expr),*)*) => {{
+        $st.set_color(ColorSpec::new()
+            .set_fg(Some(Color::Red))
+            .set_bold(true)
+            .set_intense(true)
+        ).unwrap();
+        let ret = print!($fmt, $($arg),*);
+        $st.set_color(&ColorSpec::default()).unwrap();
+        ret
+    }
+}}
+
+#[macro_export]
+macro_rules! notice {
+    ($st:expr, $fmt:expr $(, $($arg:expr),*)*) => {{
+        $st.set_color(ColorSpec::new()
+            .set_bold(true)
+            .set_intense(true)
+        ).unwrap();
+        let ret = print!($fmt, $($arg),*);
+        $st.set_color(&ColorSpec::default()).unwrap();
+        ret
+    }}
+}
+
 mod err;
 mod lex;
 mod parse;
@@ -74,18 +129,23 @@ use parse::Parser;
 use program::Program;
 use pkt::PcapWriter;
 
-use std::env;
 use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::io;
 use std::io::BufRead;
 
 use clap::{Arg, App};
+use termcolor::{ColorChoice, StandardStream, Color, ColorSpec, WriteColor};
+use atty;
 
 #[macro_use]
 extern crate lazy_static;
 
-fn process_file(inp: &Path, out: &Path, verbose: bool) -> Result<(), Error> {
+fn process_file(color: ColorChoice,
+                inp: &Path,
+                out: &Path,
+                verbose: bool,
+                ) -> Result<(), Error> {
     let file = File::open(inp)?;
     let rd = io::BufReader::new(file);
     let wr = {
@@ -98,6 +158,8 @@ fn process_file(inp: &Path, out: &Path, verbose: bool) -> Result<(), Error> {
     };
     let mut prog = Program::with_pcap_writer(wr)?;
     let mut parse = Parser::new();
+
+    prog.set_color(color);
 
     for res in rd.lines() {
         let line = res?;
@@ -119,20 +181,14 @@ fn process_file(inp: &Path, out: &Path, verbose: bool) -> Result<(), Error> {
     Ok(())
 }
 
-const PROGRAM_NAME: &str = "resynth";
-
-// An inefficiency of rust is that we cannot seem to obtain a static reference to argv[0],
-// presumably because calls to C libraries could modify the contents? This means that when argv[0]
-// isn't present or valid then we have to malloc the const string "resynth" in case of an error.
-fn prog_invocation_name(dfl: &str) -> String {
-    env::args().next().unwrap_or_else(|| dfl.to_owned())
-}
-
 fn main() {
-    let matches = App::new("resynth")
+    let argv = App::new("resynth")
         .version("0.1")
         .author("Gianni Teesco <gianni@scaramanga.co.uk>")
         .about("Packet synthesis language")
+        .arg(Arg::new("color")
+            .long("color")
+            .help("always|ansi|auto"))
         .arg(Arg::new("verbose")
             .short('v')
             .long("verbose")
@@ -152,32 +208,52 @@ fn main() {
             .index(1))
         .get_matches();
 
-    let mut prog: Option<String> = None;
-    let verbose = matches.is_present("verbose");
+    let verbose = argv.is_present("verbose");
 
-    let mut out = matches.value_of("out").map_or(
+    let preference = argv.value_of("color").unwrap_or("auto");
+    let color = match preference {
+        "always" => ColorChoice::Always,
+        "ansi" => ColorChoice::AlwaysAnsi,
+        "auto" => {
+            if atty::is(atty::Stream::Stdout) {
+                ColorChoice::Auto
+            } else {
+                ColorChoice::Never
+            }
+        }
+        _ => ColorChoice::Never,
+    };
+    let mut stdout = StandardStream::stdout(color);
+
+    let mut out = argv.value_of("out").map_or(
         PathBuf::new(),
         PathBuf::from,
     );
 
-    for arg in matches.values_of("in").unwrap() {
+    for arg in argv.values_of("in").unwrap() {
         let p = Path::new(arg);
 
         out.push(p.file_stem().unwrap());
         out.set_extension("pcap");
 
-        println!("Processing: {} -> {}", p.display(), out.display());
-        if let Err(error) = process_file(p, &out, verbose) {
-            if prog.is_none() {
-                prog = Some(prog_invocation_name(PROGRAM_NAME));
-            }
+        notice!(stdout, "Processing");
+        println!(": {} -> {}", p.display(), out.display());
 
-            println!("{}: error: {}: {}",
-                     prog.as_ref().unwrap(),
-                     p.display(),
-                     error);
+        let result = process_file(color, p, &out, verbose);
+
+        notice!(stdout, "    Result");
+        print!(": ");
+
+        if let Err(error) = result {
+            error!(stdout, "Error");
+            println!(" -> {}", error);
+        } else {
+            ok!(stdout, "Ok");
+            println!("");
         }
 
         out.pop();
+
+        println!("");
     }
 }

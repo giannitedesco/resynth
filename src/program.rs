@@ -11,8 +11,10 @@ use crate::stdlib::toplevel_module;
 use std::rc::Rc;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+use termcolor::{StandardStream, ColorChoice, Color, ColorSpec, WriteColor};
+
 pub(crate) struct Program {
+    stdout: StandardStream,
     regs: HashMap<String, Val>,
     imports: HashMap<String, &'static Module>,
     wr: Option<PcapWriter>,
@@ -22,6 +24,7 @@ impl Program {
     #[allow(unused)]
     pub fn dummy() -> Result<Self, Error> {
         Ok(Program {
+            stdout: StandardStream::stdout(ColorChoice::Never),
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: None,
@@ -30,10 +33,15 @@ impl Program {
 
     pub fn with_pcap_writer(wr: PcapWriter) -> Result<Self, Error> {
         Ok(Program {
+            stdout: StandardStream::stdout(ColorChoice::Never),
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: Some(wr),
         })
+    }
+
+    pub fn set_color(&mut self, color: ColorChoice) {
+        self.stdout = StandardStream::stdout(color);
     }
 
     #[allow(unused)]
@@ -271,7 +279,8 @@ impl Program {
                 };
             }
             _ => {
-                println!("warning: discarded {:?}", val);
+                warn!(self.stdout, "   Warning");
+                println!(": discarded value {:?}", val);
             }
         };
         Ok(())
