@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["Gianni Tedesco <gianni@scaramanga.co.uk>"]
 edition = "2018"
 license = "GPLv3"
-homepage = "https://github.com/giannitedesci/resynth"
-repository = "https://github.com/giannitedesci/resynth"
+homepage = "https://github.com/giannitedesco/resynth"
+repository = "https://github.com/giannitedesco/resynth"
 readme = "README.md"
 keywords = [
  "packets",
@@ -31,5 +31,5 @@ lto = true
 [dependencies]
 regex = "1.5"
 lazy_static = "1.4.0"
-phf = { version = "0.9", features = ["macros"] }
-clap = "3.0.0-beta.2"
+phf = { version = "0.10.1", features = ["macros"] }
+clap = "3.0.0"
