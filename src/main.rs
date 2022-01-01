@@ -130,7 +130,7 @@ use program::Program;
 use pkt::PcapWriter;
 
 use std::path::{Path, PathBuf};
-use std::fs::File;
+use std::fs;
 use std::io;
 use std::io::BufRead;
 
@@ -143,7 +143,7 @@ fn process_file(color: ColorChoice,
                 out: &Path,
                 verbose: bool,
                 ) -> Result<(), Error> {
-    let file = File::open(inp)?;
+    let file = fs::File::open(inp)?;
     let rd = io::BufReader::new(file);
     let wr = {
         let wr = PcapWriter::create(out)?;
@@ -190,6 +190,10 @@ fn main() {
             .short('v')
             .long("verbose")
             .help("Print packets"))
+        .arg(Arg::new("keep")
+            .short('k')
+            .long("keep")
+            .help("Keep pcap files on error"))
         .arg(Arg::new("out")
             .short('o')
             .long("out-dir")
@@ -206,6 +210,7 @@ fn main() {
         .get_matches();
 
     let verbose = argv.is_present("verbose");
+    let keep = argv.is_present("keep");
 
     let preference = argv.value_of("color").unwrap_or("auto");
     let color = match preference {
@@ -244,6 +249,18 @@ fn main() {
         if let Err(error) = result {
             error!(stdout, "Error");
             println!(" -> {}", error);
+
+            if !keep {
+                notice!(stdout, "    Action");
+                print!(": ");
+                if let Err(rm_err) = fs::remove_file(&out) {
+                    error!(stdout, "Delete");
+                    println!(" {} -> {}", out.display(), rm_err);
+                } else {
+                    notice!(stdout, "Delete");
+                    println!(" {}", out.display());
+                }
+            }
         } else {
             ok!(stdout, "Ok");
             println!("");
