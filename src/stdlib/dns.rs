@@ -3,7 +3,7 @@ use phf::{phf_map, phf_ordered_map};
 use crate::err::Error;
 use crate::val::{ValType, Val, ValDef};
 use crate::libapi::{Symbol, FuncDef, ArgDecl};
-use crate::str::BytesObj;
+use crate::str::Buf;
 use crate::args::Args;
 use crate::func_def;
 use crate::pkt::util::{Serialize, AsBytes};
@@ -67,7 +67,7 @@ fn dns_name(mut args: Args) -> Result<Val, Error> {
     let mut ret: Vec<u8> = Vec::new();
 
     for arg in args.extra_args() {
-        let c: BytesObj = arg.into();
+        let c: Buf = arg.into();
         let clen = c.len();
         ret.push(clen as u8);
         ret.extend(c.as_ref());
@@ -75,7 +75,7 @@ fn dns_name(mut args: Args) -> Result<Val, Error> {
 
     ret.push(0u8);
 
-    Ok(Val::Str(BytesObj::new(ret)))
+    Ok(Val::Str(Buf::new(ret)))
 }
 
 const DNS_HDR: FuncDef = func_def!(
@@ -131,7 +131,7 @@ fn dns_hdr(mut args: Args) -> Result<Val, Error> {
         arcount: 0,
     };
 
-    Ok(Val::Str(BytesObj::from(hdr.as_bytes())))
+    Ok(Val::Str(Buf::from(hdr.as_bytes())))
 }
 
 const DNS_QUESTION: FuncDef = func_def!(
@@ -149,7 +149,7 @@ const DNS_QUESTION: FuncDef = func_def!(
 );
 
 fn dns_question(mut args: Args) -> Result<Val, Error> {
-    let name: BytesObj = args.take().into();
+    let name: Buf = args.take().into();
     let qtype: u64 = args.take().into();
     let qclass: u64 = args.take().into();
 
@@ -159,7 +159,7 @@ fn dns_question(mut args: Args) -> Result<Val, Error> {
     q.extend((qtype as u16).to_be_bytes());
     q.extend((qclass as u16).to_be_bytes());
 
-    Ok(Val::Str(BytesObj::new(q)))
+    Ok(Val::Str(Buf::new(q)))
 }
 
 const DNS_HOST: FuncDef = func_def!(
@@ -176,12 +176,12 @@ const DNS_HOST: FuncDef = func_def!(
 );
 
 fn dns_host(mut args: Args) -> Result<Val, Error> {
-    let _name: BytesObj = args.take().into();
+    let _name: Buf = args.take().into();
     let _ns: Ipv4Addr = args.take().into();
     let _results = args.extra_args();
 
     // TODO: This should be a one-stop shop for generating DNS queries
-    Ok(Val::Str(BytesObj::from(b"TODO: dns::host()")))
+    Ok(Val::Str(Buf::from(b"TODO: dns::host()")))
 }
 
 pub(crate) const DNS: phf::Map<&'static str, Symbol> = phf_map! {

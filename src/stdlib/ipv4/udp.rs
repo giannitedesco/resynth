@@ -3,7 +3,7 @@ use phf::{phf_map, phf_ordered_map};
 use crate::err::Error;
 use crate::val::{ValType, Val};
 use crate::object::ObjRef;
-use crate::str::BytesObj;
+use crate::str::Buf;
 use crate::args::Args;
 use crate::libapi::{Symbol, FuncDef, ClassDef, ArgDecl};
 use crate::ezpkt::UdpFlow;
@@ -22,7 +22,7 @@ const UDP_CL_DGRAM: FuncDef = func_def!(
 
 fn udp_client_dgram(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.join_extra(b"").into();
+    let bytes: Buf = args.join_extra(b"").into();
     let this = unsafe { ObjRef::get_mut_obj::<UdpFlow>(&mut obj) };
     Ok(this.client_dgram(bytes.as_ref()).into())
 }
@@ -40,7 +40,7 @@ const UDP_SV_DGRAM: FuncDef = func_def!(
 
 fn udp_server_dgram(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.join_extra(b"").into();
+    let bytes: Buf = args.join_extra(b"").into();
     let this = unsafe { ObjRef::get_mut_obj::<UdpFlow>(&mut obj) };
     Ok(this.server_dgram(bytes.as_ref()).into())
 }

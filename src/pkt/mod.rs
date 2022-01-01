@@ -12,7 +12,7 @@ use std::fmt;
 use std::fmt::Write;
 
 use crate::val::Val;
-use crate::str::BytesObj;
+use crate::str::Buf;
 
 #[derive(Debug)]
 pub(crate) struct Hdr<T> {
@@ -246,7 +246,7 @@ impl Packet {
     }
 }
 
-impl From<Packet> for BytesObj {
+impl From<Packet> for Buf {
     fn from (pkt: Packet) -> Self {
         Self::new(pkt.buf)
     }

@@ -3,7 +3,7 @@ use phf::{phf_map, phf_ordered_map};
 use crate::err::Error;
 use crate::val::{ValType, Val};
 use crate::object::ObjRef;
-use crate::str::BytesObj;
+use crate::str::Buf;
 use crate::args::Args;
 use crate::libapi::{Symbol, FuncDef, ClassDef, ArgDecl};
 use crate::ezpkt::TcpFlow;
@@ -73,7 +73,7 @@ const TCP_CL_MSG: FuncDef = func_def!(
 
 fn tcp_client_message(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.join_extra(b"").into();
+    let bytes: Buf = args.join_extra(b"").into();
     let this = unsafe { ObjRef::get_mut_obj::<TcpFlow>(&mut obj) };
     Ok(this.client_message(bytes.as_ref()).into())
 }
@@ -91,7 +91,7 @@ const TCP_SV_MSG: FuncDef = func_def!(
 
 fn tcp_server_message(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.join_extra(b"").into();
+    let bytes: Buf = args.join_extra(b"").into();
     let this = unsafe { ObjRef::get_mut_obj::<TcpFlow>(&mut obj) };
     Ok(this.server_message(bytes.as_ref()).into())
 }

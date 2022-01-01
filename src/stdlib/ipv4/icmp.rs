@@ -3,7 +3,7 @@ use phf::{phf_map, phf_ordered_map};
 use crate::err::Error;
 use crate::val::{ValType, Val};
 use crate::object::ObjRef;
-use crate::str::BytesObj;
+use crate::str::Buf;
 use crate::libapi::{Symbol, FuncDef, ClassDef, ArgDecl};
 use crate::args::Args;
 use crate::ezpkt::IcmpFlow;
@@ -23,7 +23,7 @@ const ICMP_ECHO: FuncDef = func_def!(
 
 fn icmp_echo(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.take().into();
+    let bytes: Buf = args.take().into();
     let this = unsafe { ObjRef::get_mut_obj::<IcmpFlow>(&mut obj) };
     Ok(this.echo(bytes.as_ref()).into())
 }
@@ -42,7 +42,7 @@ const ICMP_ECHO_REPLY: FuncDef = func_def!(
 
 fn icmp_echo_reply(mut args: Args) -> Result<Val, Error> {
     let mut obj: ObjRef = args.take_this();
-    let bytes: BytesObj = args.take().into();
+    let bytes: Buf = args.take().into();
     let this = unsafe { ObjRef::get_mut_obj::<IcmpFlow>(&mut obj) };
     Ok(this.echo_reply(bytes.as_ref()).into())
 }

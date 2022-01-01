@@ -3,7 +3,7 @@ use crate::lex::{TokType, Token};
 use crate::err::Error;
 use crate::err::Error::{NameError, TypeError, ParseError};
 use crate::pkt::Packet;
-use crate::str::BytesObj;
+use crate::str::Buf;
 use crate::object::ObjRef;
 
 use std::net::{Ipv4Addr, SocketAddrV4};
@@ -40,7 +40,7 @@ pub(crate) enum Val {
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
     U64(u64),
-    Str(BytesObj),
+    Str(Buf),
     Obj(ObjRef),
     Func(&'static FuncDef),
     Method(ObjRef, &'static FuncDef),
@@ -62,7 +62,7 @@ impl From<&ValDef> for Val {
             Ip4(ip) => Val::Ip4(*ip),
             Sock4(sock) => Val::Sock4(*sock),
             U64(uint) => Val::U64(*uint),
-            Str(s) => Val::Str(BytesObj::from(s)),
+            Str(s) => Val::Str(Buf::from(s)),
         }
     }
 }
@@ -106,7 +106,7 @@ impl From<Val> for Ipv4Addr {
     }
 }
 
-impl From<Val> for BytesObj {
+impl From<Val> for Buf {
     fn from(v: Val) -> Self {
         match v {
             Val::Str(s) => s,

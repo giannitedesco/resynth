@@ -3,18 +3,18 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 #[derive(Clone)]
-pub(crate) struct BytesObj {
+pub(crate) struct Buf {
     inner: Rc<Vec<u8>>,
 }
 
-impl AsRef<[u8]> for BytesObj {
+impl AsRef<[u8]> for Buf {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         &self.inner
     }
 }
 
-impl BytesObj {
+impl Buf {
     pub fn new(mut s: Vec<u8>) -> Self {
         s.shrink_to_fit();
         Self {
@@ -33,7 +33,7 @@ impl BytesObj {
     }
 }
 
-impl fmt::Debug for BytesObj {
+impl fmt::Debug for Buf {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         /* TODO: allow printing of hex crap, data here does not have to be utf-8, and printing it
          * like this could panic.
@@ -57,7 +57,7 @@ fn hex_decode(chr: char) -> u8 {
     }
 }
 
-impl FromStr for BytesObj {
+impl FromStr for Buf {
     type Err = StringLiteralParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let inner = &s[1..s.len() - 1];
@@ -103,6 +103,6 @@ impl FromStr for BytesObj {
             }
         }
 
-        Ok(BytesObj::new(v))
+        Ok(Buf::new(v))
     }
 }

@@ -1,7 +1,7 @@
 use crate::val::Val;
 use crate::parse::Expr;
 use crate::object::ObjRef;
-use crate::str::BytesObj;
+use crate::str::Buf;
 
 use std::iter::FromIterator;
 use std::ops::Drop;
@@ -43,7 +43,7 @@ impl Args {
     pub fn join_extra(&mut self, j: &[u8]) -> Val {
         // We have to collect all the extra_args in to a vec so they can stay owning the bytes that
         // they reference
-        let cargs: Vec<BytesObj> = self.collect_extra_args();
+        let cargs: Vec<Buf> = self.collect_extra_args();
 
         // Then we construct a vec of all those references.
         //
@@ -60,7 +60,7 @@ impl Args {
         let ret = strs.join(j);
 
         // Which we can then convert in to a :1
-        Val::Str(BytesObj::new(ret))
+        Val::Str(Buf::new(ret))
     }
 
     /// Dumps all remaining, untaken args
