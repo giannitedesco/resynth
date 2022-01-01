@@ -178,7 +178,9 @@ fn process_file(color: ColorChoice,
     Ok(())
 }
 
-fn main() {
+fn resynth() -> Result<(), Error> {
+    let mut ret = Ok(());
+
     let argv = App::new("resynth")
         .version("0.1")
         .author("Gianni Teesco <gianni@scaramanga.co.uk>")
@@ -250,6 +252,8 @@ fn main() {
             error!(stdout, "Error");
             println!(" -> {}", error);
 
+            ret = Err(error);
+
             if !keep {
                 notice!(stdout, "    Action");
                 print!(": ");
@@ -269,5 +273,13 @@ fn main() {
         out.pop();
 
         println!("");
+    }
+
+    ret
+}
+
+fn main() {
+    if matches!(resynth(), Err(_)) {
+        std::process::exit(1);
     }
 }
