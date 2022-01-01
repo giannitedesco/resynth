@@ -89,7 +89,7 @@ file called `http.pcap` will be created.
 
 
 ## Why not use $OTHER\_TOOL?
-- Scapy and python-based packet generation framwworks: they are incredibly slow
+- Scapy and python-based packet generation frameworks: they are incredibly slow
   for my intended use-cases (fuzz-testing, live high-speed packet-generation),
   even by the standards of what is possible in a pure python program. For very
   high-rate applications, I don't think it would be possible to automatically
