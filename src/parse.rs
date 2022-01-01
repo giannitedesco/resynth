@@ -544,6 +544,7 @@ impl Parser {
     fn push_literal(&mut self, tok: Token) -> Result<Action, Error> {
         match tok.typ {
             TokType::StringLiteral
+            | TokType::HexIntegerLiteral
             | TokType::IntegerLiteral => Ok(
                 Action::Shift(State::ReduceLiteralExpr, Node::Literal(Val::from_token(tok)?))
             ),
@@ -586,6 +587,7 @@ impl Parser {
                 Ok(Action::Shift(State::RefComponent, Node::Component(tok.into())))
             }
             TokType::StringLiteral
+            | TokType::HexIntegerLiteral
             | TokType::IntegerLiteral
             | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
             TokType::RParen => {
@@ -606,6 +608,7 @@ impl Parser {
                 Ok(Action::Shift(State::RefComponent, Node::Component(tok.into())))
             }
             TokType::StringLiteral
+            | TokType::HexIntegerLiteral
             | TokType::IntegerLiteral
             | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
             _ => Err(ParseError)
@@ -620,6 +623,7 @@ impl Parser {
                 Ok(Action::Shift(State::RefComponent, Node::Component(tok.into())))
             }
             TokType::StringLiteral
+            | TokType::HexIntegerLiteral
             | TokType::IntegerLiteral
             | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
             _ => Err(ParseError)

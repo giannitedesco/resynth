@@ -42,9 +42,9 @@ const LEX_REGEXP: &str = concat!(
     r"|",
     r#"(?P<string_literal>"(?:\\.|[^"\\])*")"#,
     r"|",
-    r"(?P<integer_literal>[-]?[0-9][0-9]*)",
-    r"|",
     r"(?P<hex_integer_literal>0x[0-9a-fA-F][0-9a-fA-F]*)",
+    r"|",
+    r"(?P<integer_literal>[-]?[0-9][0-9]*)",
     r")",
 );
 
@@ -74,8 +74,8 @@ pub(crate) enum TokType {
     Identifier,
     IPv4Literal,
     StringLiteral,
-    IntegerLiteral,
     HexIntegerLiteral,
+    IntegerLiteral,
 
     Max,
 }
@@ -103,8 +103,8 @@ impl TokType {
             TokType::Identifier,
             TokType::IPv4Literal,
             TokType::StringLiteral,
-            TokType::IntegerLiteral,
             TokType::HexIntegerLiteral,
+            TokType::IntegerLiteral,
         ];
         TYPES.iter()
     }
@@ -137,6 +137,7 @@ impl TokType {
     pub fn get_val(self, val: &str) -> Option<&str> {
         match self {
         TokType::Identifier => Some(val),
+        TokType::HexIntegerLiteral => Some(val),
         TokType::IntegerLiteral => Some(val),
         TokType::StringLiteral => Some(val),
         TokType::IPv4Literal => Some(val),

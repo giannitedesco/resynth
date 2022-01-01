@@ -8,7 +8,7 @@ let conn = ipv4::udp::flow(
 
 conn.client_dgram(
     dns::hdr(
-      id: 1234,
+      id: 0x1234,
       opcode: dns::opcode::QUERY,
       qdcount: 1,
     ),

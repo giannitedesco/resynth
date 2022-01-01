@@ -124,7 +124,14 @@ impl Val {
             StringLiteral => Ok(Str(v.parse().or(Err(ParseError))?)),
             IPv4Literal => Ok(Ip4(v.parse().or(Err(ParseError))?)),
             IntegerLiteral => Ok(U64(v.parse().or(Err(ParseError))?)),
-            HexIntegerLiteral => Ok(U64(v.parse().or(Err(ParseError))?)),
+            HexIntegerLiteral => {
+                let hex = v.strip_prefix("0x").unwrap();
+
+                // XXX: This looks horrendously inefficient
+                let val: u64 = u64::from_str_radix(hex, 16).or(Err(ParseError))?;
+
+                Ok(U64(val))
+            },
             _ => unreachable!()
         }
     }
