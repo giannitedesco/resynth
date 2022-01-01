@@ -17,8 +17,8 @@ import dns;
 import text;
 
 let dns = ipv4::udp::flow(
-  192.168.238.112:13749,
-  172.16.239.127:53,
+  192.168.0.1:13749,
+  8.8.8.8:53,
 );
 
 dns.client_dgram(
