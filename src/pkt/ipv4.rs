@@ -241,7 +241,14 @@ pub(crate) fn ip_csum(buf: &[u8]) -> u16 {
     let remainder = it.remainder();
 
     for chunk in it {
-        let val = u16::from_be_bytes(chunk.try_into().unwrap());
+        /* hopefully this temporary bounce and bounds-check is optimized out? But I guess it
+         * depends on if the compiler can figure out that chunks_exact iterator results must be of
+         * size 2 which probably depends on whether it gets inlined or not?
+         */
+        let mut tmp: [u8; 2] = Default::default();
+        tmp.copy_from_slice(chunk);
+
+        let val = u16::from_be_bytes(tmp);
         sum += val as u32;
     }
 
