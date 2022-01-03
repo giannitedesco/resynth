@@ -131,6 +131,12 @@ impl From<SocketAddrV4> for Val {
     }
 }
 
+impl From<u64> for Val {
+    fn from(v: u64) -> Self {
+        Val::U64(v)
+    }
+}
+
 impl From<Val> for u64 {
     fn from(v: Val) -> Self {
         match v {
@@ -170,6 +176,15 @@ impl From<Val> for Buf {
 impl<T: 'static + Obj> From<T> for Val {
     fn from(obj: T) -> Self {
         Val::Obj(ObjRef::from(obj))
+    }
+}
+
+impl AsRef<[u8]> for Val {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Val::Str(s) => s.as_ref(),
+            _ => unreachable!()
+        }
     }
 }
 

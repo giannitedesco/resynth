@@ -3,13 +3,18 @@ import dns;
 
 let dns = ipv4::udp::flow(
   192.168.238.112:13749,
-  172.16.239.127:53,
+  8.8.8.8:53,
 );
 
+# There is a low-level DNS API which you can use to construct exact queries,
+# and even malformed queries
 dns.client_dgram(
     dns::hdr(
       id: 0x1234,
-      opcode: dns::opcode::QUERY,
+      flags: dns::flags(
+        opcode: dns::opcode::QUERY,
+        rd: 1,
+      ),
       qdcount: 1,
     ),
     dns::question(
@@ -22,23 +27,29 @@ dns.client_dgram(
 dns.server_dgram(
     dns::hdr(
       id: 0x1234,
-      response: 1,
-      opcode: dns::opcode::QUERY,
+      flags: dns::flags(
+        response: 1,
+        opcode: dns::opcode::QUERY,
+        ra: 1,
+      ),
       qdcount: 1,
       ancount: 1,
     ),
     dns::question(
-      qname: dns::name("www", "scaramanga", "co", "uk"),
+      qname: dns::name("www", "google", "com"),
       qtype: dns::type::A,
       qclass: dns::class::IN,
     ),
     dns::answer(
-      aname: dns::name("www", "scaramanga", "co", "uk"),
-      data: 109.107.38.8,
+      aname: dns::name("www", "google", "com"),
+      data: 142.250.196.100,
       atype: dns::type::A,
       aclass: dns::class::IN,
     ),
 );
 
+# And then there is the high level API which you can use to quickly generate a
+# query/response pair to make it lool like our hosts are doing DNS lookups
+let client = 192.168.238.112;
 let server = 142.250.207.36;
-//dns::host("www.google.com", ns: 8.8.8.8, server);
+dns::host(client, "www.google.com", ns: 8.8.8.8, server);

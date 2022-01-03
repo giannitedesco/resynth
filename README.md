@@ -16,44 +16,7 @@ import ipv4;
 import dns;
 import text;
 
-let dns = ipv4::udp::flow(
-  192.168.0.1:13749,
-  8.8.8.8:53,
-);
-
-dns.client_dgram(
-    dns::hdr(
-      id: 0x1234,
-      opcode: dns::opcode::QUERY,
-      qdcount: 1,
-    ),
-    dns::question(
-      qname: dns::name("www", "scaramanga", "co", "uk"),
-      qtype: dns::type::A,
-      qclass: dns::class::IN,
-    ),
-);
-
-dns.server_dgram(
-    dns::hdr(
-      id: 0x1234,
-      response: 1,
-      opcode: dns::opcode::QUERY,
-      qdcount: 1,
-      ancount: 1,
-    ),
-    dns::question(
-      qname: dns::name("www", "scaramanga", "co", "uk"),
-      qtype: dns::type::A,
-      qclass: dns::class::IN,
-    ),
-    dns::answer(
-      aname: dns::name("www", "scaramanga", "co", "uk"),
-      data: 109.107.38.8,
-      atype: dns::type::A,
-      aclass: dns::class::IN,
-    ),
-);
+dns::host(192.168.0.1, "www.scaramanga.co.uk", ns: 8.8.8.8, 109.107.38.8);
 
 let http = ipv4::tcp::flow(
   192.168.0.1:32768,

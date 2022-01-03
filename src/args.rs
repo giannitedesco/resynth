@@ -57,6 +57,10 @@ impl Args {
     pub fn extra_args(&mut self) -> Vec<Val> {
         std::mem::take(&mut self.extra_args)
     }
+    
+    pub fn extra_len(&self) -> usize {
+        self.extra_args.len()
+    }
 
     // Collect all extra args into a vec of the given type
     pub fn collect_extra_args<T>(&mut self) -> Vec<T> where T: From<Val> {
