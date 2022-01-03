@@ -2,7 +2,8 @@ use phf::phf_map;
 
 use crate::err::Error;
 use crate::err::Error::RuntimeError;
-use crate::libapi::{Symbol, Module};
+use crate::libapi::Module;
+use crate::sym::Symbol;
 use crate::val::Val;
 use crate::args::Args;
 

@@ -1,7 +1,8 @@
 use phf::{phf_map, phf_ordered_map};
 
 use crate::val::{ValType, Val, ValDef};
-use crate::libapi::{Symbol, FuncDef, ArgDecl};
+use crate::libapi::{FuncDef, ArgDecl};
+use crate::sym::Symbol;
 use crate::str::Buf;
 use crate::func_def;
 use crate::pkt::util::{Serialize, AsBytes};

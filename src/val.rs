@@ -1,10 +1,12 @@
-use crate::libapi::{Obj, FuncDef, Dispatchable, Symbol};
+use crate::libapi::{FuncDef};
+use crate::sym::Symbol;
 use crate::lex::{TokType, Token};
 use crate::err::Error;
 use crate::err::Error::{NameError, TypeError, ParseError};
 use crate::pkt::Packet;
 use crate::str::Buf;
-use crate::object::ObjRef;
+use crate::object::{Obj, ObjRef};
+use crate::traits::Dispatchable;
 
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::rc::Rc;

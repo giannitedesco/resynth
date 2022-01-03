@@ -12,6 +12,8 @@ mod object;
 mod args;
 mod pkt;
 mod ezpkt;
+mod sym;
+mod traits;
 
 #[cfg(test)]
 mod test;
@@ -29,7 +31,6 @@ use std::io::BufRead;
 
 use clap::{Arg, App};
 use termcolor::{ColorChoice, StandardStream, Color, ColorSpec, WriteColor};
-use atty;
 
 fn process_file(color: ColorChoice,
                 inp: &Path,
@@ -160,12 +161,12 @@ fn resynth() -> Result<(), Error> {
             }
         } else {
             ok!(stdout, "Ok");
-            println!("");
+            println!();
         }
 
         out.pop();
 
-        println!("");
+        println!();
     }
 
     ret

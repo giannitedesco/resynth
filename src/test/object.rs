@@ -1,7 +1,8 @@
 use crate::err::Error::{NameError, TypeError};
 use crate::val::{Val, ValDef};
 use crate::object::ObjRef;
-use crate::libapi::{Class, Symbol};
+use crate::libapi::Class;
+use crate::sym::Symbol;
 
 use phf::phf_map;
 

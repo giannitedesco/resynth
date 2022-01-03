@@ -2,7 +2,8 @@ use phf::{phf_map, phf_ordered_map};
 
 use crate::err::Error;
 use crate::val::{ValType, Val, ValDef};
-use crate::libapi::{Symbol, FuncDef};
+use crate::libapi::FuncDef;
+use crate::sym::Symbol;
 use crate::args::Args;
 use crate::func_def;
 

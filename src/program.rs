@@ -4,7 +4,8 @@ use crate::err::Error::{ImportError, NameError, TypeError, MultipleAssignError};
 use crate::val::{Val, Typed};
 use crate::object::ObjRef;
 use crate::args::{ArgExpr, ArgSpec};
-use crate::libapi::{FuncDef, Symbol, Module};
+use crate::libapi::{FuncDef, Module};
+use crate::sym::Symbol;
 use crate::pkt::PcapWriter;
 use crate::stdlib::toplevel_module;
 

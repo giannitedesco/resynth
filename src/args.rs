@@ -42,7 +42,7 @@ impl Args {
         Self {
             this,
             it: args.into_iter(),
-            extra_args: extra_args,
+            extra_args,
         }
     }
 
@@ -101,7 +101,7 @@ impl Drop for Args {
     fn drop(&mut self) {
         assert!(self.this.is_none());
         assert!(self.it.next().is_none());
-        assert!(self.extra_args.len() == 0);
+        assert!(self.extra_args.is_empty());
     }
 }
 
