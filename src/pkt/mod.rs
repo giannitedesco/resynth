@@ -1,12 +1,15 @@
 #![allow(unused)]
 
-pub(crate) mod util;
 pub(crate) mod eth;
 pub(crate) mod ipv4;
+pub(crate) mod dns;
 
 mod pcap;
-
 pub(crate) use pcap::PcapWriter;
+pub(crate) use util::AsBytes;
+
+mod util;
+pub(self) use util::Serialize;
 
 use std::fmt;
 use std::fmt::Write;

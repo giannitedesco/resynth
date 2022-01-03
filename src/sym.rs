@@ -8,6 +8,15 @@ pub(crate) enum Symbol {
     Val(ValDef),
 }
 
+impl Symbol {
+    // These const initializers are convenience helpers for describing modules in static/const
+    // structures where the From trait isn't allowed. Without this, the descriptions become very
+    // ponderous. ie. Symbol::Val(ValDef::U64(123)) vs. Symbol::int_val(123)
+    pub const fn int_val(val: u64) -> Self {
+        Self::Val(ValDef::U64(val))
+    }
+}
+
 impl Eq for Symbol {}
 impl PartialEq for Symbol {
     fn eq(&self, other: &Symbol) -> bool {

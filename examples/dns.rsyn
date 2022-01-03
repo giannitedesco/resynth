@@ -1,12 +1,12 @@
 import ipv4;
 import dns;
 
-let conn = ipv4::udp::flow(
+let dns = ipv4::udp::flow(
   192.168.238.112:13749,
   172.16.239.127:53,
 );
 
-conn.client_dgram(
+dns.client_dgram(
     dns::hdr(
       id: 0x1234,
       opcode: dns::opcode::QUERY,
@@ -17,6 +17,27 @@ conn.client_dgram(
       qtype: dns::type::A,
       qclass: dns::class::IN,
     )
+);
+
+dns.server_dgram(
+    dns::hdr(
+      id: 0x1234,
+      response: 1,
+      opcode: dns::opcode::QUERY,
+      qdcount: 1,
+      ancount: 1,
+    ),
+    dns::question(
+      qname: dns::name("www", "scaramanga", "co", "uk"),
+      qtype: dns::type::A,
+      qclass: dns::class::IN,
+    ),
+    dns::answer(
+      aname: dns::name("www", "scaramanga", "co", "uk"),
+      data: 109.107.38.8,
+      atype: dns::type::A,
+      aclass: dns::class::IN,
+    ),
 );
 
 let server = 142.250.207.36;

@@ -4,7 +4,7 @@ use std::io;
 use std::io::Write;
 
 use super::{Hdr, Packet};
-use super::util::{Serialize, AsBytes};
+use super::{Serialize, AsBytes};
 
 #[allow(unused)]
 enum LinkType {

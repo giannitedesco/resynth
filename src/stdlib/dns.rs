@@ -5,50 +5,51 @@ use crate::libapi::{FuncDef, ArgDecl};
 use crate::sym::Symbol;
 use crate::str::Buf;
 use crate::func_def;
-use crate::pkt::util::{Serialize, AsBytes};
+use crate::pkt::dns::{opcode, rrtype, class, dns_hdr, flags};
+use crate::pkt::AsBytes;
 
 use std::net::Ipv4Addr;
 
 const OPCODE: phf::Map<&'static str, Symbol> = phf_map! {
-    "QUERY" => Symbol::Val(ValDef::U64(0)),
-    "IQUERY" => Symbol::Val(ValDef::U64(1)),
-    "STATUS" => Symbol::Val(ValDef::U64(2)),
+    "QUERY" => Symbol::int_val(opcode::QUERY as u64),
+    "IQUERY" => Symbol::int_val(opcode::IQUERY as u64),
+    "STATUS" => Symbol::int_val(opcode::STATUS as u64),
 };
 
 const TYPE: phf::Map<&'static str, Symbol> = phf_map! {
-    "A" => Symbol::Val(ValDef::U64(1)),
-    "NS" => Symbol::Val(ValDef::U64(2)),
-    "MD" => Symbol::Val(ValDef::U64(3)),
-    "MF" => Symbol::Val(ValDef::U64(4)),
-    "CDNS_NAME" => Symbol::Val(ValDef::U64(5)),
-    "SOA" => Symbol::Val(ValDef::U64(6)),
-    "MB" => Symbol::Val(ValDef::U64(7)),
-    "MG" => Symbol::Val(ValDef::U64(8)),
-    "NMR" => Symbol::Val(ValDef::U64(9)),
-    "NULL" => Symbol::Val(ValDef::U64(10)),
-    "WKS" => Symbol::Val(ValDef::U64(11)),
-    "PTR" => Symbol::Val(ValDef::U64(12)),
-    "HINFO" => Symbol::Val(ValDef::U64(13)),
-    "MINFO" => Symbol::Val(ValDef::U64(14)),
-    "MX" => Symbol::Val(ValDef::U64(15)),
-    "TXT" => Symbol::Val(ValDef::U64(16)),
+    "A" => Symbol::int_val(rrtype::A as u64),
+    "NS" => Symbol::int_val(rrtype::NS as u64),
+    "MD" => Symbol::int_val(rrtype::MD as u64),
+    "MF" => Symbol::int_val(rrtype::MF as u64),
+    "CDNS_NAME" => Symbol::int_val(rrtype::CDNS_NAME as u64),
+    "SOA" => Symbol::int_val(rrtype::SOA as u64),
+    "MB" => Symbol::int_val(rrtype::MB as u64),
+    "MG" => Symbol::int_val(rrtype::MG as u64),
+    "NMR" => Symbol::int_val(rrtype::NMR as u64),
+    "NULL" => Symbol::int_val(rrtype::NULL as u64),
+    "WKS" => Symbol::int_val(rrtype::WKS as u64),
+    "PTR" => Symbol::int_val(rrtype::PTR as u64),
+    "HINFO" => Symbol::int_val(rrtype::HINFO as u64),
+    "MINFO" => Symbol::int_val(rrtype::MINFO as u64),
+    "MX" => Symbol::int_val(rrtype::MX as u64),
+    "TXT" => Symbol::int_val(rrtype::TXT as u64),
 
     // QTYPE
-    "AXFR" => Symbol::Val(ValDef::U64(252)),
-    "MAILB" => Symbol::Val(ValDef::U64(253)),
-    "MAILA" => Symbol::Val(ValDef::U64(254)),
+    "AXFR" => Symbol::int_val(rrtype::AXFR as u64),
+    "MAILB" => Symbol::int_val(rrtype::MAILB as u64),
+    "MAILA" => Symbol::int_val(rrtype::MAILA as u64),
 
-    "ALL" => Symbol::Val(ValDef::U64(255)),
+    "ALL" => Symbol::int_val(rrtype::ALL as u64),
 };
 
 const CLASS: phf::Map<&'static str, Symbol> = phf_map! {
-    "IN" => Symbol::Val(ValDef::U64(1)),
-    "CS" => Symbol::Val(ValDef::U64(2)),
-    "CH" => Symbol::Val(ValDef::U64(3)),
-    "HS" => Symbol::Val(ValDef::U64(4)),
+    "IN" => Symbol::int_val(class::IN as u64),
+    "CS" => Symbol::int_val(class::CS as u64),
+    "CH" => Symbol::int_val(class::CH as u64),
+    "HS" => Symbol::int_val(class::HS as u64),
 
     // QCLASS
-    "ANY" => Symbol::Val(ValDef::U64(255)),
+    "ANY" => Symbol::int_val(class::ANY as u64),
 };
 
 const DNS_NAME: FuncDef = func_def! (
@@ -74,20 +75,6 @@ const DNS_NAME: FuncDef = func_def! (
         Ok(Val::Str(Buf::from(ret)))
     }
 );
-
-#[allow(unused)]
-#[repr(C, packed(1))]
-struct dns_hdr {
-    id: u16,
-    flags: u16,
-    qdcount: u16,
-    ancount: u16,
-    nscount: u16,
-    arcount: u16,
-}
-
-impl Serialize for dns_hdr {
-}
 
 const DNS_HDR: FuncDef = func_def!(
     "dns::hdr";
@@ -116,19 +103,18 @@ const DNS_HDR: FuncDef = func_def!(
         let mut flags: u16 = 0;
 
         if response != 0 {
-            flags |= 0x8000;
+            flags |= flags::RESPONSE;
         }
 
-        flags |= ((opcode & 7) << 14) as u16;
+        flags |= flags::from_opcode(opcode as u8);
 
-        let hdr = dns_hdr {
-            id: (id as u16).to_be(),
-            flags: flags.to_be(),
-            qdcount: (qdcount as u16).to_be(),
-            ancount: (ancount as u16).to_be(),
-            nscount: (nscount as u16).to_be(),
-            arcount: (arcount as u16).to_be(),
-        };
+        let hdr = *dns_hdr::default()
+            .id(id as u16)
+            .flags(flags)
+            .qdcount(qdcount as u16)
+            .ancount(ancount as u16)
+            .nscount(nscount as u16)
+            .arcount(arcount as u16);
 
         Ok(Val::Str(Buf::from(hdr.as_bytes())))
     }

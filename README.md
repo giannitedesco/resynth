@@ -34,7 +34,7 @@ dns.client_dgram(
     ),
 );
 
-dns.client_dgram(
+dns.server_dgram(
     dns::hdr(
       id: 0x1234,
       response: 1,
