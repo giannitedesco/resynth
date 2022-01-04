@@ -25,7 +25,7 @@ struct UdpDgram {
 }
 
 impl UdpDgram {
-    fn new(src: &SocketAddrV4, dst: &SocketAddrV4) -> Self {
+    fn new(src: SocketAddrV4, dst: SocketAddrV4) -> Self {
         let mut pkt = Packet::with_capacity(UDP_DRGRAM_OVERHEAD);
 
         let eth: Hdr<eth_hdr> = pkt.push_hdr();
@@ -95,11 +95,11 @@ impl UdpFlow {
     }
 
     fn clnt(&self) -> UdpDgram {
-        UdpDgram::new(&self.cl, &self.sv)
+        UdpDgram::new(self.cl, self.sv)
     }
 
     fn srvr(&self) -> UdpDgram {
-        UdpDgram::new(&self.sv, &self.cl)
+        UdpDgram::new(self.sv, self.cl)
     }
 
     pub fn client_dgram(&mut self, bytes: &[u8]) -> Packet {

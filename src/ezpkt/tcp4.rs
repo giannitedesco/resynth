@@ -25,7 +25,7 @@ struct TcpSeg {
 }
 
 impl TcpSeg {
-    fn new(src: &SocketAddrV4, dst: &SocketAddrV4) -> Self {
+    fn new(src: SocketAddrV4, dst: SocketAddrV4) -> Self {
         let mut pkt = Packet::with_capacity(TCPSEG_OVERHEAD);
 
         let eth: Hdr<eth_hdr> = pkt.push_hdr();
@@ -141,11 +141,11 @@ impl TcpFlow {
 
     /* TODO: These could set sequence number automatically */
     fn clnt(&self) -> TcpSeg {
-        TcpSeg::new(&self.cl, &self.sv)
+        TcpSeg::new(self.cl, self.sv)
     }
 
     fn srvr(&self) -> TcpSeg {
-        TcpSeg::new(&self.sv, &self.cl)
+        TcpSeg::new(self.sv, self.cl)
     }
 
     pub fn open(&mut self) -> Vec<Packet> {
