@@ -16,8 +16,8 @@ pub(crate) enum Error {
 }
 
 impl From<io::Error> for Error {
-    fn from(e: io::Error) -> Error {
-        Error::IoError(e)
+    fn from(e: io::Error) -> Self {
+        Self::IoError(e)
     }
 }
 

@@ -3,6 +3,10 @@ use std::slice::Iter;
 use lazy_regex::*;
 use regex::CaptureLocations;
 
+use crate::loc::Loc;
+use crate::err::Error;
+use crate::err::Error::LexError;
+
 static LEX_RE: Lazy<Regex> = lazy_regex!("^\
     (?:\
     (?P<whitespace>[^\\S\n][^\\S\n]*)\
@@ -147,8 +151,23 @@ impl TokType {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct Token<'a> {
-    pub typ: TokType,
-    pub val: Option<&'a str>,
+    loc: Loc,
+    typ: TokType,
+    val: Option<&'a str>,
+}
+
+impl<'a> Token<'a> {
+    pub fn loc(&self) -> Loc {
+        self.loc
+    }
+
+    pub fn tok_type(&self) -> TokType {
+        self.typ
+    }
+
+    pub fn val(&self) -> &'a str {
+        self.val.unwrap()
+    }
 }
 
 impl From<Token<'_>> for String {
@@ -158,54 +177,76 @@ impl From<Token<'_>> for String {
 }
 
 pub(crate) const EOF: Token = Token {
+    loc: Loc::nil(),
     typ: TokType::Eof,
     val: None,
 };
 
-pub(crate) fn lex(line: &str) -> Result<Vec<Token>, ()> {
-    let mut ret = Vec::new();
-    let mut pos = 0_usize;
-    let mut caps = LEX_RE.capture_locations();
+#[derive(Debug, Default)]
+pub(crate) struct Lexer {
+    loc: Loc,
+}
 
-    while pos < line.len() {
-        let s = &line[pos..];
-        let res = LEX_RE.captures_read(&mut caps, s);
-        let m = match res {
-            Some(m) => m,
-            None => {
-                println!("fucked on {:?} @ {:?}", line, pos);
-                return Err(());
+impl Lexer {
+    pub(crate) fn loc(&self) -> Loc {
+        self.loc
+    }
+
+    fn throw(&mut self, pos: usize) -> Error {
+        self.loc.set_col(pos + 1);
+        LexError
+    }
+
+    pub(crate) fn line<'a>(&mut self, lno: usize, line: &'a str) -> Result<Vec<Token<'a>>, Error> {
+        let mut ret = Vec::new();
+        let mut pos = 0_usize;
+        let mut caps = LEX_RE.capture_locations();
+
+        self.loc = Loc::new(lno, pos + 1);
+
+        while pos < line.len() {
+            let s = &line[pos..];
+            let res = LEX_RE.captures_read(&mut caps, s);
+            let m = match res {
+                Some(m) => m,
+                None => {
+                    return Err(self.throw(pos + 1));
+                }
+            };
+
+            let (tok_type, match_end) = match TokType::from_caps(&caps) {
+                Some(result) => result,
+                _ => return Err(self.throw(pos + 1)),
+            };
+            let tok_val = &s[..m.end()];
+
+            assert!(match_end == m.end());
+
+            /*
+            println!("  {:?} {:?} => {}..{}/{} {:?}",
+                tok_type,
+                LEX_RE.capture_names().nth(tok_type as usize).unwrap().unwrap(),
+                pos,
+                m.end(),
+                match_end,
+                tok_val,
+            );
+            */
+
+            if !tok_type.ignore() {
+                ret.push(Token {
+                    loc: Loc::new(lno, pos + 1),
+                    typ: tok_type,
+                    val: tok_type.get_val(tok_val),
+                });
             }
-        };
 
-        let (tok_type, match_end) = match TokType::from_caps(&caps) {
-            Some(result) => result,
-            _ => return Err(()),
-        };
-        let tok_val = &s[..m.end()];
-
-        assert!(match_end == m.end());
-
-        /*
-        println!("  {:?} {:?} => {}..{}/{} {:?}",
-            tok_type,
-            LEX_RE.capture_names().nth(tok_type as usize).unwrap().unwrap(),
-            pos,
-            m.end(),
-            match_end,
-            tok_val,
-        );
-        */
-
-        if !tok_type.ignore() {
-            ret.push(Token {
-                typ: tok_type,
-                val: tok_type.get_val(tok_val),
-            });
+            pos += m.end();
         }
 
-        pos += m.end();
+        self.loc = Loc::new(lno, pos + 1);
+
+        ret.shrink_to_fit();
+        Ok(ret)
     }
-    ret.shrink_to_fit();
-    Ok(ret)
 }

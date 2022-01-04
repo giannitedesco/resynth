@@ -16,4 +16,4 @@ conn.server_message(
   "HTTP/1.1 200 OK|0d0a|Server: Server|0d0a0d0a|",
 );
 
-conn.close();
+conn.server_close();

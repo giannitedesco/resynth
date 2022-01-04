@@ -14,12 +14,14 @@ mod pkt;
 mod ezpkt;
 mod sym;
 mod traits;
+mod loc;
 
 #[cfg(test)]
 mod test;
 
 use err::Error;
-use lex::{lex, EOF};
+use loc::Loc;
+use lex::{Lexer, EOF};
 use parse::Parser;
 use program::Program;
 use pkt::PcapWriter;
@@ -32,11 +34,38 @@ use std::io::BufRead;
 use clap::{Arg, App};
 use termcolor::{ColorChoice, StandardStream, Color, ColorSpec, WriteColor};
 
-fn process_file(color: ColorChoice,
+#[derive(Debug)]
+pub(crate) struct ErrorLoc {
+    pub loc: Loc,
+    pub err: Error,
+}
+
+impl ErrorLoc {
+    pub fn new(loc: Loc, err: Error) -> Self {
+        Self {
+            loc,
+            err,
+        }
+    }
+}
+
+impl From<Error> for ErrorLoc {
+    fn from(e: Error) -> Self {
+        Self::new(Loc::nil(), e)
+    }
+}
+
+impl From<io::Error> for ErrorLoc {
+    fn from(e: io::Error) -> Self {
+        Self::new(Loc::nil(), e.into())
+    }
+}
+
+fn process_file(stdout: &mut StandardStream,
                 inp: &Path,
                 out: &Path,
                 verbose: bool,
-                ) -> Result<(), Error> {
+                ) -> Result<(), ErrorLoc> {
     let file = fs::File::open(inp)?;
     let rd = io::BufReader::new(file);
     let wr = {
@@ -49,30 +78,51 @@ fn process_file(color: ColorChoice,
     };
     let mut prog = Program::with_pcap_writer(wr)?;
     let mut parse = Parser::new();
+    let mut lex = Lexer::default();
 
-    prog.set_color(color);
+    let mut warning = |loc: Loc, warn: &str| {
 
-    for res in rd.lines() {
+        if loc.is_nil() {
+            print!("{}: ", inp.display());
+        } else {
+            print!("{}:{}:{}: ", inp.display(), loc.line(), loc.col());
+        }
+        warn!(stdout, "warning");
+        println!(": {}", warn);
+    };
+    prog.set_warning(&mut warning);
+
+    for (lno, res) in rd.lines().enumerate() {
         let line = res?;
-        let toks = match lex(&line) {
+
+        let toks = match lex.line(lno + 1, &line) {
             Ok(toks) => toks,
-            _ => return Err(Error::LexError),
+            Err(err) => return Err(ErrorLoc::new(lex.loc(), err)),
         };
 
         for tok in toks {
-            parse.feed(tok)?;
+            if let Err(err) = parse.feed(tok) {
+                return Err(ErrorLoc::new(tok.loc(), err));
+            }
         }
 
-        prog.add_stmts(parse.get_results())?;
+        if let Err(err) = prog.add_stmts(parse.get_results()) {
+            return Err(ErrorLoc::new(prog.loc(), err));
+        }
     }
 
-    parse.feed(EOF)?;
-    prog.add_stmts(parse.get_results())?;
+    if let Err(err) = parse.feed(EOF) {
+        return Err(ErrorLoc::new(lex.loc(), err));
+    }
+
+    if let Err(err) = prog.add_stmts(parse.get_results()) {
+        return Err(ErrorLoc::new(prog.loc(), err));
+    }
 
     Ok(())
 }
 
-fn resynth() -> Result<(), Error> {
+fn resynth() -> Result<(), ()> {
     let mut ret = Ok(());
 
     let argv = App::new("resynth")
@@ -134,39 +184,35 @@ fn resynth() -> Result<(), Error> {
         out.push(p.file_stem().unwrap());
         out.set_extension("pcap");
 
-        notice!(stdout, "Processing");
-        println!(": {} -> {}", p.display(), out.display());
-
-        let result = process_file(color, p, &out, verbose);
-
-        notice!(stdout, "    Result");
-        print!(": ");
+        let result = process_file(&mut stdout, p, &out, verbose);
 
         if let Err(error) = result {
-            error!(stdout, "Error");
-            println!(" -> {}", error);
+            let ErrorLoc { loc, err } = error;
 
-            ret = Err(error);
+            if loc.is_nil() {
+                print!("{}: ", p.display());
+            } else {
+                print!("{}:{}:{}: ", p.display(), loc.line(), loc.col());
+            }
+            error!(stdout, "error");
+            println!(": {}", err);
 
             if !keep {
-                notice!(stdout, "    Action");
-                print!(": ");
                 if let Err(rm_err) = fs::remove_file(&out) {
-                    error!(stdout, "Delete");
-                    println!(" {} -> {}", out.display(), rm_err);
-                } else {
-                    notice!(stdout, "Delete");
-                    println!(" {}", out.display());
+                    print!("{}: ", p.display());
+                    error!(stdout, "error");
+                    println!(": {}", rm_err);
                 }
             }
+
+            ret = Err(());
         } else {
-            ok!(stdout, "Ok");
+            print!("{} -> {} ", p.display(), out.display());
+            ok!(stdout, "ok");
             println!();
         }
 
         out.pop();
-
-        println!();
     }
 
     ret

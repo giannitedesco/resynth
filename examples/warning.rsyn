@@ -1,0 +1,6 @@
+import dns;
+
+dns::name();
+dns::name("com");
+dns::name("www.google.com");
+dns::name("www", "google", "com");

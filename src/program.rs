@@ -8,41 +8,47 @@ use crate::libapi::{FuncDef, Module};
 use crate::sym::Symbol;
 use crate::pkt::PcapWriter;
 use crate::stdlib::toplevel_module;
+use crate::loc::Loc;
 
 use std::rc::Rc;
 use std::collections::HashMap;
 
-use termcolor::{StandardStream, ColorChoice, Color, ColorSpec, WriteColor};
-
-pub(crate) struct Program {
-    stdout: StandardStream,
+pub(crate) struct Program<'a> {
     regs: HashMap<String, Val>,
     imports: HashMap<String, &'static Module>,
     wr: Option<PcapWriter>,
+    loc: Loc,
+    warning: Option<&'a mut dyn FnMut(Loc, &str)>,
 }
 
-impl Program {
+impl<'a> Program<'a> {
     #[allow(unused)]
     pub fn dummy() -> Result<Self, Error> {
         Ok(Program {
-            stdout: StandardStream::stdout(ColorChoice::Never),
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: None,
+            loc: Loc::nil(),
+            warning: None,
         })
     }
 
     pub fn with_pcap_writer(wr: PcapWriter) -> Result<Self, Error> {
         Ok(Program {
-            stdout: StandardStream::stdout(ColorChoice::Never),
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: Some(wr),
+            loc: Loc::nil(),
+            warning: None,
         })
     }
 
-    pub fn set_color(&mut self, color: ColorChoice) {
-        self.stdout = StandardStream::stdout(color);
+    pub fn loc(&self) -> Loc {
+        self.loc
+    }
+
+    pub fn set_warning(&mut self, warning: &'a mut dyn FnMut(Loc, &str)) {
+        self.warning = Some(warning);
     }
 
     #[allow(unused)]
@@ -149,7 +155,7 @@ impl Program {
         }
     }
 
-    fn eval_args(&self, argexprs: Vec<ArgExpr>) -> Result<Vec<ArgSpec>, Error> {
+    fn eval_args(&mut self, argexprs: Vec<ArgExpr>) -> Result<Vec<ArgSpec>, Error> {
         let mut ret = Vec::new();
 
         for x in argexprs {
@@ -162,7 +168,7 @@ impl Program {
         Ok(ret)
     }
 
-    fn eval_callable(&self,
+    fn eval_callable(&mut self,
                      func: &'static FuncDef,
                      this: Option<ObjRef>,
                      argexprs: Vec<ArgExpr>,
@@ -187,7 +193,7 @@ impl Program {
         Ok(ret)
     }
 
-    pub fn eval_call(&self, call: Call) -> Result<Val, Error> {
+    pub fn eval_call(&mut self, call: Call) -> Result<Val, Error> {
         match self.eval_obj_ref(call.obj)? {
             Val::Func(f) => self.eval_callable(f, None, call.args),
             Val::Method(obj, f) => self.eval_callable(f, Some(obj), call.args),
@@ -198,12 +204,21 @@ impl Program {
         }
     }
 
-    pub fn eval(&self, expr: Expr) -> Result<Val, Error> {
+    pub fn eval(&mut self, expr: Expr) -> Result<Val, Error> {
         Ok(match expr {
             Expr::Nil => Val::Nil,
-            Expr::Literal(lit) => lit,
-            Expr::ObjectRef(obj) => self.eval_obj_ref(obj)?,
-            Expr::Call(call) => self.eval_call(call)?,
+            Expr::Literal(loc, lit) => {
+                self.loc = loc;
+                lit
+            },
+            Expr::ObjectRef(obj) => {
+                self.loc = obj.loc;
+                self.eval_obj_ref(obj)?
+            },
+            Expr::Call(call) => {
+                self.loc = call.obj.loc;
+                self.eval_call(call)?
+            },
         })
     }
 
@@ -229,6 +244,8 @@ impl Program {
     pub fn add_import(&mut self, import: Import) -> Result<(), Error> {
         let name = &import.module;
 
+        self.loc = import.loc;
+
         if self.imports.get(name).is_some() {
             println!("Multiple imports of {:?}", name);
             return Ok(());
@@ -248,6 +265,8 @@ impl Program {
 
     pub fn add_assign(&mut self, assign: Assign) -> Result<(), Error> {
         let name = &assign.target;
+
+        self.loc = assign.loc;
 
         if self.regs.get(name).is_some() {
             return Err(MultipleAssignError(name.to_owned()));
@@ -280,8 +299,9 @@ impl Program {
                 };
             }
             _ => {
-                warn!(self.stdout, "   Warning");
-                println!(": discarded value {:?}", val);
+                if let Some(ref mut func) = self.warning {
+                    (func)(self.loc, &format!("disarded value {:?}", val));
+                }
             }
         };
         Ok(())

@@ -1,4 +1,4 @@
-use crate::libapi::{FuncDef};
+use crate::libapi::FuncDef;
 use crate::sym::Symbol;
 use crate::lex::{TokType, Token};
 use crate::err::Error;
@@ -210,8 +210,8 @@ impl Val {
     pub fn from_token(tok: Token) -> Result<Self, Error> {
         use Val::*;
         use TokType::*;
-        let v = tok.val.unwrap();
-        match tok.typ {
+        let v = tok.val();
+        match tok.tok_type() {
             StringLiteral => Ok(Str(v.parse().or(Err(ParseError))?)),
             IPv4Literal => Ok(Ip4(v.parse().or(Err(ParseError))?)),
             IntegerLiteral => Ok(U64(v.parse().or(Err(ParseError))?)),
