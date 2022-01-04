@@ -77,7 +77,7 @@ pub(crate) mod class {
 }
 
 #[repr(C, packed(1))]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub(crate) struct dns_hdr {
     id: u16,
     flags: u16,
@@ -87,19 +87,6 @@ pub(crate) struct dns_hdr {
     arcount: u16,
 }
 impl Serialize for dns_hdr {}
-
-impl Default for dns_hdr {
-    fn default() -> Self {
-        Self {
-            id: 0,
-            flags: 0,
-            qdcount: 0,
-            ancount: 0,
-            nscount: 0,
-            arcount: 0,
-        }
-    }
-}
 
 impl dns_hdr {
     pub fn builder() -> DnsHdrBuilder {
@@ -137,17 +124,9 @@ impl dns_hdr {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub(crate) struct DnsHdrBuilder {
     hdr: dns_hdr,
-}
-
-impl Default for DnsHdrBuilder {
-    fn default() -> Self {
-        Self {
-            hdr: dns_hdr::default(),
-        }
-    }
 }
 
 impl DnsHdrBuilder {
@@ -186,17 +165,9 @@ impl DnsHdrBuilder {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub(crate) struct DnsFlags {
     flags: u16,
-}
-
-impl Default for DnsFlags {
-    fn default() -> Self {
-        Self {
-            flags: 0,
-        }
-    }
 }
 
 impl DnsFlags {
@@ -276,7 +247,7 @@ impl DnsName {
             buf: Vec::with_capacity(name.len() + 1),
         };
 
-        for part in name.split(|x| *x == '.' as u8) {
+        for part in name.split(|x| *x == b'.') {
             ret.push(part);
         }
 
