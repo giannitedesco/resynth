@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "resynth"
-version = "0.1.0"
+version = "0.1.1"
 description = "A packet synthesis language"
 authors = ["Gianni Tedesco <gianni@scaramanga.co.uk>"]
 license = "GPL-3.0-only"
@@ -18,7 +18,7 @@ keywords = [
 categories = [
  "command-line-utilities",
  "compilers",
- "network programming",
+ "network-programming",
 ]
 include = [
  "**/*.rs",
