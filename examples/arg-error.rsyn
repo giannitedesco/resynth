@@ -1,0 +1,3 @@
+import dns;
+
+dns::name("foo", 123);
