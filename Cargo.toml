@@ -20,6 +20,13 @@ categories = [
  "compilers",
  "network programming",
 ]
+include = [
+ "**/*.rs",
+ "Cargo.toml",
+ "README.md",
+ "LICENSE.txt",
+ "examples/*.rsyn",
+]
 
 [profile.release]
 lto = true
