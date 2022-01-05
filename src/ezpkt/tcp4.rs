@@ -1,13 +1,11 @@
 use std::net::SocketAddrV4;
 
-use crate::val::Val;
-
 use super::pkt::eth::eth_hdr;
 use super::pkt::ipv4::{ip_hdr, tcp_hdr};
 use super::pkt::{Packet, Hdr};
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct TcpFlow {
+pub struct TcpFlow {
     cl: SocketAddrV4,
     sv: SocketAddrV4,
     cl_seq: u32,
@@ -17,7 +15,7 @@ pub(crate) struct TcpFlow {
 const TCPSEG_OVERHEAD: usize = 14 + 20 + 20;
 
 /// Helper for creating TCP segments
-struct TcpSeg {
+pub struct TcpSeg {
     pkt: Packet,
     ip: Hdr<ip_hdr>,
     tcp: Hdr<tcp_hdr>,
@@ -107,11 +105,8 @@ impl TcpSeg {
     }
 
     fn fin_ack(mut self, seq: &mut u32, ack: u32) -> Self {
-        self.pkt.get_mut_hdr(&self.tcp)
-            .seq(*seq)
-            .fin()
-            .ack(ack);
-        *seq += 1;
+        self = self.fin(seq);
+        self.pkt.get_mut_hdr(&self.tcp).ack(ack);
         self
     }
 

@@ -7,8 +7,7 @@ use crate::sym::Symbol;
 use crate::val::Val;
 use crate::args::Args;
 
-#[allow(unused)]
-fn unimplemented(mut args: Args) -> Result<Val, Error> {
+pub fn unimplemented(mut args: Args) -> Result<Val, Error> {
     println!("Unimplemented stdlib call");
     args.void();
     Err(RuntimeError)
@@ -28,7 +27,7 @@ const STDLIB: phf::Map<&'static str, Symbol> = phf_map! {
     "dns" => Symbol::Module(&DNS),
 };
 
-pub(crate) fn toplevel_module(name: &str) -> Option<&'static Module> {
+pub fn toplevel_module(name: &str) -> Option<&'static Module> {
     match STDLIB.get(name) {
         None => None,
         Some(Symbol::Module(module)) => Some(module),

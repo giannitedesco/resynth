@@ -8,7 +8,7 @@ use crate::sym::Symbol;
 use crate::libapi::Class;
 use crate::traits::Dispatchable;
 
-pub(crate) trait Obj: Class + Debug + Dispatchable {
+pub trait Obj: Class + Debug + Dispatchable {
     fn as_any(&self) -> &dyn Any;
     fn as_mut_any(&mut self) -> &mut dyn Any;
     fn equals_obj(&self, _: &dyn Obj) -> bool;
@@ -35,7 +35,7 @@ impl<T: Obj> Dispatchable for T {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct ObjRef {
+pub struct ObjRef {
     inner: Rc<RefCell<dyn Obj>>,
 }
 

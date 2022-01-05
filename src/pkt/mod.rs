@@ -1,12 +1,10 @@
-#![allow(unused)]
-
-pub(crate) mod eth;
-pub(crate) mod ipv4;
-pub(crate) mod dns;
+pub mod eth;
+pub mod ipv4;
+pub mod dns;
 
 mod pcap;
-pub(crate) use pcap::PcapWriter;
-pub(crate) use util::AsBytes;
+pub use pcap::{PcapWriter, LinkType};
+pub use util::AsBytes;
 
 mod util;
 pub(self) use util::Serialize;
@@ -18,7 +16,7 @@ use crate::val::Val;
 use crate::str::Buf;
 
 #[derive(Debug)]
-pub(crate) struct Hdr<T> {
+pub struct Hdr<T> {
     off: u16,
     len: u16,
     phantom: std::marker::PhantomData<T>,
@@ -40,10 +38,14 @@ impl<T> Hdr<T> {
     pub fn len(&self) -> usize {
         self.len as usize
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
 }
 
 #[derive(Eq, PartialEq)]
-pub(crate) struct Packet {
+pub struct Packet {
     buf: Vec<u8>,
     headroom: usize,
 }
@@ -51,7 +53,7 @@ pub(crate) struct Packet {
 impl fmt::Debug for Packet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
-            f.write_fmt(format_args!("{} byte packet:\n", self.len()));
+            f.write_fmt(format_args!("{} byte packet:\n", self.len()))?;
             for line in self.hex_dump() {
                 f.write_str(&line)?;
                 f.write_str("\n")?;
@@ -86,7 +88,7 @@ impl Packet {
 
         new
     }
-    pub fn with_headroom(headroom: usize, capacity: usize) -> Self {
+    pub fn with_headroom(headroom: usize) -> Self {
         Packet::new(headroom, DEFAULT_CAPACITY)
     }
 
@@ -97,6 +99,10 @@ impl Packet {
     pub fn len(&self) -> usize {
         assert!(self.buf.len() > self.headroom);
         self.buf.len() - self.headroom
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     fn expand(&mut self, len: usize) -> usize {
@@ -203,25 +209,25 @@ impl Packet {
         };
         let bytes = &self.buf[pos..pos + valid];
 
-        write!(s, "{:05x} |", pos);
+        write!(s, "{:05x} |", pos).unwrap();
 
         for b in bytes[0..valid].iter() {
-            write!(s, " {:02x}", b);
+            write!(s, " {:02x}", b).unwrap();
         }
 
-        for i in valid..width {
-            write!(s, "   ");
+        for _ in valid..width {
+            write!(s, "   ").unwrap();
         }
 
-        write!(s, " ");
+        write!(s, " ").unwrap();
 
         for b in bytes[0..valid].iter() {
             let chr = *b as char;
 
             if chr.is_ascii_graphic() {
-                write!(s, "{}", chr);
+                write!(s, "{}", chr).unwrap();
             } else {
-                write!(s, ".");
+                write!(s, ".").unwrap();
             }
         }
 

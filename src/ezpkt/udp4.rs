@@ -5,7 +5,7 @@ use super::pkt::ipv4::{ip_hdr, udp_hdr};
 use super::pkt::{Packet, Hdr};
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct UdpFlow {
+pub struct UdpFlow {
     cl: SocketAddrV4,
     sv: SocketAddrV4,
 }
@@ -15,8 +15,8 @@ const UDP_DRGRAM_OVERHEAD: usize =
     + std::mem::size_of::<ip_hdr>()
     + std::mem::size_of::<udp_hdr>();
 
-/// Helper for creating TCP segments
-struct UdpDgram {
+/// Helper for creating UDP datagrams
+pub struct UdpDgram {
     pkt: Packet,
     ip: Hdr<ip_hdr>,
     udp: Hdr<udp_hdr>,

@@ -126,6 +126,6 @@ const TCP_FLOW: FuncDef = func_def!(
 );
 
 
-pub(crate) const TCP4: phf::Map<&'static str, Symbol> = phf_map! {
+pub const TCP4: phf::Map<&'static str, Symbol> = phf_map! {
     "flow" => Symbol::Func(&TCP_FLOW),
 };

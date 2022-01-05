@@ -71,7 +71,7 @@ const UDP_FLOW: FuncDef = func_def!(
     }
 );
 
-pub(crate) const UDP4: phf::Map<&'static str, Symbol> = phf_map! {
+pub const UDP4: phf::Map<&'static str, Symbol> = phf_map! {
     "flow" => Symbol::Func(&UDP_FLOW),
 };
 

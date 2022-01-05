@@ -7,7 +7,7 @@ use crate::sym::Symbol;
 use phf::phf_map;
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Tcp {
+pub(self) struct Tcp {
     pub cl_seq: u32,
     pub sv_seq: u32,
 }
@@ -26,7 +26,7 @@ impl Class for Tcp {
 }
 
 impl Tcp {
-    pub(crate) fn new(cl_seq: u32, sv_seq: u32) -> Self {
+    pub(self) fn new(cl_seq: u32, sv_seq: u32) -> Self {
         Self {
             cl_seq,
             sv_seq,
@@ -35,7 +35,7 @@ impl Tcp {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Udp {
+pub(self) struct Udp {
 }
 
 impl Class for Udp {
@@ -52,7 +52,7 @@ impl Class for Udp {
 }
 
 impl Udp {
-    pub(crate) fn new() -> Self {
+    pub(self) fn new() -> Self {
         Self {
         }
     }

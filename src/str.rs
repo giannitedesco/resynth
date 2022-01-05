@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct Buf {
+pub struct Buf {
     inner: Rc<Vec<u8>>,
 }
 
@@ -60,7 +60,7 @@ impl fmt::Debug for Buf {
     }
 }
 
-pub(crate) struct StringLiteralParseError {
+pub struct StringLiteralParseError {
 }
 
 fn hex_decode(chr: char) -> u8 {

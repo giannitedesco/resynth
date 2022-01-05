@@ -53,7 +53,7 @@ static LEX_RE: Lazy<Regex> = lazy_regex!("^\
 ");
 
 #[derive(Debug, Copy, Clone)]
-pub(crate) enum TokType {
+pub enum TokType {
     Eof,
 
     Whitespace,
@@ -149,8 +149,13 @@ impl TokType {
     }
 }
 
+/// Represents a lexeme within the resynth language.
+///
+/// ## Lifetime
+/// For things like identifiers and string literals, a reference is included to the original
+/// string. So the [Token] must outlive that buffer.
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct Token<'a> {
+pub struct Token<'a> {
     loc: Loc,
     typ: TokType,
     val: Option<&'a str>,
@@ -176,19 +181,23 @@ impl From<Token<'_>> for String {
     }
 }
 
-pub(crate) const EOF: Token = Token {
+/// EOF token
+pub const EOF: Token = Token {
     loc: Loc::nil(),
     typ: TokType::Eof,
     val: None,
 };
 
+/// The lexer takes a [line at a time](Lexer::line) and returns a [vector](Vec) of
+/// [tokens](Token). If an error occurs then the location of that error may be retreived from
+/// [Lexer::loc].
 #[derive(Debug, Default)]
-pub(crate) struct Lexer {
+pub struct Lexer {
     loc: Loc,
 }
 
 impl Lexer {
-    pub(crate) fn loc(&self) -> Loc {
+    pub fn loc(&self) -> Loc {
         self.loc
     }
 
@@ -197,7 +206,7 @@ impl Lexer {
         LexError
     }
 
-    pub(crate) fn line<'a>(&mut self, lno: usize, line: &'a str) -> Result<Vec<Token<'a>>, Error> {
+    pub fn line<'a>(&mut self, lno: usize, line: &'a str) -> Result<Vec<Token<'a>>, Error> {
         let mut ret = Vec::new();
         let mut pos = 0_usize;
         let mut caps = LEX_RE.capture_locations();

@@ -10,7 +10,7 @@ use tcp::TCP4;
 use udp::UDP4;
 use icmp::ICMP4;
 
-pub(crate) const IPV4: phf::Map<&'static str, Symbol> = phf_map! {
+pub const IPV4: phf::Map<&'static str, Symbol> = phf_map! {
     "tcp" => Symbol::Module(&TCP4),
     "udp" => Symbol::Module(&UDP4),
     "icmp" => Symbol::Module(&ICMP4),

@@ -1,5 +1,6 @@
+/// Identifies a line number and column number within a source file.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
-pub(crate) struct Loc {
+pub struct Loc {
     line: u32,
     col: u32,
 }

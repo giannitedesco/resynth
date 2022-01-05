@@ -13,7 +13,8 @@ use crate::loc::Loc;
 use std::rc::Rc;
 use std::collections::HashMap;
 
-pub(crate) struct Program<'a> {
+/// The interpreter and program-state
+pub struct Program<'a> {
     regs: HashMap<String, Val>,
     imports: HashMap<String, &'static Module>,
     wr: Option<PcapWriter>,

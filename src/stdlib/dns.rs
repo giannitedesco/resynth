@@ -291,7 +291,7 @@ const DNS_HOST: FuncDef = func_def!(
 );
 
 
-pub(crate) const DNS: phf::Map<&'static str, Symbol> = phf_map! {
+pub const DNS: phf::Map<&'static str, Symbol> = phf_map! {
     "opcode" => Symbol::Module(&OPCODE),
     "type" => Symbol::Module(&TYPE),
     "class" => Symbol::Module(&CLASS),

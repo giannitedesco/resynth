@@ -1,13 +1,12 @@
-#![allow(unused)]
-use super::{Serialize, AsBytes};
+use super::Serialize;
 
-pub(crate) mod opcode {
+pub mod opcode {
     pub const QUERY: u8 = 0;
     pub const IQUERY: u8 = 1;
     pub const STATUS: u8 = 2;
 }
 
-pub(crate) mod rcode {
+pub mod rcode {
     pub const NOERROR: u8 = 0;
     pub const FORMERROR: u8 = 1;
     pub const SERVFAIL: u8 = 2;
@@ -20,7 +19,7 @@ pub(crate) mod rcode {
     pub const NOTZONE: u8 = 9;
 }
 
-pub(crate) mod flags {
+pub mod flags {
     /// Response message
     pub const RESPONSE: u16 = 0x8000;
 
@@ -45,7 +44,7 @@ pub(crate) mod flags {
     }
 }
 
-pub(crate) mod rrtype {
+pub mod rrtype {
     pub const A: u16 = 1;
     pub const NS: u16 = 2;
     pub const MD: u16 = 3;
@@ -68,7 +67,7 @@ pub(crate) mod rrtype {
     pub const ALL: u16 = 255;
 }
 
-pub(crate) mod class {
+pub mod class {
     pub const IN: u16 = 1;
     pub const CS: u16 = 2;
     pub const CH: u16 = 3;
@@ -78,7 +77,7 @@ pub(crate) mod class {
 
 #[repr(C, packed(1))]
 #[derive(Debug, Copy, Clone, Default)]
-pub(crate) struct dns_hdr {
+pub struct dns_hdr {
     id: u16,
     flags: u16,
     qdcount: u16,
@@ -125,40 +124,47 @@ impl dns_hdr {
 }
 
 #[derive(Debug, Copy, Clone, Default)]
-pub(crate) struct DnsHdrBuilder {
+pub struct DnsHdrBuilder {
     hdr: dns_hdr,
 }
 
 impl DnsHdrBuilder {
+    #[must_use]
     pub fn build(self) -> dns_hdr {
         self.hdr
     }
 
+    #[must_use]
     pub fn id(mut self, id: u16) -> Self {
         self.hdr.set_id(id);
         self
     }
 
+    #[must_use]
     pub fn flags(mut self, flags: u16) -> Self {
         self.hdr.set_flags(flags);
         self
     }
 
+    #[must_use]
     pub fn qdcount(mut self, qdcount: u16) -> Self {
         self.hdr.set_qdcount(qdcount);
         self
     }
 
+    #[must_use]
     pub fn ancount(mut self, ancount: u16) -> Self {
         self.hdr.set_ancount(ancount);
         self
     }
 
+    #[must_use]
     pub fn nscount(mut self, nscount: u16) -> Self {
         self.hdr.set_nscount(nscount);
         self
     }
 
+    #[must_use]
     pub fn arcount(mut self, arcount: u16) -> Self {
         self.hdr.set_arcount(arcount);
         self
@@ -166,15 +172,17 @@ impl DnsHdrBuilder {
 }
 
 #[derive(Debug, Copy, Clone, Default)]
-pub(crate) struct DnsFlags {
+pub struct DnsFlags {
     flags: u16,
 }
 
 impl DnsFlags {
+    #[must_use]
     pub fn build(self) -> u16 {
         self.flags
     }
 
+    #[must_use]
     pub fn response(mut self, flag: bool) -> Self {
         if flag {
             self.flags |= flags::RESPONSE;
@@ -184,11 +192,13 @@ impl DnsFlags {
         self
     }
 
+    #[must_use]
     pub fn opcode(mut self, opcode: u8) -> Self {
         self.flags |= flags::from_opcode(opcode);
         self
     }
 
+    #[must_use]
     pub fn aa(mut self, flag: bool) -> Self {
         if flag {
             self.flags |= flags::AA;
@@ -198,6 +208,7 @@ impl DnsFlags {
         self
     }
 
+    #[must_use]
     pub fn tc(mut self, flag: bool) -> Self {
         if flag {
             self.flags |= flags::TC;
@@ -207,6 +218,7 @@ impl DnsFlags {
         self
     }
 
+    #[must_use]
     pub fn rd(mut self, flag: bool) -> Self {
         if flag {
             self.flags |= flags::RD;
@@ -216,6 +228,7 @@ impl DnsFlags {
         self
     }
 
+    #[must_use]
     pub fn ra(mut self, flag: bool) -> Self {
         if flag {
             self.flags |= flags::RA;
@@ -225,13 +238,14 @@ impl DnsFlags {
         self
     }
 
+    #[must_use]
     pub fn rcode(mut self, opcode: u8) -> Self {
         self.flags |= flags::from_rcode(opcode);
         self
     }
 }
 
-pub(crate) struct DnsName {
+pub struct DnsName {
     buf: Vec<u8>,
 }
 

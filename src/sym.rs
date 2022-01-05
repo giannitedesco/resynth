@@ -1,17 +1,19 @@
 use crate::libapi::{Module, FuncDef};
 use crate::val::ValDef;
 
+/// A symbol can either point to a [const value](ValDef), [another module](Module), or a [function
+/// or method](FuncDef)
 #[derive(Debug, Copy, Clone)]
-pub(crate) enum Symbol {
+pub enum Symbol {
     Module(&'static Module),
     Func(&'static FuncDef),
     Val(ValDef),
 }
 
 impl Symbol {
-    // These const initializers are convenience helpers for describing modules in static/const
-    // structures where the From trait isn't allowed. Without this, the descriptions become very
-    // ponderous. ie. Symbol::Val(ValDef::U64(123)) vs. Symbol::int_val(123)
+    /// This const initializer is a convenience helpers for describing modules in static/const
+    /// structures where the From trait isn't allowed. Without this, the descriptions become very
+    /// ponderous. ie. `Symbol::Val(ValDef::U64(123))` vs. `Symbol::int_val(123)`
     pub const fn int_val(val: u64) -> Self {
         Self::Val(ValDef::U64(val))
     }

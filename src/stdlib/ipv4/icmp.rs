@@ -73,6 +73,6 @@ const ICMP_FLOW: FuncDef = func_def!(
     }
 );
 
-pub(crate) const ICMP4: phf::Map<&'static str, Symbol> = phf_map! {
+pub const ICMP4: phf::Map<&'static str, Symbol> = phf_map! {
     "flow" => Symbol::Func(&ICMP_FLOW),
 };

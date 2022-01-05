@@ -5,7 +5,7 @@ use super::pkt::ipv4::{ip_hdr, icmp_hdr, icmp_echo_hdr, ip_csum, ICMP_ECHOREPLY,
 use super::pkt::{Packet, Hdr};
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct IcmpFlow {
+pub struct IcmpFlow {
     cl: Ipv4Addr,
     sv: Ipv4Addr,
     id: u16,
@@ -19,8 +19,8 @@ const ICMP_DRGRAM_OVERHEAD: usize =
     + std::mem::size_of::<icmp_echo_hdr>()
     + std::mem::size_of::<icmp_hdr>();
 
-/// Helper for creating TCP segments
-struct IcmpDgram {
+/// Helper for creating ICMP datagrams
+pub struct IcmpDgram {
     pkt: Packet,
     ip: Hdr<ip_hdr>,
     icmp: Hdr<icmp_hdr>,

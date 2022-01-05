@@ -1,9 +1,10 @@
 use std::io;
 use std::fmt;
 
+/// Error code for resynth program. Think of it as base exception type for the resynth language.
 #[allow(unused, clippy::enum_variant_names)]
 #[derive(Debug)]
-pub(crate) enum Error {
+pub enum Error {
     IoError(io::Error),
     LexError,
     ParseError,

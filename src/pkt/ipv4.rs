@@ -1,10 +1,8 @@
-#![allow(unused)]
-
 use std::net::Ipv4Addr;
 
 #[repr(C, packed(1))]
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct ip_hdr {
+pub struct ip_hdr {
     pub ihl_version: u8,
     pub tos: u8,
     pub tot_len: u16,
@@ -60,7 +58,7 @@ impl ip_hdr {
 
 #[repr(C, packed(1))]
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct udp_hdr {
+pub struct udp_hdr {
     pub sport: u16,
     pub dport: u16,
     pub len: u16,
@@ -69,7 +67,7 @@ pub(crate) struct udp_hdr {
 
 #[repr(C, packed(1))]
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct tcp_hdr {
+pub struct tcp_hdr {
     pub sport: u16,
     pub dport: u16,
     pub seq: u32,
@@ -81,14 +79,14 @@ pub(crate) struct tcp_hdr {
     pub urp: u16,
 }
 
-pub(crate) const TCP_FIN: u8 = 0x01;
-pub(crate) const TCP_SYN: u8 = 0x02;
-pub(crate) const TCP_RST: u8 = 0x04;
-pub(crate) const TCP_PSH: u8 = 0x08;
-pub(crate) const TCP_ACK: u8 = 0x10;
-pub(crate) const TCP_URG: u8 = 0x20;
-pub(crate) const TCP_ECE: u8 = 0x40;
-pub(crate) const TCP_CWR: u8 = 0x80;
+pub const TCP_FIN: u8 = 0x01;
+pub const TCP_SYN: u8 = 0x02;
+pub const TCP_RST: u8 = 0x04;
+pub const TCP_PSH: u8 = 0x08;
+pub const TCP_ACK: u8 = 0x10;
+pub const TCP_URG: u8 = 0x20;
+pub const TCP_ECE: u8 = 0x40;
+pub const TCP_CWR: u8 = 0x80;
 
 impl tcp_hdr {
     pub fn init(&mut self) -> &mut Self {
@@ -157,40 +155,40 @@ impl udp_hdr {
     }
 }
 
-pub(crate) const ICMP_ECHOREPLY: u8 = 0;       /* Echo Reply */
-pub(crate) const ICMP_DEST_UNREACH: u8 = 3;    /* Destination Unreachable */
-pub(crate) const ICMP_SOURCE_QUENCH: u8 = 4;   /* Source Quench */
-pub(crate) const ICMP_REDIRECT: u8 = 5;        /* Redirect (change route) */
-pub(crate) const ICMP_ECHO: u8 = 8;            /* Echo Request */
-pub(crate) const ICMP_TIME_EXCEEDED: u8 = 11;  /* Time Exceeded */
-pub(crate) const ICMP_PARAMETERPROB: u8 = 12;  /* Parameter Problem */
-pub(crate) const ICMP_TIMESTAMP: u8 = 13;      /* Timestamp Request */
-pub(crate) const ICMP_TIMESTAMPREPLY: u8 = 14; /* Timestamp Reply */
-pub(crate) const ICMP_INFO_REQUEST: u8 = 15;   /* Information Request */
-pub(crate) const ICMP_INFO_REPLY: u8 = 16;     /* Information Reply */
-pub(crate) const ICMP_ADDRESS: u8 = 17;        /* Address Mask Request */
-pub(crate) const ICMP_ADDRESSREPLY: u8 = 18;   /* Address Mask Reply */
+pub const ICMP_ECHOREPLY: u8 = 0;       /* Echo Reply */
+pub const ICMP_DEST_UNREACH: u8 = 3;    /* Destination Unreachable */
+pub const ICMP_SOURCE_QUENCH: u8 = 4;   /* Source Quench */
+pub const ICMP_REDIRECT: u8 = 5;        /* Redirect (change route) */
+pub const ICMP_ECHO: u8 = 8;            /* Echo Request */
+pub const ICMP_TIME_EXCEEDED: u8 = 11;  /* Time Exceeded */
+pub const ICMP_PARAMETERPROB: u8 = 12;  /* Parameter Problem */
+pub const ICMP_TIMESTAMP: u8 = 13;      /* Timestamp Request */
+pub const ICMP_TIMESTAMPREPLY: u8 = 14; /* Timestamp Reply */
+pub const ICMP_INFO_REQUEST: u8 = 15;   /* Information Request */
+pub const ICMP_INFO_REPLY: u8 = 16;     /* Information Reply */
+pub const ICMP_ADDRESS: u8 = 17;        /* Address Mask Request */
+pub const ICMP_ADDRESSREPLY: u8 = 18;   /* Address Mask Reply */
 
 /* For ICMP_DEST_UNREACH */
-pub(crate) const ICMP_NET_UNREACH: u8 = 0;
-pub(crate) const ICMP_HOST_UNREACH: u8 = 1;
-pub(crate) const ICMP_PROT_UNREACH: u8 = 2;
-pub(crate) const ICMP_PORT_UNREACH: u8 = 3;
-pub(crate) const ICMP_FRAG_NEEDED: u8 = 4;
-pub(crate) const ICMP_SR_FAILED: u8 = 5;
-pub(crate) const ICMP_NET_UNKNOWN: u8 = 7;
-pub(crate) const ICMP_HOST_UNKNOWN: u8 = 8;
-pub(crate) const ICMP_NET_ANO: u8 = 9;
-pub(crate) const ICMP_HOST_ANO: u8 = 10;
-pub(crate) const ICMP_NET_UNR_TOS: u8 = 11;
-pub(crate) const ICMP_HOST_UNR_TOS: u8 = 12;
-pub(crate) const ICMP_PKT_FILTERED: u8 = 13;
-pub(crate) const ICMP_PREC_VIOLATION: u8 = 14;
-pub(crate) const ICMP_PREC_CUTOFF: u8 = 15;
+pub const ICMP_NET_UNREACH: u8 = 0;
+pub const ICMP_HOST_UNREACH: u8 = 1;
+pub const ICMP_PROT_UNREACH: u8 = 2;
+pub const ICMP_PORT_UNREACH: u8 = 3;
+pub const ICMP_FRAG_NEEDED: u8 = 4;
+pub const ICMP_SR_FAILED: u8 = 5;
+pub const ICMP_NET_UNKNOWN: u8 = 7;
+pub const ICMP_HOST_UNKNOWN: u8 = 8;
+pub const ICMP_NET_ANO: u8 = 9;
+pub const ICMP_HOST_ANO: u8 = 10;
+pub const ICMP_NET_UNR_TOS: u8 = 11;
+pub const ICMP_HOST_UNR_TOS: u8 = 12;
+pub const ICMP_PKT_FILTERED: u8 = 13;
+pub const ICMP_PREC_VIOLATION: u8 = 14;
+pub const ICMP_PREC_CUTOFF: u8 = 15;
 
 #[repr(C, packed(1))]
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct icmp_hdr {
+pub struct icmp_hdr {
     pub typ: u8,
     pub code: u8,
     pub csum: u16,
@@ -215,7 +213,7 @@ impl icmp_hdr {
 
 #[repr(C, packed(1))]
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct icmp_echo_hdr {
+pub struct icmp_echo_hdr {
     pub id: u16,
     pub seq: u16,
 }
@@ -232,9 +230,7 @@ impl icmp_echo_hdr {
     }
 }
 
-pub(crate) fn ip_csum(buf: &[u8]) -> u16 {
-    use std::convert::TryInto;
-
+pub fn ip_csum(buf: &[u8]) -> u16 {
     let mut sum: u32 = 0;
 
     let it = buf.chunks_exact(2);

@@ -6,13 +6,11 @@ use std::io::Write;
 use super::{Hdr, Packet};
 use super::{Serialize, AsBytes};
 
-#[allow(unused)]
-enum LinkType {
+pub enum LinkType {
     Null = 0,
     Ethernet = 1,
 }
 
-#[allow(unused)]
 #[derive(Debug)]
 #[repr(C)]
 struct pcap_hdr {
@@ -54,8 +52,9 @@ impl pcap_hdr {
     }
 }
 
+/// A [buffered file writer](std::io::BufWriter) for pcap files.
 #[derive(Debug)]
-pub(crate) struct PcapWriter {
+pub struct PcapWriter {
     wr: io::BufWriter<File>,
     cnt: usize,
     dbg: bool,
@@ -75,6 +74,7 @@ impl PcapWriter {
         Ok(ret)
     }
 
+    #[must_use]
     pub fn debug(mut self) -> Self {
         self.dbg = true;
         self

@@ -9,13 +9,14 @@ use std::fmt::Debug;
 
 /// Argument declarator
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ArgDecl {
+pub enum ArgDecl {
     Positional(ValType),
     Named(ValDef),
 }
 
+/// Defines a function or method for the resynth stdlib
 #[derive(Debug)]
-pub(crate) struct FuncDef {
+pub struct FuncDef {
     #[allow(unused)]
     pub name: &'static str,
     pub return_type: ValType,
@@ -32,9 +33,10 @@ impl PartialEq for FuncDef {
     }
 }
 
-pub(crate) type Module = phf::Map<&'static str, Symbol>;
+/// A module is a mapping between names and [Symbol]
+pub type Module = phf::Map<&'static str, Symbol>;
 
-pub(crate) trait Class {
+pub trait Class {
     fn symbols(&self) -> phf::Map<&'static str, Symbol>;
     fn class_name(&self) -> &'static str;
 }

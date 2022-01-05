@@ -7,7 +7,7 @@ use std::ops::Drop;
 use std::vec;
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct ArgVec {
+pub struct ArgVec {
     this: Option<ObjRef>,
     args: Vec<Val>,
     extra: Vec<Val>,
@@ -24,7 +24,7 @@ impl ArgVec {
 }
 
 #[derive(Debug)]
-pub(crate) struct Args {
+pub struct Args {
     this: Option<ObjRef>,
     it: vec::IntoIter<Val>,
     extra_args: Vec<Val>,
@@ -110,7 +110,7 @@ impl Drop for Args {
 }
 
 #[derive(Debug)]
-pub(crate) struct ArgExpr {
+pub struct ArgExpr {
     pub name: Option<String>,
     pub expr: Expr,
 }
@@ -125,7 +125,7 @@ impl ArgExpr {
 }
 
 #[derive(Debug)]
-pub(crate) struct ArgSpec {
+pub struct ArgSpec {
     pub name: Option<String>,
     pub val: Val,
 }

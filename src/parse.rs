@@ -8,20 +8,20 @@ use crate::loc::Loc;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
 #[derive(Debug)]
-pub(crate) struct ObjectRef {
+pub struct ObjectRef {
     pub loc: Loc,
     pub modules: Box<[String]>,
     pub components: Box<[String]>,
 }
 
 #[derive(Debug)]
-pub(crate) struct Call {
+pub struct Call {
     pub obj: ObjectRef,
     pub args: Vec<ArgExpr>
 }
 
 #[derive(Debug)]
-pub(crate) enum Expr {
+pub enum Expr {
     Nil,
     Literal(Loc, Val),
     ObjectRef(ObjectRef), // ObjectRef contains loc
@@ -35,20 +35,21 @@ impl Default for Expr {
 }
 
 #[derive(Debug)]
-pub(crate) struct Import {
+pub struct Import {
     pub loc: Loc,
     pub module: String,
 }
 
 #[derive(Debug)]
-pub(crate) struct Assign {
+pub struct Assign {
     pub loc: Loc,
     pub target: String,
     pub rvalue: Expr,
 }
 
+/// A complete statement of the resynth language
 #[derive(Debug)]
-pub(crate) enum Stmt {
+pub enum Stmt {
     //Nop,
     Import(Import),
     Assign(Assign),
@@ -106,6 +107,12 @@ enum State {
     ReduceStmt,
 
     Accept,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        State::Initial
+    }
 }
 
 #[derive(Debug)]
@@ -279,7 +286,13 @@ impl From<Node> for Stmt {
     }
 }
 
-pub(crate) struct Parser {
+/// A hand-written LR-parser which [takes a token at a time](Parser::feed) and whenever a complete
+/// [statement](Stmt) is encountered, the [statement](Stmt) is pushed in to a [results
+/// vector](Parser::get_results) which can later be retreived with [Parser::get_results]. Each type
+/// of statement which is produced contains a [line number and column number](Loc) which allows any
+/// error mesages to locate themselves within the source file.
+#[derive(Default)]
+pub struct Parser {
     state: State,
     stack: Vec<Node>,
 
@@ -294,14 +307,6 @@ enum Action {
 }
 
 impl Parser {
-    pub fn new() -> Parser {
-        Parser {
-            state: State::Initial,
-            stack: Vec::new(),
-            stmts: Vec::new(),
-        }
-    }
-
     fn push(&mut self, item: Node) {
         self.stack.push(item);
     }

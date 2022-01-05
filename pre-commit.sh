@@ -6,3 +6,4 @@ exec 1>&2
 
 cargo clippy
 cargo test
+cargo doc

@@ -11,8 +11,9 @@ use crate::traits::Dispatchable;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::rc::Rc;
 
+/// All resynth values must be one of the following types
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum ValType {
+pub enum ValType {
     Void,
     Ip4,
     Sock4,
@@ -25,21 +26,28 @@ pub(crate) enum ValType {
     PktGen,
 }
 
-pub(crate) trait Typed {
+/// Both [Val] and [ValDef] have types which corrsepond to each other. In fact [Val] is a subset of
+/// the types allowed in [Val] since a [ValDef] must support static or constant epressions.
+pub trait Typed {
+    // Return the corresponding [ValType] for this value
     fn val_type(&self) -> ValType;
 
+    // Check if the value is of the given [ValType]
     fn is_type(&self, typ: ValType) -> bool {
         self.val_type() == typ
     }
 
+    // Check if the value is nil, by testing if it is of type [ValType::Void]
     fn is_nil(&self) -> bool {
         self.is_type(ValType::Void)
     }
 }
 
+/// Represents a static or const version of [Val]. This is used when defining constants in the
+/// stdlib, or when defining default arguments for functions.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[allow(unused)]
-pub(crate) enum ValDef {
+pub enum ValDef {
     Nil,
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
@@ -84,9 +92,10 @@ impl<T> From<&'static T> for ValDef where T: AsRef<[u8]> + ? Sized {
     }
 }
 
+/// Represents a live value in the interpreter, for example the result of evaluating an expression.
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Val {
+pub enum Val {
     Nil,
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
