@@ -4,7 +4,7 @@ use crate::val::{ValType, Val};
 use crate::str::Buf;
 use crate::libapi::{FuncDef, ArgDecl, Class};
 use crate::sym::Symbol;
-use crate::ezpkt::IcmpFlow;
+use ezpkt::IcmpFlow;
 use crate::func_def;
 
 const ICMP_ECHO: FuncDef = func_def!(

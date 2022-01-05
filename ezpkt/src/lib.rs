@@ -1,5 +1,3 @@
-use super::pkt;
-
 mod tcp4;
 mod udp4;
 mod icmp4;

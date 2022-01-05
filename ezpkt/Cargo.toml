@@ -1,0 +1,28 @@
+[package]
+edition = "2018"
+name = "ezpkt"
+version = "0.1.2"
+description = "A packet construction library"
+authors = ["Gianni Tedesco <gianni@scaramanga.co.uk>"]
+license = "GPL-3.0-only"
+homepage = "https://github.com/giannitedesco/resynth"
+repository = "https://github.com/giannitedesco/resynth"
+readme = "README.md"
+keywords = [
+ "packets",
+ "traffic-generation",
+ "networking",
+ "pcap",
+]
+categories = [
+ "network-programming",
+]
+include = [
+ "src/**/*.rs",
+ "Cargo.toml",
+ "README.md",
+ "LICENSE.txt",
+]
+
+[dependencies]
+pkt = { path = "../pkt", version = "0.1.2" }

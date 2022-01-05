@@ -1,15 +1,16 @@
 use phf::{phf_map, phf_ordered_map};
 
-use crate::pkt::Packet;
-use crate::ezpkt::UdpFlow;
+use pkt::dns::{opcode, rcode, rrtype, class, dns_hdr, DnsFlags, DnsName};
+use pkt::AsBytes;
+use pkt::Packet;
+
+use ezpkt::UdpFlow;
 
 use crate::val::{ValType, Val, ValDef};
 use crate::libapi::{FuncDef, ArgDecl};
 use crate::sym::Symbol;
 use crate::str::Buf;
 use crate::func_def;
-use crate::pkt::dns::{opcode, rcode, rrtype, class, dns_hdr, DnsFlags, DnsName};
-use crate::pkt::AsBytes;
 
 use std::net::{Ipv4Addr, SocketAddrV4};
 

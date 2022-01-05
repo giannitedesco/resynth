@@ -1,8 +1,8 @@
 use std::net::Ipv4Addr;
 
-use super::pkt::eth::eth_hdr;
-use super::pkt::ipv4::{ip_hdr, icmp_hdr, icmp_echo_hdr, ip_csum, ICMP_ECHOREPLY, ICMP_ECHO};
-use super::pkt::{Packet, Hdr};
+use pkt::eth::eth_hdr;
+use pkt::ipv4::{ip_hdr, icmp_hdr, icmp_echo_hdr, ip_csum, ICMP_ECHOREPLY, ICMP_ECHO};
+use pkt::{Packet, Hdr};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct IcmpFlow {

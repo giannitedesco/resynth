@@ -4,7 +4,7 @@ use crate::val::{ValType, Val};
 use crate::str::Buf;
 use crate::libapi::{FuncDef, ArgDecl, Class};
 use crate::sym::Symbol;
-use crate::ezpkt::TcpFlow;
+use ezpkt::TcpFlow;
 use crate::func_def;
 
 const TCP_OPEN: FuncDef = func_def!(

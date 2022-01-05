@@ -1,8 +1,8 @@
 use std::net::SocketAddrV4;
 
-use super::pkt::eth::eth_hdr;
-use super::pkt::ipv4::{ip_hdr, udp_hdr};
-use super::pkt::{Packet, Hdr};
+use pkt::eth::eth_hdr;
+use pkt::ipv4::{ip_hdr, udp_hdr};
+use pkt::{Packet, Hdr};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct UdpFlow {

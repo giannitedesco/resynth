@@ -4,7 +4,7 @@ use crate::val::{ValType, Val};
 use crate::str::Buf;
 use crate::libapi::{FuncDef, ArgDecl, Class};
 use crate::sym::Symbol;
-use crate::ezpkt::UdpFlow;
+use ezpkt::UdpFlow;
 use crate::func_def;
 
 const UDP_CL_DGRAM: FuncDef = func_def!(

@@ -12,9 +12,6 @@ pub(self) use util::Serialize;
 use std::fmt;
 use std::fmt::Write;
 
-use crate::val::Val;
-use crate::str::Buf;
-
 #[derive(Debug)]
 pub struct Hdr<T> {
     off: u16,
@@ -256,20 +253,8 @@ impl Packet {
     }
 }
 
-impl From<Packet> for Buf {
-    fn from(pkt: Packet) -> Self {
-        Self::from(pkt.buf)
-    }
-}
-
-impl From<Packet> for Val {
-    fn from(pkt: Packet) -> Self {
-        Self::Pkt(pkt.into())
-    }
-}
-
-impl From<Vec<Packet>> for Val {
-    fn from(pkts: Vec<Packet>) -> Self {
-        Self::PktGen(pkts.into())
+impl AsRef<[u8]> for Packet {
+    fn as_ref(&self) -> &[u8] {
+        self.buf.as_ref()
     }
 }

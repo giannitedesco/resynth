@@ -7,14 +7,14 @@
 //!
 //! ## Structure of the Codebase
 //! The codebase is split in to several major components
-//! - [crate::pkt] A low-level packet generation library which mostly contains structs and consts
+//! - [pkt] A low-level packet generation library which mostly contains structs and consts
 //! to do with various network protocols.
-//! - [crate::ezpkt] A more high-level packet generation library which provides abstractions around
+//! - [ezpkt] A more high-level packet generation library which provides abstractions around
 //! concepts such as flows
 //! - [crate] The language compiler and interpreter itself is the root of the crate. In future we
 //! will probably move in to its own module at some point in future.
 //! - [crate::stdlib] Contains the resynth standard library which is mostly glue to allow resynth
-//! programs to use the functionality in [crate::pkt] and [crate::ezpkt] 
+//! programs to use the functionality in [pkt] and [ezpkt]
 //!
 //! ## Compiler Phases
 //! 1. [crate::process_file()] is the basic wrapper function which handles all phases of the
@@ -24,12 +24,9 @@
 //!    [statement](Stmt) is encountered, the [statement](Stmt) is pushed in to a
 //!    [results vector](Parser::get_results) which can later be [retreived](Parser::get_results)
 //! 4. [Program] maintains the execution state of any given program. It takes one statement at a
-//!    time, and updates the program state based on that. If the program has a [PcapWriter]
+//!    time, and updates the program state based on that. If the program has a [pkt::PcapWriter]
 //!    attached to it, then any generated packets will be written in to the corresponding pcap file
 //!    as they are generated.
-
-pub mod pkt;
-pub mod ezpkt;
 
 #[macro_use]
 mod macros;
@@ -51,12 +48,13 @@ pub mod stdlib;
 #[cfg(test)]
 mod test;
 
+use pkt::PcapWriter;
+
 pub use err::Error;
 pub use loc::Loc;
 pub use lex::{Lexer, EOF, Token};
 pub use parse::{Parser, Stmt};
 pub use program::Program;
-pub use pkt::PcapWriter;
 
 use std::path::{Path, PathBuf};
 use std::fs;

@@ -3,10 +3,11 @@ use crate::sym::Symbol;
 use crate::lex::{TokType, Token};
 use crate::err::Error;
 use crate::err::Error::{NameError, TypeError, ParseError};
-use crate::pkt::Packet;
 use crate::str::Buf;
 use crate::object::{Obj, ObjRef};
 use crate::traits::Dispatchable;
+
+use pkt::Packet;
 
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::rc::Rc;
@@ -266,4 +267,22 @@ impl Val {
             }
 		}
 	}
+}
+
+impl From<Packet> for Buf {
+    fn from(pkt: Packet) -> Self {
+        Self::from(pkt.as_ref())
+    }
+}
+
+impl From<Packet> for Val {
+    fn from(pkt: Packet) -> Self {
+        Self::Pkt(pkt.into())
+    }
+}
+
+impl From<Vec<Packet>> for Val {
+    fn from(pkts: Vec<Packet>) -> Self {
+        Self::PktGen(pkts.into())
+    }
 }

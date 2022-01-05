@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "resynth"
-version = "0.1.1"
+version = "0.1.2"
 description = "A packet synthesis language"
 authors = ["Gianni Tedesco <gianni@scaramanga.co.uk>"]
 license = "GPL-3.0-only"
@@ -21,7 +21,7 @@ categories = [
  "network-programming",
 ]
 include = [
- "**/*.rs",
+ "src/**/*.rs",
  "Cargo.toml",
  "README.md",
  "LICENSE.txt",
@@ -39,7 +39,11 @@ codegen-units = 8
 [profile.bench]
 lto = true
 
+[workspace]
+
 [dependencies]
+pkt = { path = "pkt", version = "0.1.1" }
+ezpkt = { path = "ezpkt", version = "0.1.1" }
 lazy-regex = "2.2.2"
 regex = "1.5.4"
 phf = { version = "0.10.1", features = ["macros"] }

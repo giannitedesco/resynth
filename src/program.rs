@@ -6,9 +6,10 @@ use crate::object::ObjRef;
 use crate::args::{ArgExpr, ArgSpec};
 use crate::libapi::{FuncDef, Module};
 use crate::sym::Symbol;
-use crate::pkt::PcapWriter;
 use crate::stdlib::toplevel_module;
 use crate::loc::Loc;
+
+use pkt::PcapWriter;
 
 use std::rc::Rc;
 use std::collections::HashMap;
