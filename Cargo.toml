@@ -1,14 +1,16 @@
 [package]
+edition = "2018"
 name = "resynth"
 version = "0.1.0"
+description = "A packet synthesis language"
 authors = ["Gianni Tedesco <gianni@scaramanga.co.uk>"]
-edition = "2018"
 license = "GPLv3"
 homepage = "https://github.com/giannitedesco/resynth"
 repository = "https://github.com/giannitedesco/resynth"
 readme = "README.md"
 keywords = [
  "packets",
+ "packet-synthesis",
  "traffic-generation",
  "networking",
  "pcap",
