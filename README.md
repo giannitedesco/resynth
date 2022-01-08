@@ -1,5 +1,10 @@
 # resynth: A Network Packet Synthesis Language
 
+<div align="center">
+[![Latest Version](https://img.shields.io/crates/v/resynth)](https://crates.io/crates/resynth/)
+[![Documentation](https://img.shields.io/docsrs/resynth)](https://docs.rs/resynth/latest/resynth/)
+</div>
+
 ## About
 Resynth is a packet synthesis language. It produces network traffic (in the
 form of pcap files) from textual descriptions of traffic. It enables
