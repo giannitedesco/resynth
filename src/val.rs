@@ -87,6 +87,26 @@ impl From<u64> for ValDef {
     }
 }
 
+/*
+impl From<u32> for ValDef {
+    fn from(val: u32) -> Self {
+        Self::U64(val as u64)
+    }
+}
+
+impl From<u16> for ValDef {
+    fn from(val: u16) -> Self {
+        Self::U64(val as u64)
+    }
+}
+
+impl From<u8> for ValDef {
+    fn from(val: u8) -> Self {
+        Self::U64(val as u64)
+    }
+}
+*/
+
 impl<T> From<&'static T> for ValDef where T: AsRef<[u8]> + ? Sized {
     fn from(s: &'static T) -> Self {
         Self::Str(s.as_ref())
@@ -147,10 +167,55 @@ impl From<u64> for Val {
     }
 }
 
+impl From<u32> for Val {
+    fn from(v: u32) -> Self {
+        Val::U64(v as u64)
+    }
+}
+
+impl From<u16> for Val {
+    fn from(v: u16) -> Self {
+        Val::U64(v as u64)
+    }
+}
+
+impl From<u8> for Val {
+    fn from(v: u8) -> Self {
+        Val::U64(v as u64)
+    }
+}
+
 impl From<Val> for u64 {
     fn from(v: Val) -> Self {
         match v {
             Val::U64(u) => u,
+            _ => unreachable!()
+        }
+    }
+}
+
+impl From<Val> for u32 {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::U64(u) => u as u32,
+            _ => unreachable!()
+        }
+    }
+}
+
+impl From<Val> for u16 {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::U64(u) => u as u16,
+            _ => unreachable!()
+        }
+    }
+}
+
+impl From<Val> for u8 {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::U64(u) => u as u8,
             _ => unreachable!()
         }
     }

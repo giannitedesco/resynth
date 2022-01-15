@@ -1,0 +1,97 @@
+Value,Extension Name,TLS 1.3,DTLS-Only,Recommended,Reference
+0,server_name,"CH, EE",N,Y,[RFC6066]
+1,max_fragment_length,"CH, EE",N,N,[RFC6066][RFC8449]
+2,client_certificate_url,-,N,Y,[RFC6066]
+3,trusted_ca_keys,-,N,Y,[RFC6066]
+4,truncated_hmac,-,N,N,[RFC6066][IESG Action 2018-08-16]
+5,status_request,"CH, CR, CT",N,Y,[RFC6066]
+6,user_mapping,-,N,Y,[RFC4681]
+7,client_authz,-,N,N,[RFC5878]
+8,server_authz,-,N,N,[RFC5878]
+9,cert_type,-,N,N,[RFC6091]
+10,"supported_groups (renamed from ""elliptic_curves"")","CH, EE",N,Y,[RFC8422][RFC7919]
+11,ec_point_formats,-,N,Y,[RFC8422]
+12,srp,-,N,N,[RFC5054]
+13,signature_algorithms,"CH, CR",N,Y,[RFC8446]
+14,use_srtp,"CH, EE",N,Y,[RFC5764]
+15,heartbeat,"CH, EE",N,Y,[RFC6520]
+16,application_layer_protocol_negotiation,"CH, EE",N,Y,[RFC7301]
+17,status_request_v2,-,N,Y,[RFC6961]
+18,signed_certificate_timestamp,"CH, CR, CT",N,N,[RFC6962]
+19,client_certificate_type,"CH, EE",N,Y,[RFC7250]
+20,server_certificate_type,"CH, EE",N,Y,[RFC7250]
+21,padding,CH,N,Y,[RFC7685]
+22,encrypt_then_mac,-,N,Y,[RFC7366]
+23,extended_master_secret,-,N,Y,[RFC7627]
+24,token_binding,-,N,Y,[RFC8472]
+25,cached_info,-,N,Y,[RFC7924]
+26,tls_lts,-,N,N,[draft-gutmann-tls-lts]
+27,compress_certificate,"CH, CR",N,Y,[RFC8879]
+28,record_size_limit,"CH, EE",N,Y,[RFC8449]
+29,pwd_protect,CH,N,N,[RFC8492]
+30,pwd_clear,CH,N,N,[RFC8492]
+31,password_salt,"CH, SH, HRR",N,N,[RFC8492]
+32,ticket_pinning,"CH, EE",N,N,[RFC8672]
+33,tls_cert_with_extern_psk,"CH, SH",N,N,[RFC8773]
+34,delegated_credentials,"CH, CR, CT",N,N,[draft-ietf-tls-subcerts]
+35,"session_ticket (renamed from ""SessionTicket TLS"")",-,N,Y,[RFC5077][RFC8447]
+36,TLMSP,-,N,N,[ETSI TS 103 523-2]
+37,TLMSP_proxying,-,N,N,[ETSI TS 103 523-2]
+38,TLMSP_delegate,-,N,N,[ETSI TS 103 523-2]
+39,supported_ekt_ciphers,"CH, EE",N,Y,[RFC8870]
+40,Reserved,,,,[tls-reg-review mailing list]
+41,pre_shared_key,"CH, SH",N,Y,[RFC8446]
+42,early_data,"CH, EE, NST",N,Y,[RFC8446]
+43,supported_versions,"CH, SH, HRR",N,Y,[RFC8446]
+44,cookie,"CH, HRR",N,Y,[RFC8446]
+45,psk_key_exchange_modes,CH,N,Y,[RFC8446]
+46,Reserved,,,,[tls-reg-review mailing list]
+47,certificate_authorities,"CH, CR",N,Y,[RFC8446]
+48,oid_filters,CR,N,Y,[RFC8446]
+49,post_handshake_auth,CH,N,Y,[RFC8446]
+50,signature_algorithms_cert,"CH, CR",N,Y,[RFC8446]
+51,key_share,"CH, SH, HRR",N,Y,[RFC8446]
+52,transparency_info,"CH, CR, CT",N,Y,[RFC9162]
+53,connection_id (deprecated),-,Y,N,[RFC-ietf-tls-dtls-connection-id-13]
+54,connection_id,"CH, SH",Y,N,[RFC-ietf-tls-dtls-connection-id-13]
+55,external_id_hash,"CH, EE",N,Y,[RFC8844]
+56,external_session_id,"CH, EE",N,Y,[RFC8844]
+57,quic_transport_parameters,"CH, EE",N,Y,[RFC9001]
+58,ticket_request,"CH, EE",N,Y,[RFC-ietf-tls-ticketrequests-07]
+59,dnssec_chain,CH,N,N,[RFC9102]
+60-2569,Unassigned,,,,
+2570,Reserved,"CH, CR, NST",N,N,[RFC8701]
+2571-6681,Unassigned,,,,
+6682,Reserved,"CH, CR, NST",N,N,[RFC8701]
+6683-10793,Unassigned,,,,
+10794,Reserved,"CH, CR, NST",N,N,[RFC8701]
+10795-14905,Unassigned,,,,
+14906,Reserved,"CH, CR, NST",N,N,[RFC8701]
+14907-19017,Unassigned,,,,
+19018,Reserved,"CH, CR, NST",N,N,[RFC8701]
+19019-23129,Unassigned,,,,
+23130,Reserved,"CH, CR, NST",N,N,[RFC8701]
+23131-27241,Unassigned,,,,
+27242,Reserved,"CH, CR, NST",N,N,[RFC8701]
+27243-31353,Unassigned,,,,
+31354,Reserved,"CH, CR, NST",N,N,[RFC8701]
+31355-35465,Unassigned,,,,
+35466,Reserved,"CH, CR, NST",N,N,[RFC8701]
+35467-39577,Unassigned,,,,
+39578,Reserved,"CH, CR, NST",N,N,[RFC8701]
+39579-43689,Unassigned,,,,
+43690,Reserved,"CH, CR, NST",N,N,[RFC8701]
+43691-47801,Unassigned,,,,
+47802,Reserved,"CH, CR, NST",N,N,[RFC8701]
+47803-51913,Unassigned,,,,
+51914,Reserved,"CH, CR, NST",N,N,[RFC8701]
+51915-56025,Unassigned,,,,
+56026,Reserved,"CH, CR, NST",N,N,[RFC8701]
+56027-60137,Unassigned,,,,
+60138,Reserved,"CH, CR, NST",N,N,[RFC8701]
+60139-64249,Unassigned,,,,
+64250,Reserved,"CH, CR, NST",N,N,[RFC8701]
+64251-65279,Unassigned,,,,
+65280,Reserved for Private Use,,,,[RFC8446]
+65281,renegotiation_info,-,N,Y,[RFC5746]
+65282-65535,Reserved for Private Use,,,,[RFC8446]

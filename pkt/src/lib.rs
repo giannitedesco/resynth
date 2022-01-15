@@ -1,6 +1,7 @@
 pub mod eth;
 pub mod ipv4;
 pub mod dns;
+pub mod tls;
 
 mod pcap;
 pub use pcap::{PcapWriter, LinkType};
