@@ -54,6 +54,15 @@ You can compile this to a pcap file with the command `resynth http.rsyn` - a
 file called `http.pcap` will be created.
 
 
+## Currently Supported Protocols
+Not only can you write arbitrary TCP, UDP and ICMP packets but there are also
+language modules for crafting packets for the following protocols:
+- DNS (fairly mature, but could do with adding support for more record types)
+- TLS (early stages, still need support for SSL2 and common extensions,
+  although you can craft arbitrary TLS frames)
+- IO packets can be crafted which include the contents of external files
+
+
 ## Why not use $OTHER\_TOOL?
 - Scapy and python-based packet generation frameworks: they are incredibly slow
   for my intended use-cases (fuzz-testing, live high-speed packet-generation),
@@ -82,10 +91,11 @@ The language is pretty bare-bones right now. But I plan to add:
 - An operator for concatenating buffers
 
 I plan to add support for the following protocols to the standard library:
-- TLS
-- HTTP
-- ARP
-- SMB2
-- DCE-RPC
-- More exotic TCP/IP interactions
+- Support for PMTU and segmentization of TCP messages
 - Decent support for generating IP fragments
+- VXLAN
+- More direct support for HTTP
+- SMB2
+- ARP
+- DCE-RPC
+- More exotic TCP/IP interactions and better ICMP support
