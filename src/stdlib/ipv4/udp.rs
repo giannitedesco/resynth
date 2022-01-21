@@ -8,7 +8,7 @@ use ezpkt::UdpFlow;
 use crate::func_def;
 
 const UDP_CL_DGRAM: FuncDef = func_def!(
-    "ipv4::tcp::flow.client_dgram";
+    "ipv4::udp::flow.client_dgram";
     ValType::Pkt;
 
     =>
@@ -25,7 +25,7 @@ const UDP_CL_DGRAM: FuncDef = func_def!(
 );
 
 const UDP_SV_DGRAM: FuncDef = func_def!(
-    "ipv4::tcp::flow.server_dgram";
+    "ipv4::udp::flow.server_dgram";
     ValType::Pkt;
 
     =>

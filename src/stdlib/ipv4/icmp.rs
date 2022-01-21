@@ -8,7 +8,7 @@ use ezpkt::IcmpFlow;
 use crate::func_def;
 
 const ICMP_ECHO: FuncDef = func_def!(
-    "ipv4::tcp::flow.echo";
+    "ipv4::icmp::flow.echo";
     ValType::Pkt;
     
     "payload" => ValType::Str,
@@ -26,7 +26,7 @@ const ICMP_ECHO: FuncDef = func_def!(
 );
 
 const ICMP_ECHO_REPLY: FuncDef = func_def!(
-    "ipv4::tcp::flow.echo_reply";
+    "ipv4::icmp::flow.echo_reply";
     ValType::Pkt;
 
     "payload" => ValType::Str,
