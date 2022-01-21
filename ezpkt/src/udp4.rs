@@ -10,7 +10,7 @@ pub struct UdpFlow {
     sv: SocketAddrV4,
 }
 
-const UDP_DRGRAM_OVERHEAD: usize =
+const UDP_DGRAM_OVERHEAD: usize =
     std::mem::size_of::<eth_hdr>()
     + std::mem::size_of::<ip_hdr>()
     + std::mem::size_of::<udp_hdr>();
@@ -26,7 +26,7 @@ pub struct UdpDgram {
 
 impl UdpDgram {
     fn new(src: SocketAddrV4, dst: SocketAddrV4) -> Self {
-        let mut pkt = Packet::with_capacity(UDP_DRGRAM_OVERHEAD);
+        let mut pkt = Packet::with_capacity(UDP_DGRAM_OVERHEAD);
 
         let eth: Hdr<eth_hdr> = pkt.push_hdr();
         pkt.get_mut_hdr(&eth)

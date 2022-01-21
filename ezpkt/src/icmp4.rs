@@ -13,7 +13,7 @@ pub struct IcmpFlow {
     pong_seq: u16,
 }
 
-const ICMP_DRGRAM_OVERHEAD: usize =
+const ICMP_DGRAM_OVERHEAD: usize =
     std::mem::size_of::<eth_hdr>()
     + std::mem::size_of::<ip_hdr>()
     + std::mem::size_of::<icmp_echo_hdr>()
@@ -30,7 +30,7 @@ pub struct IcmpDgram {
 
 impl IcmpDgram {
     fn new(src: Ipv4Addr, dst: Ipv4Addr) -> Self {
-        let mut pkt = Packet::with_capacity(ICMP_DRGRAM_OVERHEAD);
+        let mut pkt = Packet::with_capacity(ICMP_DGRAM_OVERHEAD);
 
         let eth: Hdr<eth_hdr> = pkt.push_hdr();
         pkt.get_mut_hdr(&eth)
