@@ -10,13 +10,14 @@ digraph {
 	 * filled nodes indicate pushing a state transition to the stack
 	 * magenta edges represent popping a state from the stack and transitioning to it
 	 */
-	graph [rankdir=LR]
-	node [shape=rectangle]
-	edge [color=blue]
+	graph [rankdir=LR];
+	node [shape=rectangle];
+	edge [color=blue];
 
 	arg_val [style=filled];
 	expr_stmt [style=filled];
 	expr_rvalue [style=filled];
+	slash [style=filled];
 
 	initial [shape="circle"];
 	accept [shape="doublecircle"];
@@ -32,7 +33,7 @@ digraph {
 
 	assign -> expr_rvalue [label="discard\n\"=\""];
 
-	reduce_import -> reduce_stmt [color=red]
+	reduce_import -> reduce_stmt [color=red];
 	reduce_import [label="reduce\nimport" shape=box3d];
 
 	// ref
@@ -43,14 +44,14 @@ digraph {
 	ref_component -> reduce_ref_call [label="discard\n\"(\""];
 	ref_component -> reduce_ref_naked [label="*" color=green];
 
-	reduce_object -> ref_object [color=red]
+	reduce_object -> ref_object [color=red];
 	reduce_object [label="reduce\nobject" shape=box3d];
 
-	reduce_ref_call -> expr_arg [color=red]
+	reduce_ref_call -> expr_arg [color=red];
 	reduce_ref_call [label="reduce\nref\nnew arglist" shape=box3d];
 
 
-	reduce_module -> ref_module [color=red]
+	reduce_module -> ref_module [color=red];
 	reduce_module [label="reduce\nmodule" shape=box3d];
 
 	ref_module -> ref_component [label="shift\nIDENTIFIER"];
@@ -77,36 +78,40 @@ digraph {
 
 	arg_val -> reduce_call [label="discard\n\")\""];
 
-	expr_stmt -> reduce_literal_expr [label="shift\nSTRING"];
-	expr_stmt -> reduce_literal_expr [label="shift\nINTEGER"];
-	expr_stmt -> reduce_literal_expr [label="shift\nBOOL"];
-	expr_stmt -> ipv4 [label="shift\nIPV4"];
-	expr_stmt -> ref_component [label="shift\nPathBuilder\nIDENTIFIER"];
+	expr_stmt -> expr [color=red];
+	expr_rvalue -> expr [color=red];
 
-	expr_rvalue -> reduce_literal_expr [label="shift\nSTRING"];
-	expr_rvalue -> reduce_literal_expr [label="shift\nINTEGER"];
-	expr_rvalue -> reduce_literal_expr [label="shift\nBOOL"];
-	expr_rvalue -> ipv4 [label="shift\nIPV4"];
-	expr_rvalue -> ref_component [label="shift\nPathBuilder\nIDENTIFIER"];
+	expr -> reduce_literal_expr [label="shift\nSTRING"];
+	expr -> reduce_literal_expr [label="shift\nINTEGER"];
+	expr -> reduce_literal_expr [label="shift\nBOOL"];
+	expr -> ipv4 [label="shift\nIPV4"];
+	expr -> ref_component [label="shift\nPathBuilder\nIDENTIFIER"];
 
-	reduce_arg -> arg_next [color=red]
+	reduce_arg -> arg_next [color=red];
 	reduce_arg [label="reduce\narg" shape=box3d];
 
-	reduce_literal_expr -> reduce_expr [color=red];
+	reduce_bop -> reduce_expr [color=red];
+	reduce_bop [label="reduce\nbop" shape=box3d];
+
+	reduce_literal_expr -> slash [color=red];
 	reduce_literal_expr [label="reduce\nliteral_expr" shape=box3d];
 
 	reduce_ref_naked -> reduce_ref_expr [color=red];
 	reduce_ref_naked [label="reduce\nref" shape=box3d];
 
-	reduce_ref_expr -> reduce_expr [color=red];
+	reduce_ref_expr -> slash [color=red];
 	reduce_ref_expr [label="reduce\nref_expr" shape=box3d];
 
-	reduce_call_expr -> reduce_expr [color=red];
+	reduce_call_expr -> slash [color=red];
 	reduce_call_expr [label="reduce\ncall_expr" shape=box3d];
 
-	reduce_expr -> reduce_arg [color=magenta]
-	reduce_expr -> expr_stmt_end [color=magenta]
-	reduce_expr -> assign_stmt_end [color=magenta]
+	slash -> expr [label="shift\n\"/\""];
+	slash -> reduce_expr [label="*" color=green];
+
+	reduce_expr -> reduce_arg [color=magenta];
+	reduce_expr -> reduce_bop [color=magenta];
+	reduce_expr -> expr_stmt_end [color=magenta];
+	reduce_expr -> assign_stmt_end [color=magenta];
 	reduce_expr [label="reduce\nexpr" shape=box3d];
 
 	ipv4 -> ipv4_colon [label="discard\n\":\""];
@@ -114,25 +119,25 @@ digraph {
 
 	ipv4_colon -> reduce_sockaddr [label="shift\nINTEGER"];
 
-	reduce_sockaddr -> reduce_literal_expr [color=red]
+	reduce_sockaddr -> reduce_literal_expr [color=red];
 	reduce_sockaddr [label="reduce\nsockaddr" shape=box3d];
 
-	reduce_call -> reduce_call_expr [color=red]
+	reduce_call -> reduce_call_expr [color=red];
 	reduce_call [label="reduce\ncall" shape=box3d];
 
 	expr_stmt_end -> reduce_expr_stmt [label="shift\n\";\""];
 
 	assign_stmt_end -> reduce_assign [label="shift\n\";\""];
 
-	reduce_assign -> reduce_assign_stmt [color=red]
+	reduce_assign -> reduce_assign_stmt [color=red];
 	reduce_assign [label="reduce\nassign" shape=box3d];
 
-	reduce_expr_stmt -> reduce_stmt [color=red]
+	reduce_expr_stmt -> reduce_stmt [color=red];
 	reduce_expr_stmt [label="reduce\nexpr_stmt" shape=box3d];
 
-	reduce_assign_stmt -> reduce_stmt [color=red]
+	reduce_assign_stmt -> reduce_stmt [color=red];
 	reduce_assign_stmt [label="reduce\nassign_stmt" shape=box3d];
 
-	reduce_stmt -> accept [color=red]
+	reduce_stmt -> accept [color=red];
 	reduce_stmt [label="reduce\nstmt" shape=box3d];
 }

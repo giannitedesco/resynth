@@ -33,6 +33,8 @@ static LEX_RE: Lazy<Regex> = lazy_regex!("^\
     |\
     (?P<comma>,)\
     |\
+    (?P<slash>/)\
+    |\
     (?P<import_keyword>\\bimport\\b)\
     |\
     (?P<let_keyword>\\blet\\b)\
@@ -71,6 +73,7 @@ pub enum TokType {
     SemiColon,
     Equals,
     Comma,
+    Slash,
 
     ImportKeyword,
     LetKeyword,
@@ -102,6 +105,7 @@ impl TokType {
             TokType::SemiColon,
             TokType::Equals,
             TokType::Comma,
+            TokType::Slash,
 
             TokType::ImportKeyword,
             TokType::LetKeyword,

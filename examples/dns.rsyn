@@ -1,9 +1,13 @@
 import ipv4;
 import dns;
 
+let client = 192.168.238.112;
+let server = 142.250.207.36;
+let google = 8.8.8.8;
+
 let dns = ipv4::udp::flow(
-  192.168.238.112:13749,
-  8.8.8.8:53,
+  client/13749,
+  google/53,
 );
 
 # There is a low-level DNS API which you can use to construct exact queries,
@@ -42,7 +46,7 @@ dns.server_dgram(
     ),
     dns::answer(
       aname: dns::name("www", "google", "com"),
-      data: 142.250.196.100,
+      data: server,
       atype: dns::type::A,
       aclass: dns::class::IN,
     ),
@@ -50,6 +54,4 @@ dns.server_dgram(
 
 # And then there is the high level API which you can use to quickly generate a
 # query/response pair to make it lool like our hosts are doing DNS lookups
-let client = 192.168.238.112;
-let server = 142.250.207.36;
-dns::host(client, "www.google.com", ns: 8.8.8.8, server);
+dns::host(client, "www.google.com", ns: google, server);

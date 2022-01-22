@@ -26,6 +26,9 @@ pub enum Expr {
     Literal(Loc, Val),
     ObjectRef(ObjectRef), // ObjectRef contains loc
     Call(Call), // Call contains obj which contains loc
+
+    /* Binary operators */
+    Slash(Box<Expr>, Box<Expr>),
 }
 
 impl Default for Expr {
@@ -85,6 +88,7 @@ enum State {
     ArgName,
     ArgVal,
     ExprStmt,
+    Expr,
     ExprRvalue,
 
     IPv4,
@@ -93,11 +97,13 @@ enum State {
     ReduceLiteralExpr,
     ReduceRefExpr,
     ReduceCallExpr,
+    Slash,
     ReduceExpr,
     ReduceSockAddr,
 
     ExprStmtEnd,
     AssignStmtEnd,
+    ReduceBop,
 
     ReduceAssign,
 
@@ -156,6 +162,8 @@ enum Node {
     Stmt(Stmt),
 
     Loc(Loc),
+
+    Slash,
 }
 
 impl From<Node> for Loc {
@@ -240,6 +248,16 @@ impl From<Node> for Expr {
         }
     }
 }
+
+impl From<Node> for Box<Expr> {
+    fn from(node: Node) -> Self {
+        match node {
+            Node::Expr(expr) => Box::new(expr),
+            _ => unreachable!()
+        }
+    }
+}
+
 
 impl From<Node> for PathBuilder {
     fn from(node: Node) -> Self {
@@ -382,6 +400,22 @@ impl Parser {
     fn reduce_call_expr(&mut self) {
         let call = self.pop();
         self.push(Node::Expr(Expr::Call(call.into())));
+    }
+
+    fn reduce_bop_expr(&mut self) {
+        let b = self.pop();
+        let op = self.pop();
+        let a = self.pop();
+
+        let expr = match op {
+            Node::Slash => Expr::Slash(
+                a.into(),
+                b.into(),
+            ),
+            _ => unreachable!(),
+        };
+
+        self.push(Node::Expr(expr));
     }
 
     fn reduce_arg(&mut self) {
@@ -634,8 +668,12 @@ impl Parser {
         }
     }
 
-    fn state_expr_stmt(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_expr_stmt(&mut self, _tok: Token) -> Result<Action, Error> {
         self.push_goto(State::ExprStmtEnd);
+        Ok(Action::Goto(State::Expr))
+    }
+
+    fn state_expr(&mut self, tok: Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::Identifier => {
                 self.push(Node::Path(PathBuilder::new(tok.loc())));
@@ -650,20 +688,9 @@ impl Parser {
         }
     }
 
-    fn state_expr_rvalue(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_expr_rvalue(&mut self, _tok: Token) -> Result<Action, Error> {
         self.push_goto(State::AssignStmtEnd);
-        match tok.tok_type() {
-            TokType::Identifier => {
-                self.push(Node::Path(PathBuilder::new(tok.loc())));
-                Ok(Action::Shift(State::RefComponent, Node::Component(tok.into())))
-            }
-            TokType::StringLiteral
-            | TokType::BooleanLiteral
-            | TokType::HexIntegerLiteral
-            | TokType::IntegerLiteral
-            | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
-            _ => Err(ParseError)
-        }
+        Ok(Action::Goto(State::Expr))
     }
 
     fn state_ipv4(&mut self, tok: Token) -> Result<Action, Error> {
@@ -690,23 +717,34 @@ impl Parser {
 
     fn state_reduce_literal_expr(&mut self, _tok: Token) -> Result<Action, Error> {
         self.reduce_literal_expr();
-        Ok(Action::Goto(State::ReduceExpr))
+        Ok(Action::Goto(State::Slash))
     }
 
     fn state_reduce_ref_expr(&mut self, _tok: Token) -> Result<Action, Error> {
         self.reduce_ref_expr();
-        Ok(Action::Goto(State::ReduceExpr))
+        Ok(Action::Goto(State::Slash))
     }
 
     fn state_reduce_call_expr(&mut self, _tok: Token) -> Result<Action, Error> {
         self.reduce_call_expr();
-        Ok(Action::Goto(State::ReduceExpr))
+        Ok(Action::Goto(State::Slash))
+    }
+
+    fn state_slash(&mut self, tok: Token) -> Result<Action, Error> {
+        Ok(match tok.tok_type() {
+            TokType::Slash => {
+                self.push(Node::Slash);
+                self.push_goto(State::ReduceBop);
+                Action::Discard(State::Expr)
+            },
+            _ => Action::Goto(State::ReduceExpr)
+        })
     }
 
     fn state_reduce_expr(&mut self, _tok: Token) -> Result<Action, Error> {
-        let a = self.pop();
+        let expr = self.pop();
         let st = self.pop();
-        self.push(a);
+        self.push(expr);
         Ok(Action::Goto(st.into()))
     }
 
@@ -735,6 +773,11 @@ impl Parser {
         }
     }
 
+    fn state_reduce_bop(&mut self, _tok: Token) -> Result<Action, Error> {
+        self.reduce_bop_expr();
+        Ok(Action::Goto(State::ReduceExpr))
+    }
+
     fn state_reduce_assign(&mut self, _tok: Token) -> Result<Action, Error> {
         self.reduce_assign();
         Ok(Action::Goto(State::ReduceAssignStmt))
@@ -756,7 +799,7 @@ impl Parser {
     }
 
     fn dispatch(&mut self, tok: Token) -> Result<Action, Error> {
-        // println!("{:<24} {:?} {:?}", format!("State::{:?}", self.state), tok.tok_type(), tok.optval());
+        //println!("{:<24} {:?} {:?}", format!("State::{:?}", self.state), tok.tok_type(), tok.optval());
         match self.state {
             State::Initial => self.state_initial(tok),
             State::Import => self.state_import(tok),
@@ -783,6 +826,7 @@ impl Parser {
             State::ArgName => self.state_arg_name(tok),
             State::ArgVal => self.state_arg_val(tok),
             State::ExprStmt => self.state_expr_stmt(tok),
+            State::Expr => self.state_expr(tok),
             State::ExprRvalue => self.state_expr_rvalue(tok),
 
             State::IPv4 => self.state_ipv4(tok),
@@ -791,11 +835,13 @@ impl Parser {
             State::ReduceLiteralExpr => self.state_reduce_literal_expr(tok),
             State::ReduceRefExpr => self.state_reduce_ref_expr(tok),
             State::ReduceCallExpr => self.state_reduce_call_expr(tok),
+            State::Slash => self.state_slash(tok),
             State::ReduceExpr => self.state_reduce_expr(tok),
             State::ReduceSockAddr => self.state_reduce_sockaddr(tok),
 
             State::ExprStmtEnd => self.state_expr_stmt_end(tok),
             State::AssignStmtEnd => self.state_assign_stmt_end(tok),
+            State::ReduceBop => self.state_reduce_bop(tok),
 
             State::ReduceAssign => self.state_reduce_assign(tok),
 

@@ -1,7 +1,7 @@
 use crate::parse::{ObjectRef, Call, Expr, Import, Assign, Stmt};
 use crate::err::Error;
 use crate::err::Error::{ImportError, NameError, TypeError, MultipleAssignError};
-use crate::val::{Val, Typed};
+use crate::val::{Val, Typed, ValType};
 use crate::object::ObjRef;
 use crate::args::{ArgExpr, ArgSpec};
 use crate::libapi::{FuncDef, Module};
@@ -13,6 +13,7 @@ use pkt::PcapWriter;
 
 use std::rc::Rc;
 use std::collections::HashMap;
+use std::net::SocketAddrV4;
 
 /// The interpreter and program-state
 pub struct Program<'a> {
@@ -220,6 +221,24 @@ impl<'a> Program<'a> {
             Expr::Call(call) => {
                 self.loc = call.obj.loc;
                 self.eval_call(call)?
+            },
+            Expr::Slash(a, b) => {
+                let a = self.eval(*a)?;
+                if !a.is_type(ValType::Ip4) {
+                    return Err(TypeError)
+                }
+
+                let a_loc = self.loc;
+
+                let b = self.eval(*b)?;
+                if !b.is_type(ValType::U64) {
+                    return Err(TypeError)
+                }
+
+                /* TODO: Perhaps use location of the operator? */
+                self.loc = a_loc;
+
+                Val::Sock4(SocketAddrV4::new(a.into(), b.into()))
             },
         })
     }

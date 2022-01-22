@@ -19,11 +19,14 @@ import ipv4;
 import dns;
 import text;
 
-dns::host(192.168.0.1, "www.scaramanga.co.uk", ns: 8.8.8.8, 109.107.38.8);
+let cl = 192.168.0.1;
+let sv = 109.197.38.8;
+
+dns::host(cl, "www.scaramanga.co.uk", ns: 8.8.8.8, sv);
 
 let http = ipv4::tcp::flow(
-  192.168.0.1:32768,
-  109.107.38.8:80,
+  cl/32768,
+  sv/80,
 );
 
 http.open();

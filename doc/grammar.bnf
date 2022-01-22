@@ -20,7 +20,9 @@ arg := ( IDENTIFIER ":" expr ) | expr
 
 args := [ ( arg | arg "," args ) ]
 
-expr := literal | ref | call
+term := literal | ref | call
+
+expr := ( expr "/" term ) | term
 
 literal := BOOL | INTEGER | STRING | IPV4 | v4socket
 
