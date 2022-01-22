@@ -60,6 +60,7 @@ language modules for crafting packets for the following protocols:
 - DNS (fairly mature, but could do with adding support for more record types)
 - TLS (early stages, still need support for SSL2 and common extensions,
   although you can craft arbitrary TLS frames)
+- VXLAN
 - IO packets can be crafted which include the contents of external files
 
 
@@ -85,15 +86,15 @@ addresses and port numbers) modulated. This would move all of the expensive
 work out of the packet transmit mainloop and allow us to generate traffic at
 upwards of 20Gbps per CPU.
 
-The language is pretty bare-bones right now. But I plan to add:
+The language is pretty bare-bones right now but I plan to add:
 - More builtin types: eg. signed integers, booleans, integers of various widths
 - An operator to concatenate ip/port into a sockaddr
+- The ability to coerce any type in to bytes
 - An operator for concatenating buffers
 
 I plan to add support for the following protocols to the standard library:
 - Support for PMTU and segmentization of TCP messages
 - Decent support for generating IP fragments
-- VXLAN
 - More direct support for HTTP
 - SMB2
 - ARP

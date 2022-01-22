@@ -25,8 +25,9 @@ pub struct UdpDgram {
 }
 
 impl UdpDgram {
-    fn new(src: SocketAddrV4, dst: SocketAddrV4) -> Self {
-        let mut pkt = Packet::with_capacity(UDP_DGRAM_OVERHEAD);
+    #[must_use]
+    pub fn with_capacity(src: SocketAddrV4, dst: SocketAddrV4, payload_sz: usize) -> Self {
+        let mut pkt = Packet::with_capacity(UDP_DGRAM_OVERHEAD + payload_sz);
 
         let eth: Hdr<eth_hdr> = pkt.push_hdr();
         pkt.get_mut_hdr(&eth)
@@ -59,19 +60,27 @@ impl UdpDgram {
         ret.update_tot_len().update_dgram_len()
     }
 
-    fn push(mut self, bytes: &[u8]) -> Self {
+    #[must_use]
+    pub fn new(src: SocketAddrV4, dst: SocketAddrV4) -> Self {
+        Self::with_capacity(src, dst, 0)
+    }
+
+    #[must_use]
+    pub fn push(mut self, bytes: &[u8]) -> Self {
         self.pkt.push_bytes(bytes);
         self.tot_len += bytes.len();
         self.dgram_len += bytes.len();
         self.update_tot_len().update_dgram_len()
     }
 
+    #[must_use]
     fn update_tot_len(mut self) -> Self {
         self.pkt.get_mut_hdr(&self.ip)
             .tot_len(self.tot_len as u16);
         self
     }
 
+    #[must_use]
     fn update_dgram_len(mut self) -> Self {
         self.pkt.get_mut_hdr(&self.udp)
             .len(self.dgram_len as u16);

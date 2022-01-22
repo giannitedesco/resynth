@@ -2,6 +2,7 @@ pub mod eth;
 pub mod ipv4;
 pub mod dns;
 pub mod tls;
+pub mod vxlan;
 
 mod pcap;
 pub use pcap::{PcapWriter, LinkType};
@@ -256,6 +257,6 @@ impl Packet {
 
 impl AsRef<[u8]> for Packet {
     fn as_ref(&self) -> &[u8] {
-        self.buf.as_ref()
+        self.as_bytes()
     }
 }

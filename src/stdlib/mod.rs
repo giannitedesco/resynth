@@ -18,6 +18,7 @@ mod io;
 mod ipv4;
 mod dns;
 mod tls;
+mod vxlan;
 
 const STDLIB: phf::Map<&'static str, Symbol> = phf_map! {
     "text" => Symbol::Module(&text::MODULE),
@@ -25,6 +26,7 @@ const STDLIB: phf::Map<&'static str, Symbol> = phf_map! {
     "ipv4" => Symbol::Module(&ipv4::IPV4),
     "dns" => Symbol::Module(&dns::DNS),
     "tls" => Symbol::Module(&tls::TLS),
+    "vxlan" => Symbol::Module(&vxlan::MODULE),
 };
 
 pub fn toplevel_module(name: &str) -> Option<&'static Module> {

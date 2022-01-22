@@ -248,6 +248,24 @@ impl From<Val> for Buf {
     }
 }
 
+impl From<Val> for Rc<Vec<Packet>> {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::PktGen(g) => g,
+            _ => unreachable!()
+        }
+    }
+}
+
+impl From<Val> for Rc<Packet> {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Pkt(p) => p,
+            _ => unreachable!()
+        }
+    }
+}
+
 impl<T: 'static + Obj> From<T> for Val {
     fn from(obj: T) -> Self {
         Val::Obj(ObjRef::from(obj))
