@@ -8,6 +8,7 @@ let tls = ipv4::tcp::flow(
 );
 
 tls.client_message(
+  send_ack: false,
   tls::message(
     version: tls::version::TLS_1_0,
     content: tls::content::HANDSHAKE,

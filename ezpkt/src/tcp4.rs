@@ -195,14 +195,37 @@ impl TcpFlow {
         pkts
     }
 
-
-    pub fn client_message(&mut self, bytes: &[u8]) -> Packet {
+    pub fn client_segment(&mut self, bytes: &[u8]) -> Packet {
         //println!("trace: tcp:client({} bytes)", bytes.len());
         self.clnt().push(&mut self.cl_seq, self.sv_seq, bytes).into()
     }
 
-    pub fn server_message(&mut self, bytes: &[u8]) -> Packet {
+    pub fn server_segment(&mut self, bytes: &[u8]) -> Packet {
         //println!("trace: tcp:server({} bytes)", bytes.len());
         self.srvr().push(&mut self.sv_seq, self.cl_seq, bytes).into()
+    }
+
+    pub fn client_message(&mut self, bytes: &[u8], send_ack: bool) -> Vec<Packet> {
+        let mut pkts: Vec<Packet> = Vec::with_capacity(2);
+        pkts.push(self.client_segment(bytes));
+
+        if send_ack {
+            let ack = self.srvr().ack(self.sv_seq, self.cl_seq);
+            pkts.push(ack.into());
+        }
+
+        pkts
+    }
+
+    pub fn server_message(&mut self, bytes: &[u8], send_ack: bool) -> Vec<Packet> {
+        let mut pkts: Vec<Packet> = Vec::with_capacity(2);
+        pkts.push(self.server_segment(bytes));
+
+        if send_ack {
+            let ack = self.clnt().ack(self.cl_seq, self.sv_seq);
+            pkts.push(ack.into());
+        }
+
+        pkts
     }
 }

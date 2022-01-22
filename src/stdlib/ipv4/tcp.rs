@@ -1,6 +1,6 @@
 use phf::{phf_map, phf_ordered_map};
 
-use crate::val::{ValType, Val};
+use crate::val::{ValType, Val, ValDef};
 use crate::str::Buf;
 use crate::libapi::{FuncDef, ArgDecl, Class};
 use crate::sym::Symbol;
@@ -57,9 +57,10 @@ const TCP_SV_CLOSE: FuncDef = func_def!(
 
 const TCP_CL_MSG: FuncDef = func_def!(
     "ipv4::tcp::flow.client_message";
-    ValType::Pkt;
+    ValType::PktGen;
 
     =>
+    "send_ack" => ValDef::Bool(true),
     =>
     ValType::Str;
 
@@ -67,18 +68,20 @@ const TCP_CL_MSG: FuncDef = func_def!(
         let obj = args.take_this();
         let mut r = obj.borrow_mut();
         let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
+        let send_ack: bool = args.next().into();
 
         let bytes: Buf = args.join_extra(b"").into();
 
-        Ok(this.client_message(bytes.as_ref()).into())
+        Ok(this.client_message(bytes.as_ref(), send_ack).into())
     }
 );
 
 const TCP_SV_MSG: FuncDef = func_def!(
     "ipv4::tcp::flow.server_message";
-    ValType::Pkt;
+    ValType::PktGen;
 
     =>
+    "send_ack" => ValDef::Bool(true),
     =>
     ValType::Str;
 
@@ -86,9 +89,11 @@ const TCP_SV_MSG: FuncDef = func_def!(
         let obj = args.take_this();
         let mut r = obj.borrow_mut();
         let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
+        let send_ack: bool = args.next().into();
 
         let bytes: Buf = args.join_extra(b"").into();
-        Ok(this.server_message(bytes.as_ref()).into())
+
+        Ok(this.server_message(bytes.as_ref(), send_ack).into())
     }
 );
 
