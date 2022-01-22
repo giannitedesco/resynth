@@ -37,6 +37,8 @@ static LEX_RE: Lazy<Regex> = lazy_regex!("^\
     |\
     (?P<let_keyword>\\blet\\b)\
     |\
+    (?P<boolean_literal>\\b(?:true|false)\\b)\
+    |\
     (?P<identifier>[a-zA-Z_][a-zA-Z0-9_]*)\
     |\
     (?P<ipv4_literal>\
@@ -72,6 +74,7 @@ pub enum TokType {
 
     ImportKeyword,
     LetKeyword,
+    BooleanLiteral,
     Identifier,
     IPv4Literal,
     StringLiteral,
@@ -102,6 +105,7 @@ impl TokType {
 
             TokType::ImportKeyword,
             TokType::LetKeyword,
+            TokType::BooleanLiteral,
             TokType::Identifier,
             TokType::IPv4Literal,
             TokType::StringLiteral,
@@ -142,6 +146,7 @@ impl TokType {
         TokType::Identifier => Some(val),
         TokType::HexIntegerLiteral => Some(val),
         TokType::IntegerLiteral => Some(val),
+        TokType::BooleanLiteral => Some(val),
         TokType::StringLiteral => Some(val),
         TokType::IPv4Literal => Some(val),
         _ => None,
@@ -168,6 +173,10 @@ impl<'a> Token<'a> {
 
     pub fn tok_type(&self) -> TokType {
         self.typ
+    }
+
+    pub fn optval(&self) -> Option<&'a str> {
+        self.val
     }
 
     pub fn val(&self) -> &'a str {

@@ -71,6 +71,7 @@ digraph {
 
 	arg_val -> reduce_literal_expr [label="shift\nSTRING"];
 	arg_val -> reduce_literal_expr [label="shift\nINTEGER"];
+	arg_val -> reduce_literal_expr [label="shift\nBOOL"];
 	arg_val -> ipv4 [label="shift\nIPV4"];
 	arg_val -> ref_component [label="shift\nPathBuilder\nIDENTIFIER"];
 
@@ -78,11 +79,13 @@ digraph {
 
 	expr_stmt -> reduce_literal_expr [label="shift\nSTRING"];
 	expr_stmt -> reduce_literal_expr [label="shift\nINTEGER"];
+	expr_stmt -> reduce_literal_expr [label="shift\nBOOL"];
 	expr_stmt -> ipv4 [label="shift\nIPV4"];
 	expr_stmt -> ref_component [label="shift\nPathBuilder\nIDENTIFIER"];
 
 	expr_rvalue -> reduce_literal_expr [label="shift\nSTRING"];
 	expr_rvalue -> reduce_literal_expr [label="shift\nINTEGER"];
+	expr_rvalue -> reduce_literal_expr [label="shift\nBOOL"];
 	expr_rvalue -> ipv4 [label="shift\nIPV4"];
 	expr_rvalue -> ref_component [label="shift\nPathBuilder\nIDENTIFIER"];
 

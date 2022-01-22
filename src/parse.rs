@@ -574,6 +574,7 @@ impl Parser {
     fn push_literal(&mut self, tok: Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::StringLiteral
+            | TokType::BooleanLiteral
             | TokType::HexIntegerLiteral
             | TokType::IntegerLiteral => {
                 self.push(Node::Loc(tok.loc()));
@@ -619,6 +620,7 @@ impl Parser {
                 Ok(Action::Shift(State::RefComponent, Node::Component(tok.into())))
             }
             TokType::StringLiteral
+            | TokType::BooleanLiteral
             | TokType::HexIntegerLiteral
             | TokType::IntegerLiteral
             | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
@@ -640,6 +642,7 @@ impl Parser {
                 Ok(Action::Shift(State::RefComponent, Node::Component(tok.into())))
             }
             TokType::StringLiteral
+            | TokType::BooleanLiteral
             | TokType::HexIntegerLiteral
             | TokType::IntegerLiteral
             | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
@@ -655,6 +658,7 @@ impl Parser {
                 Ok(Action::Shift(State::RefComponent, Node::Component(tok.into())))
             }
             TokType::StringLiteral
+            | TokType::BooleanLiteral
             | TokType::HexIntegerLiteral
             | TokType::IntegerLiteral
             | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
@@ -752,7 +756,7 @@ impl Parser {
     }
 
     fn dispatch(&mut self, tok: Token) -> Result<Action, Error> {
-        //println!("{:<24} {:?} {:?}", format!("State::{:?}", self.state), tok.tok_type(), tok.val);
+        // println!("{:<24} {:?} {:?}", format!("State::{:?}", self.state), tok.tok_type(), tok.optval());
         match self.state {
             State::Initial => self.state_initial(tok),
             State::Import => self.state_import(tok),

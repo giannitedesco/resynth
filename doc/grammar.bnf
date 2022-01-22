@@ -22,6 +22,6 @@ args := [ ( arg | arg "," args ) ]
 
 expr := literal | ref | call
 
-literal := INTEGER | STRING | IPV4 | v4socket
+literal := BOOL | INTEGER | STRING | IPV4 | v4socket
 
 v4socket := IPV4 ":" INTEGER

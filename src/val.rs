@@ -16,9 +16,10 @@ use std::rc::Rc;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ValType {
     Void,
+    Bool,
+    U64,
     Ip4,
     Sock4,
-    U64,
     Str,
     Obj,
     Func,
@@ -50,9 +51,10 @@ pub trait Typed {
 #[allow(unused)]
 pub enum ValDef {
     Nil,
+    Bool(bool),
+    U64(u64),
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
-    U64(u64),
     Str(&'static [u8]),
 }
 
@@ -61,9 +63,10 @@ impl Typed for ValDef {
         use ValType::*;
         match self {
             ValDef::Nil => Void,
+            ValDef::Bool(..) => Bool,
+            ValDef::U64(..) => U64,
             ValDef::Ip4(..) => Ip4,
             ValDef::Sock4(..) => Sock4,
-            ValDef::U64(..) => U64,
             ValDef::Str(..) => Str,
         }
     }
@@ -78,6 +81,12 @@ impl From<Ipv4Addr> for ValDef {
 impl From<SocketAddrV4> for ValDef {
     fn from(val: SocketAddrV4) -> Self {
         Self::Sock4(val)
+    }
+}
+
+impl From<bool> for ValDef {
+    fn from(val: bool) -> Self {
+        Self::Bool(val)
     }
 }
 
@@ -118,9 +127,10 @@ impl<T> From<&'static T> for ValDef where T: AsRef<[u8]> + ? Sized {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Val {
     Nil,
+    Bool(bool),
+    U64(u64),
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
-    U64(u64),
     Str(Buf),
     Obj(ObjRef),
     Func(&'static FuncDef),
@@ -141,9 +151,10 @@ impl From<ValDef> for Val {
 
         match valdef {
             Nil => Val::Nil,
+            Bool(b) => Val::Bool(b),
+            U64(uint) => Val::U64(uint),
             Ip4(ip) => Val::Ip4(ip),
             Sock4(sock) => Val::Sock4(sock),
-            U64(uint) => Val::U64(uint),
             Str(s) => Val::Str(Buf::from(s)),
         }
     }
@@ -158,6 +169,12 @@ impl From<&'static FuncDef> for Val {
 impl From<SocketAddrV4> for Val {
     fn from(sock: SocketAddrV4) -> Self {
         Val::Sock4(sock)
+    }
+}
+
+impl From<bool> for Val {
+    fn from(v: bool) -> Self {
+        Val::Bool(v)
     }
 }
 
@@ -182,6 +199,15 @@ impl From<u16> for Val {
 impl From<u8> for Val {
     fn from(v: u8) -> Self {
         Val::U64(v as u64)
+    }
+}
+
+impl From<Val> for bool {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Bool(b) => b,
+            _ => unreachable!()
+        }
     }
 }
 
@@ -286,9 +312,10 @@ impl Typed for Val {
         use ValType::*;
         match self {
             Val::Nil => Void,
+            Val::Bool(..) => Bool,
+            Val::U64(..) => U64,
             Val::Ip4(..) => Ip4,
             Val::Sock4(..) => Sock4,
-            Val::U64(..) => U64,
             Val::Str(..) => Str,
             Val::Obj(..) => Obj,
             Val::Func(..) => Func,
@@ -308,6 +335,7 @@ impl Val {
             StringLiteral => Ok(Str(v.parse().or(Err(ParseError))?)),
             IPv4Literal => Ok(Ip4(v.parse().or(Err(ParseError))?)),
             IntegerLiteral => Ok(U64(v.parse().or(Err(ParseError))?)),
+            BooleanLiteral => Ok(Bool(v.parse().or(Err(ParseError))?)),
             HexIntegerLiteral => {
                 let hex = v.strip_prefix("0x").unwrap();
 
