@@ -91,9 +91,9 @@ upwards of 20Gbps per CPU.
 
 The language is pretty bare-bones right now but I plan to add:
 - More builtin types: eg. signed integers, booleans, integers of various widths
-- An operator to concatenate ip/port into a sockaddr
+- Arithmetic and logical operators so that complex expressions can be built
 - The ability to coerce any type in to bytes
-- An operator for concatenating buffers
+- Syntax for concatenating buffers
 
 I plan to add support for the following protocols to the standard library:
 - Support for PMTU and segmentization of TCP messages
