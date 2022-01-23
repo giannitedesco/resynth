@@ -25,7 +25,6 @@ pub struct Program<'a> {
 }
 
 impl<'a> Program<'a> {
-    #[allow(unused)]
     pub fn dummy() -> Result<Self, Error> {
         Ok(Program {
             regs: HashMap::new(),
@@ -54,7 +53,6 @@ impl<'a> Program<'a> {
         self.warning = Some(warning);
     }
 
-    #[allow(unused)]
     pub fn execute(stmts: Vec<Stmt>, wr: PcapWriter) -> Result<Self, Error> {
         let mut prog = Self::with_pcap_writer(wr)?;
         prog.add_stmts(stmts)?;

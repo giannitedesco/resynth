@@ -17,7 +17,6 @@ pub enum ArgDecl {
 /// Defines a function or method for the resynth stdlib
 #[derive(Debug)]
 pub struct FuncDef {
-    #[allow(unused)]
     pub name: &'static str,
     pub return_type: ValType,
     pub args: phf::OrderedMap<&'static str, ArgDecl>,

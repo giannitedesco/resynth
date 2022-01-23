@@ -2,7 +2,7 @@ use std::io;
 use std::fmt;
 
 /// Error code for resynth program. Think of it as base exception type for the resynth language.
-#[allow(unused, clippy::enum_variant_names)]
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum Error {
     IoError(io::Error),

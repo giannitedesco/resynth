@@ -67,7 +67,6 @@ impl Dispatchable for ObjRef {
 }
 
 impl ObjRef {
-    #[allow(dead_code)]
     pub fn borrow(&self) -> Ref<dyn Obj> {
         self.inner.borrow()
     }

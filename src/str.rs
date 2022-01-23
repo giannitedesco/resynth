@@ -8,7 +8,6 @@ pub struct Buf {
 }
 
 impl Buf {
-    #[allow(dead_code)]
     #[inline]
     pub fn len(&self) -> usize {
         self.inner.len()

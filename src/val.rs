@@ -48,7 +48,6 @@ pub trait Typed {
 /// Represents a static or const version of [Val]. This is used when defining constants in the
 /// stdlib, or when defining default arguments for functions.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[allow(unused)]
 pub enum ValDef {
     Nil,
     Bool(bool),
@@ -123,7 +122,6 @@ impl<T> From<&'static T> for ValDef where T: AsRef<[u8]> + ? Sized {
 }
 
 /// Represents a live value in the interpreter, for example the result of evaluating an expression.
-#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Val {
     Nil,
@@ -368,7 +366,6 @@ impl Val {
         }
     }
 
-    #[allow(dead_code)]
     pub fn lookup_symbol(&self, name: &str) -> Result<Symbol, Error> {
 		match self {
 			Val::Obj(obj) => obj.lookup_symbol(name).ok_or(NameError),

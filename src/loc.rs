@@ -5,7 +5,6 @@ pub struct Loc {
     col: u32,
 }
 
-#[allow(unused)]
 impl Loc {
     pub const fn new(line: usize, col: usize) -> Self {
         Self {
