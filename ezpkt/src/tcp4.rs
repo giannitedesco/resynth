@@ -5,11 +5,9 @@ use pkt::ipv4::{ip_hdr, tcp_hdr};
 use pkt::{Packet, Hdr};
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct TcpFlow {
-    cl: SocketAddrV4,
-    sv: SocketAddrV4,
-    cl_seq: u32,
-    sv_seq: u32,
+struct TcpState {
+    snd_nxt: u32,
+    rcv_nxt: u32,
 }
 
 const TCPSEG_OVERHEAD: usize = 14 + 20 + 20;
@@ -19,11 +17,13 @@ pub struct TcpSeg {
     pkt: Packet,
     ip: Hdr<ip_hdr>,
     tcp: Hdr<tcp_hdr>,
-    tot_len: usize,
+    st: TcpState,
+    tot_len: u32,
+    seq: u32,
 }
 
 impl TcpSeg {
-    fn new(src: SocketAddrV4, dst: SocketAddrV4) -> Self {
+    fn new(src: SocketAddrV4, dst: SocketAddrV4, st: TcpState) -> Self {
         let mut pkt = Packet::with_capacity(TCPSEG_OVERHEAD);
 
         let eth: Hdr<eth_hdr> = pkt.push_hdr();
@@ -42,71 +42,69 @@ impl TcpSeg {
         let tcp: Hdr<tcp_hdr> = pkt.push_hdr();
         pkt.get_mut_hdr(&tcp)
             .init()
+            .seq(st.snd_nxt)
             .sport(src.port())
             .dport(dst.port());
 
-        let tot_len = ip.len() + tcp.len();
+        let tot_len = (ip.len() + tcp.len()) as u32;
 
         let ret = Self {
             pkt,
             ip,
             tcp,
             tot_len,
+            st,
+            seq: 0,
         };
 
         ret.update_tot_len()
     }
 
-    fn syn(mut self, seq: &mut u32) -> Self {
+    fn syn(mut self) -> Self {
         self.pkt.get_mut_hdr(&self.tcp)
-            .seq(*seq)
             .syn();
-        *seq += 1;
+        self.seq += 1;
         self
     }
 
-    fn syn_ack(mut self, seq: &mut u32, ack: u32) -> Self {
+    fn syn_ack(mut self) -> Self {
         self.pkt.get_mut_hdr(&self.tcp)
-            .seq(*seq)
             .syn()
-            .ack(ack);
-        *seq += 1;
+            .ack(self.st.rcv_nxt);
+        self.seq += 1;
         self
     }
 
-    fn ack(mut self, seq: u32, ack: u32) -> Self {
+    fn ack(mut self) -> Self {
         self.pkt.get_mut_hdr(&self.tcp)
-            .seq(seq)
-            .ack(ack);
+            .ack(self.st.rcv_nxt);
         self
     }
 
-    fn push(mut self, seq: &mut u32, ack: u32, bytes: &[u8]) -> Self {
+    fn push(mut self, bytes: &[u8]) -> Self {
         self.pkt.get_mut_hdr(&self.tcp)
-            .seq(*seq)
-            .ack(ack)
+            .ack(self.st.rcv_nxt)
             .push();
-        *seq += bytes.len() as u32;
+        self.seq += bytes.len() as u32;
         self.push_bytes(bytes)
     }
 
     fn push_bytes(mut self, bytes: &[u8]) -> Self {
         self.pkt.push_bytes(bytes);
-        self.tot_len += bytes.len();
+        self.tot_len += bytes.len() as u32;
         self.update_tot_len()
     }
 
-    fn fin(mut self, seq: &mut u32) -> Self {
+    fn fin(mut self) -> Self {
         self.pkt.get_mut_hdr(&self.tcp)
-            .seq(*seq)
             .fin();
-        *seq += 1;
+        self.seq += 1;
         self
     }
 
-    fn fin_ack(mut self, seq: &mut u32, ack: u32) -> Self {
-        self = self.fin(seq);
-        self.pkt.get_mut_hdr(&self.tcp).ack(ack);
+    fn fin_ack(mut self) -> Self {
+        self = self.fin();
+        self = self.ack();
         self
     }
 
@@ -114,6 +112,10 @@ impl TcpSeg {
         self.pkt.get_mut_hdr(&self.ip)
             .tot_len(self.tot_len as u16);
         self
+    }
+
+    fn seq_consumed(&self) -> u32 {
+        self.seq
     }
 }
 
@@ -123,79 +125,84 @@ impl From<TcpSeg> for Packet {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct TcpFlow {
+    cl: SocketAddrV4,
+    sv: SocketAddrV4,
+    cl_seq: u32,
+    sv_seq: u32,
+    pkts: Vec<Packet>,
+}
+
 impl TcpFlow {
     pub fn new(cl: SocketAddrV4,
                sv: SocketAddrV4,
                cl_seq: u32,
-               sv_seq: u32) -> Self {
-        //println!("trace: tcp:flow({:?}, {:?})", cl, sv);
+               sv_seq: u32,
+               ) -> Self {
         Self {
             cl,
             sv,
             cl_seq,
             sv_seq,
+            pkts: Vec::new(),
         }
     }
 
-    /* TODO: These could set sequence number automatically */
+    fn cl_state(&self) -> TcpState {
+        TcpState {
+            snd_nxt: self.cl_seq,
+            rcv_nxt: self.sv_seq,
+        }
+    }
+
+    fn sv_state(&self) -> TcpState {
+        TcpState {
+            snd_nxt: self.sv_seq,
+            rcv_nxt: self.cl_seq,
+        }
+    }
+
     fn clnt(&self) -> TcpSeg {
-        TcpSeg::new(self.cl, self.sv)
+        TcpSeg::new(self.cl, self.sv, self.cl_state())
     }
 
     fn srvr(&self) -> TcpSeg {
-        TcpSeg::new(self.sv, self.cl)
+        TcpSeg::new(self.sv, self.cl, self.sv_state())
+    }
+    
+    fn cl_tx(&mut self, seg: TcpSeg) {
+        self.cl_seq += seg.seq_consumed();
+        self.pkts.push(seg.into());
+    }
+    
+    fn sv_tx(&mut self, seg: TcpSeg) {
+        self.sv_seq += seg.seq_consumed();
+        self.pkts.push(seg.into());
     }
 
     pub fn open(&mut self) -> Vec<Packet> {
-        let mut pkts: Vec<Packet> = Vec::with_capacity(3);
+        self.cl_tx(self.clnt().syn());
+        self.sv_tx(self.srvr().syn_ack());
+        self.cl_tx(self.clnt().ack());
 
-        //println!("trace: tcp:open()");
-
-        /* XXX: We could have a method to update state rather than keep passing these borrows? */
-        let pkt = self.clnt().syn(&mut self.cl_seq);
-        pkts.push(pkt.into());
-
-        let pkt = self.srvr().syn_ack(&mut self.sv_seq, self.cl_seq);
-        pkts.push(pkt.into());
-
-        let pkt = self.clnt().ack(self.cl_seq, self.sv_seq);
-        pkts.push(pkt.into());
-
-        pkts
+        std::mem::take(&mut self.pkts)
     }
 
     pub fn client_close(&mut self) -> Vec<Packet> {
-        let mut pkts: Vec<Packet> = Vec::with_capacity(3);
+        self.cl_tx(self.clnt().fin_ack());
+        self.sv_tx(self.srvr().fin_ack());
+        self.cl_tx(self.clnt().ack());
 
-        //println!("trace: tcp:client_close()");
-
-        let pkt = self.clnt().fin_ack(&mut self.cl_seq, self.sv_seq);
-        pkts.push(pkt.into());
-
-        let pkt = self.srvr().fin_ack(&mut self.sv_seq, self.cl_seq);
-        pkts.push(pkt.into());
-
-        let pkt = self.clnt().ack(self.cl_seq, self.sv_seq);
-        pkts.push(pkt.into());
-
-        pkts
+        std::mem::take(&mut self.pkts)
     }
 
     pub fn server_close(&mut self) -> Vec<Packet> {
-        let mut pkts: Vec<Packet> = Vec::with_capacity(3);
+        self.sv_tx(self.srvr().fin_ack());
+        self.cl_tx(self.clnt().fin_ack());
+        self.sv_tx(self.srvr().ack());
 
-        //println!("trace: tcp:server_close()");
-
-        let pkt = self.srvr().fin_ack(&mut self.sv_seq, self.cl_seq);
-        pkts.push(pkt.into());
-
-        let pkt = self.clnt().fin_ack(&mut self.cl_seq, self.sv_seq);
-        pkts.push(pkt.into());
-
-        let pkt = self.srvr().ack(self.sv_seq, self.cl_seq);
-        pkts.push(pkt.into());
-
-        pkts
+        std::mem::take(&mut self.pkts)
     }
 
     // Advance client seq by `bytes` bytes in order to simulate a hole
@@ -208,37 +215,31 @@ impl TcpFlow {
         self.sv_seq += bytes;
     }
 
-    pub fn client_segment(&mut self, bytes: &[u8]) -> Packet {
-        //println!("trace: tcp:client({} bytes)", bytes.len());
-        self.clnt().push(&mut self.cl_seq, self.sv_seq, bytes).into()
-    }
-
-    pub fn server_segment(&mut self, bytes: &[u8]) -> Packet {
-        //println!("trace: tcp:server({} bytes)", bytes.len());
-        self.srvr().push(&mut self.sv_seq, self.cl_seq, bytes).into()
-    }
-
-    pub fn client_message(&mut self, bytes: &[u8], send_ack: bool) -> Vec<Packet> {
-        let mut pkts: Vec<Packet> = Vec::with_capacity(2);
-        pkts.push(self.client_segment(bytes));
-
+    pub fn client_message(&mut self,
+                          bytes: &[u8],
+                          send_ack: bool,
+                          //seq: Option<u32>,
+                          //ack: Option<u32>,
+                          ) -> Vec<Packet> {
+        self.cl_tx(self.clnt().push(bytes));
         if send_ack {
-            let ack = self.srvr().ack(self.sv_seq, self.cl_seq);
-            pkts.push(ack.into());
+            self.sv_tx(self.srvr().ack());
         }
 
-        pkts
+        std::mem::take(&mut self.pkts)
     }
 
-    pub fn server_message(&mut self, bytes: &[u8], send_ack: bool) -> Vec<Packet> {
-        let mut pkts: Vec<Packet> = Vec::with_capacity(2);
-        pkts.push(self.server_segment(bytes));
-
+    pub fn server_message(&mut self,
+                          bytes: &[u8],
+                          send_ack: bool,
+                          //seq: Option<u32>,
+                          //ack: Option<u32>,
+                          ) -> Vec<Packet> {
+        self.sv_tx(self.srvr().push(bytes));
         if send_ack {
-            let ack = self.clnt().ack(self.cl_seq, self.sv_seq);
-            pkts.push(ack.into());
+            self.cl_tx(self.clnt().ack());
         }
 
-        pkts
+        std::mem::take(&mut self.pkts)
     }
 }
