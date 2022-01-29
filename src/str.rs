@@ -95,6 +95,19 @@ impl FromStr for Buf {
                     continue;
                 }
 
+                /* XXX: Allow a range of separators. For now we're ignoring them as purely
+                 * cosmetic, but in future we probably want to delimit bytes with these?
+                 */
+                match chr {
+                    ':' => continue,
+                    '.' => continue,
+                    '_' => continue,
+                    '-' => continue,
+                    '\'' => continue,
+                    '`' => continue,
+                    _ => (),
+                }
+
                 if chr == '|' {
                     if ix != 0 {
                         /* Odd number of hex digits */

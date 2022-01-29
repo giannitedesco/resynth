@@ -13,43 +13,43 @@ let dns = ipv4::udp::flow(
 # There is a low-level DNS API which you can use to construct exact queries,
 # and even malformed queries
 dns.client_dgram(
-    dns::hdr(
-      id: 0x1234,
-      flags: dns::flags(
-        opcode: dns::opcode::QUERY,
-        rd: 1,
-      ),
-      qdcount: 1,
+  dns::hdr(
+    id: 0x1234,
+    flags: dns::flags(
+      opcode: dns::opcode::QUERY,
+      rd: 1,
     ),
-    dns::question(
-      qname: dns::name("www", "google", "com"),
-      qtype: dns::type::A,
-      qclass: dns::class::IN,
-    )
+    qdcount: 1,
+  ),
+  dns::question(
+    qname: dns::name("www", "google", "com"),
+    qtype: dns::type::A,
+    qclass: dns::class::IN,
+  )
 );
 
 dns.server_dgram(
-    dns::hdr(
-      id: 0x1234,
-      flags: dns::flags(
-        response: 1,
-        opcode: dns::opcode::QUERY,
-        ra: 1,
-      ),
-      qdcount: 1,
-      ancount: 1,
+  dns::hdr(
+    id: 0x1234,
+    flags: dns::flags(
+      response: 1,
+      opcode: dns::opcode::QUERY,
+      ra: 1,
     ),
-    dns::question(
-      qname: dns::name("www", "google", "com"),
-      qtype: dns::type::A,
-      qclass: dns::class::IN,
-    ),
-    dns::answer(
-      aname: dns::name("www", "google", "com"),
-      data: server,
-      atype: dns::type::A,
-      aclass: dns::class::IN,
-    ),
+    qdcount: 1,
+    ancount: 1,
+  ),
+  dns::question(
+    qname: dns::name("www", "google", "com"),
+    qtype: dns::type::A,
+    qclass: dns::class::IN,
+  ),
+  dns::answer(
+    aname: dns::name("www", "google", "com"),
+    data: server,
+    atype: dns::type::A,
+    aclass: dns::class::IN,
+  ),
 );
 
 # And then there is the high level API which you can use to quickly generate a

@@ -1,6 +1,8 @@
+pub mod arp;
 pub mod eth;
 pub mod ipv4;
 pub mod dns;
+pub mod dhcp;
 pub mod tls;
 pub mod vxlan;
 
@@ -127,8 +129,12 @@ impl Packet {
     }
 
     /// Apped a bunch of bytes
-    pub fn push_bytes(&mut self, buf: &[u8]) {
-        self.buf.extend_from_slice(buf);
+    pub fn push_bytes<T: AsRef<[u8]>>(&mut self, buf: T) {
+        self.buf.extend_from_slice(buf.as_ref());
+    }
+
+    pub fn push_byte(&mut self, byte: u8) {
+        self.buf.push(byte);
     }
 
     /// Prepend a new header into the packet headroom

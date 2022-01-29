@@ -344,6 +344,17 @@ impl From<Val> for Option<u8> {
     }
 }
 
+impl From<Val> for Option<Buf> {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Nil => None,
+            Val::Str(s) => Some(s),
+            _ => unreachable!()
+        }
+    }
+}
+
+
 impl<T: 'static + Obj> From<T> for Val {
     fn from(obj: T) -> Self {
         Val::Obj(ObjRef::from(obj))

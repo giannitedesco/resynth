@@ -17,6 +17,8 @@ mod text;
 mod io;
 mod ipv4;
 mod dns;
+mod dhcp;
+mod arp;
 mod tls;
 mod vxlan;
 
@@ -25,6 +27,8 @@ const STDLIB: phf::Map<&'static str, Symbol> = phf_map! {
     "io" => Symbol::Module(&io::MODULE),
     "ipv4" => Symbol::Module(&ipv4::IPV4),
     "dns" => Symbol::Module(&dns::DNS),
+    "dhcp" => Symbol::Module(&dhcp::MODULE),
+    "arp" => Symbol::Module(&arp::MODULE),
     "tls" => Symbol::Module(&tls::TLS),
     "vxlan" => Symbol::Module(&vxlan::MODULE),
 };

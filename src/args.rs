@@ -103,9 +103,9 @@ impl Args {
 
 impl Drop for Args {
     fn drop(&mut self) {
-        assert!(self.this.is_none());
-        assert!(self.it.next().is_none());
-        assert!(self.extra_args.is_empty());
+        assert!(self.this.is_none(), "Method didn't take ownership of this");
+        assert!(self.it.next().is_none(), "Function didn't consume all args");
+        assert!(self.extra_args.is_empty(), "Function didn't consume extra args");
     }
 }
 
