@@ -163,11 +163,11 @@ impl TcpFlow {
         }
     }
 
-    fn clnt(&self) -> TcpSeg {
+    fn cl(&self) -> TcpSeg {
         TcpSeg::new(self.cl, self.sv, self.cl_state())
     }
 
-    fn srvr(&self) -> TcpSeg {
+    fn sv(&self) -> TcpSeg {
         TcpSeg::new(self.sv, self.cl, self.sv_state())
     }
     
@@ -182,25 +182,25 @@ impl TcpFlow {
     }
 
     pub fn open(&mut self) -> Vec<Packet> {
-        self.cl_tx(self.clnt().syn());
-        self.sv_tx(self.srvr().syn_ack());
-        self.cl_tx(self.clnt().ack());
+        self.cl_tx(self.cl().syn());
+        self.sv_tx(self.sv().syn_ack());
+        self.cl_tx(self.cl().ack());
 
         std::mem::take(&mut self.pkts)
     }
 
     pub fn client_close(&mut self) -> Vec<Packet> {
-        self.cl_tx(self.clnt().fin_ack());
-        self.sv_tx(self.srvr().fin_ack());
-        self.cl_tx(self.clnt().ack());
+        self.cl_tx(self.cl().fin_ack());
+        self.sv_tx(self.sv().fin_ack());
+        self.cl_tx(self.cl().ack());
 
         std::mem::take(&mut self.pkts)
     }
 
     pub fn server_close(&mut self) -> Vec<Packet> {
-        self.sv_tx(self.srvr().fin_ack());
-        self.cl_tx(self.clnt().fin_ack());
-        self.sv_tx(self.srvr().ack());
+        self.sv_tx(self.sv().fin_ack());
+        self.cl_tx(self.cl().fin_ack());
+        self.sv_tx(self.sv().ack());
 
         std::mem::take(&mut self.pkts)
     }
@@ -236,9 +236,9 @@ impl TcpFlow {
                           bytes: &[u8],
                           send_ack: bool,
                           ) -> Vec<Packet> {
-        self.cl_tx(self.clnt().push(bytes));
+        self.cl_tx(self.cl().push(bytes));
         if send_ack {
-            self.sv_tx(self.srvr().ack());
+            self.sv_tx(self.sv().ack());
         }
 
         std::mem::take(&mut self.pkts)
@@ -248,9 +248,9 @@ impl TcpFlow {
                           bytes: &[u8],
                           send_ack: bool,
                           ) -> Vec<Packet> {
-        self.sv_tx(self.srvr().push(bytes));
+        self.sv_tx(self.sv().push(bytes));
         if send_ack {
-            self.cl_tx(self.clnt().ack());
+            self.cl_tx(self.cl().ack());
         }
 
         std::mem::take(&mut self.pkts)
