@@ -1,5 +1,5 @@
 use crate::err::Error;
-use crate::err::Error::{TypeError};
+use crate::err::Error::TypeError;
 use crate::val::{Val, ValType, ValDef, Typed};
 use crate::object::ObjRef;
 use crate::args::{Args, ArgVec, ArgSpec};
@@ -198,7 +198,7 @@ impl FuncDef {
         for (spec, arg) in self.args.values().zip(args.iter()) {
             if !match spec {
                 ArgDecl::Positional(typ) => { arg.val_type() == *typ },
-                ArgDecl::Named(dfl) => { arg.val_type() == dfl.val_type() },
+                ArgDecl::Named(dfl) => { dfl.arg_compatible(arg) },
             } {
                 println!("ERR: Argument type-check failed");
                 return Err(TypeError);

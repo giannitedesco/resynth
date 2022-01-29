@@ -14,6 +14,7 @@ const PLAIN: FuncDef = func_def! {
         =>
         "c" => ValDef::U64(123),
         "d" => ValDef::Str(b"hello"),
+        "e" => ValDef::Type(ValType::Bool),
         =>
         ValType::Void;
 
@@ -38,6 +39,7 @@ fn argvec_simple() {
                 Val::Str(Buf::from(Buf::from(b"hello"))),
                 Val::U64(123),
                 Val::Str(Buf::from(b"hello")),
+                Val::Nil,
             ),
             vec!(),
         )),
@@ -102,6 +104,7 @@ fn argvec_named_positionals() {
             Val::Str(Buf::from(b"goodbye")),
             Val::U64(123),
             Val::Str(Buf::from(b"hello")),
+            Val::Nil,
         ), vec!())),
         PLAIN.argvec(None, args),
     )
@@ -150,6 +153,7 @@ fn argvec_many_named_args() {
             Val::Str(Buf::from(b"hello")),
             Val::U64(123),
             Val::Str(Buf::from(b"hello")),
+            Val::Nil,
         ), vec!())),
         PLAIN.argvec(None, args),
     )

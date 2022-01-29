@@ -21,6 +21,8 @@ pub enum ValType {
     Ip4,
     Sock4,
     Str,
+    Type,
+
     Obj,
     Func,
     Method,
@@ -55,6 +57,16 @@ pub enum ValDef {
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
     Str(&'static [u8]),
+    Type(ValType),
+}
+
+impl ValDef {
+    pub fn arg_compatible(&self, v: &Val) -> bool {
+        match self {
+            ValDef::Type(t) => v.is_nil() || v.val_type() == *t,
+            _ => self.val_type() == v.val_type()
+        }
+    }
 }
 
 impl Typed for ValDef {
@@ -67,6 +79,7 @@ impl Typed for ValDef {
             ValDef::Ip4(..) => Ip4,
             ValDef::Sock4(..) => Sock4,
             ValDef::Str(..) => Str,
+            ValDef::Type(..) => Type,
         }
     }
 }
@@ -154,6 +167,7 @@ impl From<ValDef> for Val {
             Ip4(ip) => Val::Ip4(ip),
             Sock4(sock) => Val::Sock4(sock),
             Str(s) => Val::Str(Buf::from(s)),
+            Type(_) => Val::Nil,
         }
     }
 }
