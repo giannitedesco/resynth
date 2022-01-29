@@ -124,13 +124,16 @@ impl From<TcpSeg> for Packet {
 }
 
 impl TcpFlow {
-    pub fn new(cl: SocketAddrV4, sv: SocketAddrV4) -> Self {
+    pub fn new(cl: SocketAddrV4,
+               sv: SocketAddrV4,
+               cl_seq: u32,
+               sv_seq: u32) -> Self {
         //println!("trace: tcp:flow({:?}, {:?})", cl, sv);
         Self {
             cl,
             sv,
-            cl_seq: 1000,
-            sv_seq: 2000,
+            cl_seq,
+            sv_seq,
         }
     }
 

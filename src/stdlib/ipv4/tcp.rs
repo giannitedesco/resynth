@@ -162,13 +162,17 @@ const TCP_FLOW: FuncDef = func_def!(
     "cl" => ValType::Sock4,
     "sv" => ValType::Sock4,
     =>
+    "cl_seq" => ValDef::U64(1),
+    "sv_seq" => ValDef::U64(1),
     =>
     ValType::Void;
 
     |mut args| {
         let cl = args.next();
         let sv = args.next();
-        Ok(Val::from(TcpFlow::new(cl.into(), sv.into())))
+        let cl_seq: u32 = args.next().into();
+        let sv_seq: u32 = args.next().into();
+        Ok(Val::from(TcpFlow::new(cl.into(), sv.into(), cl_seq, sv_seq)))
     }
 );
 
