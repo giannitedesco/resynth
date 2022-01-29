@@ -47,6 +47,31 @@ fn argvec_simple() {
     )
 }
 
+/// Supply a nullable argument
+#[test]
+fn argvec_nullable() {
+    let args = vec!(
+        ArgSpec::from(1),
+        ArgSpec::from(b"hello"),
+        ArgSpec::from(("e", true)),
+    );
+
+    assert_eq!(
+        Ok(ArgVec::new(
+            None,
+            vec!(
+                Val::U64(1),
+                Val::Str(Buf::from(Buf::from(b"hello"))),
+                Val::U64(123),
+                Val::Str(Buf::from(b"hello")),
+                Val::Bool(true),
+            ),
+            vec!(),
+        )),
+        PLAIN.argvec(None, args)
+    )
+}
+
 /// Supply a type-mismatched positional argument
 #[test]
 fn argvec_type_mismatch_1() {

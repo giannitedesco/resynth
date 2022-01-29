@@ -1,0 +1,39 @@
+import ipv4;
+import text;
+
+let cl = 192.168.0.1;
+let sv = 109.197.38.8;
+
+let http = ipv4::tcp::flow(
+  cl/32768,
+  sv/80,
+
+  cl_seq: 1000,
+  sv_seq: 1000,
+);
+
+// http.open()
+
+http.client_hole(123);
+http.client_message(
+  text::crlflines(
+    "GET / HTTP/1.1",
+    "Host: www.scaramanga.co.uk",
+    text::CRLF,
+  )
+);
+
+http.server_hole(45678);
+http.server_message(
+  text::crlflines(
+    "HTTP/1.1 301 Moved Permanently",
+    "Date: Sat, 17 Jul 2021 02:55:05 GMT",
+    "Server: Apache/2.4.29 (Ubuntu)",
+    "Location: https://www.scaramanga.co.uk/",
+    "Content-Type: text/html; charset=iso-8859-1",
+    text::CRLF,
+  ),
+);
+
+http.server_close();
+

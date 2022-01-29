@@ -101,6 +101,8 @@ const TCP_CL_MSG: FuncDef = func_def!(
 
     =>
     "send_ack" => ValDef::Bool(true),
+    "seq" => ValDef::Type(ValType::U64),
+    "ack" => ValDef::Type(ValType::U64),
     =>
     ValType::Str;
 
@@ -109,10 +111,16 @@ const TCP_CL_MSG: FuncDef = func_def!(
         let mut r = obj.borrow_mut();
         let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
         let send_ack: bool = args.next().into();
+        let seq: Option<u32> = args.next().into();
+        let ack: Option<u32> = args.next().into();
 
         let bytes: Buf = args.join_extra(b"").into();
 
-        Ok(this.client_message(bytes.as_ref(), send_ack).into())
+        let saved = this.push_state(seq, ack);
+        let pkt = this.client_message(bytes.as_ref(), send_ack);
+        this.pop_state(saved);
+
+        Ok(pkt.into())
     }
 );
 
@@ -122,6 +130,8 @@ const TCP_SV_MSG: FuncDef = func_def!(
 
     =>
     "send_ack" => ValDef::Bool(true),
+    "seq" => ValDef::Type(ValType::U64),
+    "ack" => ValDef::Type(ValType::U64),
     =>
     ValType::Str;
 
@@ -130,10 +140,16 @@ const TCP_SV_MSG: FuncDef = func_def!(
         let mut r = obj.borrow_mut();
         let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
         let send_ack: bool = args.next().into();
+        let seq: Option<u32> = args.next().into();
+        let ack: Option<u32> = args.next().into();
 
         let bytes: Buf = args.join_extra(b"").into();
 
-        Ok(this.server_message(bytes.as_ref(), send_ack).into())
+        let saved = this.push_state(seq, ack);
+        let pkt = this.server_message(bytes.as_ref(), send_ack);
+        this.pop_state(saved);
+
+        Ok(pkt.into())
     }
 );
 

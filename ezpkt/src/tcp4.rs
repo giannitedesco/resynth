@@ -215,11 +215,26 @@ impl TcpFlow {
         self.sv_seq += bytes;
     }
 
+    pub fn push_state(&mut self,
+                      cl_seq: Option<u32>,
+                      sv_seq: Option<u32>,
+                      ) -> (Option<u32>, Option<u32>) {
+        let ret = (cl_seq.and(Some(self.cl_seq)), sv_seq.and(Some(self.sv_seq)));
+        self.cl_seq = cl_seq.unwrap_or(self.cl_seq);
+        self.sv_seq = sv_seq.unwrap_or(self.sv_seq);
+        ret
+    }
+
+    pub fn pop_state(&mut self, st: (Option<u32>, Option<u32>)) {
+        let (cl_seq, sv_seq) = st;
+
+        self.cl_seq = cl_seq.unwrap_or(self.cl_seq);
+        self.sv_seq = sv_seq.unwrap_or(self.sv_seq);
+    }
+
     pub fn client_message(&mut self,
                           bytes: &[u8],
                           send_ack: bool,
-                          //seq: Option<u32>,
-                          //ack: Option<u32>,
                           ) -> Vec<Packet> {
         self.cl_tx(self.clnt().push(bytes));
         if send_ack {
@@ -232,8 +247,6 @@ impl TcpFlow {
     pub fn server_message(&mut self,
                           bytes: &[u8],
                           send_ack: bool,
-                          //seq: Option<u32>,
-                          //ack: Option<u32>,
                           ) -> Vec<Packet> {
         self.sv_tx(self.srvr().push(bytes));
         if send_ack {

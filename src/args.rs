@@ -178,3 +178,12 @@ impl From<(&str, ValDef)> for ArgSpec {
         }
     }
 }
+
+impl From<(&str, bool)> for ArgSpec {
+    fn from((name, val): (&str, bool)) -> Self {
+        Self {
+            name: Some(name.to_owned()),
+            val: Val::from(val),
+        }
+    }
+}

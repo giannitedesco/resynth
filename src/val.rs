@@ -304,6 +304,46 @@ impl From<Val> for Rc<Packet> {
     }
 }
 
+impl From<Val> for Option<u64> {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Nil => None,
+            Val::U64(u) => Some(u),
+            _ => unreachable!()
+        }
+    }
+}
+
+impl From<Val> for Option<u32> {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Nil => None,
+            Val::U64(u) => Some(u as u32),
+            _ => unreachable!()
+        }
+    }
+}
+
+impl From<Val> for Option<u16> {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Nil => None,
+            Val::U64(u) => Some(u as u16),
+            _ => unreachable!()
+        }
+    }
+}
+
+impl From<Val> for Option<u8> {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Nil => None,
+            Val::U64(u) => Some(u as u8),
+            _ => unreachable!()
+        }
+    }
+}
+
 impl<T: 'static + Obj> From<T> for Val {
     fn from(obj: T) -> Self {
         Val::Obj(ObjRef::from(obj))
