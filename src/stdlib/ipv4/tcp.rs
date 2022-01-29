@@ -55,6 +55,46 @@ const TCP_SV_CLOSE: FuncDef = func_def!(
     }
 );
 
+const TCP_CL_HOLE: FuncDef = func_def!(
+    "ipv4::tcp::flow.client_hole";
+    ValType::Void;
+
+    "bytes" => ValType::U64,
+    =>
+    =>
+    ValType::Void;
+
+    |mut args| {
+        let obj = args.take_this();
+        let mut r = obj.borrow_mut();
+        let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
+        let bytes: u32 = args.next().into();
+
+        this.server_hole(bytes);
+        Ok(Val::Nil)
+    }
+);
+
+const TCP_SV_HOLE: FuncDef = func_def!(
+    "ipv4::tcp::flow.server_hole";
+    ValType::Void;
+
+    "bytes" => ValType::U64,
+    =>
+    =>
+    ValType::Void;
+
+    |mut args| {
+        let obj = args.take_this();
+        let mut r = obj.borrow_mut();
+        let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
+        let bytes: u32 = args.next().into();
+
+        this.server_hole(bytes);
+        Ok(Val::Nil)
+    }
+);
+
 const TCP_CL_MSG: FuncDef = func_def!(
     "ipv4::tcp::flow.client_message";
     ValType::PktGen;
@@ -105,6 +145,8 @@ impl Class for TcpFlow {
             "server_close" => Symbol::Func(&TCP_SV_CLOSE),
             "client_message" => Symbol::Func(&TCP_CL_MSG),
             "server_message" => Symbol::Func(&TCP_SV_MSG),
+            "client_hole" => Symbol::Func(&TCP_CL_HOLE),
+            "server_hole" => Symbol::Func(&TCP_SV_HOLE),
         }
     }
 

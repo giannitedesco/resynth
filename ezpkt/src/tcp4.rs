@@ -195,6 +195,16 @@ impl TcpFlow {
         pkts
     }
 
+    // Advance client seq by `bytes` bytes in order to simulate a hole
+    pub fn client_hole(&mut self, bytes: u32) {
+        self.cl_seq += bytes;
+    }
+
+    // Advance server seq by `bytes` bytes in order to simulate a hole
+    pub fn server_hole(&mut self, bytes: u32) {
+        self.sv_seq += bytes;
+    }
+
     pub fn client_segment(&mut self, bytes: &[u8]) -> Packet {
         //println!("trace: tcp:client({} bytes)", bytes.len());
         self.clnt().push(&mut self.cl_seq, self.sv_seq, bytes).into()
