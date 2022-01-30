@@ -27,20 +27,20 @@ impl TcpSeg {
         let mut pkt = Packet::with_capacity(TCPSEG_OVERHEAD);
 
         let eth: Hdr<eth_hdr> = pkt.push_hdr();
-        pkt.get_mut_hdr(&eth)
+        pkt.get_mut_hdr(eth)
             .dst_from_ip(*dst.ip())
             .src_from_ip(*src.ip())
             .proto(0x0800);
 
         let ip: Hdr<ip_hdr> = pkt.push_hdr();
-        pkt.get_mut_hdr(&ip)
+        pkt.get_mut_hdr(ip)
             .init()
             .protocol(6)
             .saddr(*src.ip())
             .daddr(*dst.ip());
 
         let tcp: Hdr<tcp_hdr> = pkt.push_hdr();
-        pkt.get_mut_hdr(&tcp)
+        pkt.get_mut_hdr(tcp)
             .init()
             .seq(st.snd_nxt)
             .sport(src.port())
@@ -61,14 +61,14 @@ impl TcpSeg {
     }
 
     fn syn(mut self) -> Self {
-        self.pkt.get_mut_hdr(&self.tcp)
+        self.pkt.get_mut_hdr(self.tcp)
             .syn();
         self.seq += 1;
         self
     }
 
     fn syn_ack(mut self) -> Self {
-        self.pkt.get_mut_hdr(&self.tcp)
+        self.pkt.get_mut_hdr(self.tcp)
             .syn()
             .ack(self.st.rcv_nxt);
         self.seq += 1;
@@ -76,13 +76,13 @@ impl TcpSeg {
     }
 
     fn ack(mut self) -> Self {
-        self.pkt.get_mut_hdr(&self.tcp)
+        self.pkt.get_mut_hdr(self.tcp)
             .ack(self.st.rcv_nxt);
         self
     }
 
     fn push(mut self, bytes: &[u8]) -> Self {
-        self.pkt.get_mut_hdr(&self.tcp)
+        self.pkt.get_mut_hdr(self.tcp)
             .ack(self.st.rcv_nxt)
             .push();
         self.seq += bytes.len() as u32;
@@ -96,7 +96,7 @@ impl TcpSeg {
     }
 
     fn fin(mut self) -> Self {
-        self.pkt.get_mut_hdr(&self.tcp)
+        self.pkt.get_mut_hdr(self.tcp)
             .fin();
         self.seq += 1;
         self
@@ -109,7 +109,7 @@ impl TcpSeg {
     }
 
     fn update_tot_len(mut self) -> Self {
-        self.pkt.get_mut_hdr(&self.ip)
+        self.pkt.get_mut_hdr(self.ip)
             .tot_len(self.tot_len as u16);
         self
     }

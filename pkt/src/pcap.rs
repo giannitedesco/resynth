@@ -11,7 +11,7 @@ pub enum LinkType {
     Ethernet = 1,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 #[repr(C)]
 struct pcap_hdr {
     magic: u32,
@@ -26,7 +26,7 @@ struct pcap_hdr {
 impl Serialize for pcap_hdr {
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 #[repr(C)]
 struct pcap_pkt {
     sec: u32,
@@ -94,7 +94,7 @@ impl PcapWriter {
         }
 
         let hdr: Hdr<pcap_pkt> = pkt.lower_headroom();
-        let mut pcap_hdr = pkt.get_mut_hdr(&hdr);
+        let mut pcap_hdr = pkt.get_mut_hdr(hdr);
 
         pcap_hdr.sec = self.cnt as u32;
         pcap_hdr.len = len;

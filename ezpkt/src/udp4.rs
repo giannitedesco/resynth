@@ -31,11 +31,11 @@ impl UdpDgram {
         let mut pkt = Packet::with_capacity(UDP_DGRAM_OVERHEAD + payload_sz);
 
         let eth: Hdr<eth_hdr> = pkt.push_hdr();
-        pkt.get_mut_hdr(&eth)
+        pkt.get_mut_hdr(eth)
             .proto(0x0800);
 
         let ip: Hdr<ip_hdr> = pkt.push_hdr();
-        pkt.get_mut_hdr(&ip)
+        pkt.get_mut_hdr(ip)
             .init()
             .protocol(17);
 
@@ -62,23 +62,23 @@ impl UdpDgram {
 
     #[must_use]
     pub fn src(mut self, src: SocketAddrV4) -> Self {
-        self.pkt.get_mut_hdr(&self.eth).src_from_ip(*src.ip());
-        self.pkt.get_mut_hdr(&self.ip).saddr(*src.ip());
-        self.pkt.get_mut_hdr(&self.udp).sport(src.port());
+        self.pkt.get_mut_hdr(self.eth).src_from_ip(*src.ip());
+        self.pkt.get_mut_hdr(self.ip).saddr(*src.ip());
+        self.pkt.get_mut_hdr(self.udp).sport(src.port());
         self
     }
 
     #[must_use]
     pub fn dst(mut self, dst: SocketAddrV4) -> Self {
-        self.pkt.get_mut_hdr(&self.eth).dst_from_ip(*dst.ip());
-        self.pkt.get_mut_hdr(&self.ip).daddr(*dst.ip());
-        self.pkt.get_mut_hdr(&self.udp).dport(dst.port());
+        self.pkt.get_mut_hdr(self.eth).dst_from_ip(*dst.ip());
+        self.pkt.get_mut_hdr(self.ip).daddr(*dst.ip());
+        self.pkt.get_mut_hdr(self.udp).dport(dst.port());
         self
     }
 
     #[must_use]
     pub fn broadcast(mut self) -> Self {
-        self.pkt.get_mut_hdr(&self.eth).broadcast();
+        self.pkt.get_mut_hdr(self.eth).broadcast();
         self
     }
 
@@ -93,14 +93,14 @@ impl UdpDgram {
 
     #[must_use]
     fn update_tot_len(mut self) -> Self {
-        self.pkt.get_mut_hdr(&self.ip)
+        self.pkt.get_mut_hdr(self.ip)
             .tot_len(self.tot_len as u16);
         self
     }
 
     #[must_use]
     fn update_dgram_len(mut self) -> Self {
-        self.pkt.get_mut_hdr(&self.udp)
+        self.pkt.get_mut_hdr(self.udp)
             .len(self.dgram_len as u16);
         self
     }

@@ -23,6 +23,14 @@ pub struct Hdr<T> {
     phantom: std::marker::PhantomData<T>,
 }
 
+impl<T> Copy for Hdr<T> { }
+
+impl<T> Clone for Hdr<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
 impl<T> Hdr<T> {
     fn new(off: usize) -> Self {
         Self {
@@ -156,7 +164,7 @@ impl Packet {
     }
 
     /// Get a reference to the part of the buffer corresponding to this header
-    pub fn get_hdr<T>(&self, hdr: &Hdr<T>) -> &T {
+    pub fn get_hdr<T>(&self, hdr: Hdr<T>) -> &T {
         let sz = std::mem::size_of::<T>();
         let off = hdr.off as usize;
         let bytes = &self.buf[off..off + sz];
@@ -167,7 +175,7 @@ impl Packet {
     }
 
     /// Get a mutable reference to the part of the buffer corresponding to this header
-    pub fn get_mut_hdr<T>(&mut self, hdr: &Hdr<T>) -> &mut T {
+    pub fn get_mut_hdr<T>(&mut self, hdr: Hdr<T>) -> &mut T {
         let sz = std::mem::size_of::<T>();
         let off = hdr.off as usize;
         let bytes = &mut self.buf[off..off + sz];
@@ -193,12 +201,12 @@ impl Packet {
         &mut self.buf[off..off + len]
     }
 
-    pub fn bytes_from<T>(&mut self, hdr: &Hdr<T>, len: usize) -> &mut [u8] {
+    pub fn bytes_from<T>(&mut self, hdr: Hdr<T>, len: usize) -> &mut [u8] {
         let off = hdr.off();
         &mut self.buf[off..off + len]
     }
 
-    pub fn bytes_after<T>(&mut self, hdr: &Hdr<T>, len: usize) -> &mut [u8] {
+    pub fn bytes_after<T>(&mut self, hdr: Hdr<T>, len: usize) -> &mut [u8] {
         let off = hdr.off();
         let start = off + hdr.len();
         let end = off + len;
