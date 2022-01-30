@@ -18,13 +18,10 @@ pub struct VxlanDgram {
 impl VxlanDgram {
     fn new(src: SocketAddrV4, dst: SocketAddrV4, vni: u32) -> Self {
         Self {
-            outer: UdpDgram::with_capacity(
-                src,
-                dst,
-                std::mem::size_of::<vxlan_hdr>(),
-            ).push(
-                vxlan_hdr::with_vni(vni).as_bytes()
-            ),
+            outer: UdpDgram::with_capacity(std::mem::size_of::<vxlan_hdr>())
+                .src(src)
+                .dst(dst)
+                .push(vxlan_hdr::with_vni(vni).as_bytes()),
         }
     }
 

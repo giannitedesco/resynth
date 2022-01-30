@@ -2,17 +2,14 @@ import ipv4;
 import dhcp;
 import arp;
 
-let client = 192.168.238.112;
-let server = 142.250.207.36;
-
-let dhcp = ipv4::udp::flow(
-  client/dhcp::CLIENT_PORT,
-  server/dhcp::SERVER_PORT,
-);
+let client = 192.168.238.112/dhcp::CLIENT_PORT;
+let server = 142.250.207.36/dhcp::SERVER_PORT;
 
 # There is a low-level DNS API which you can use to construct exact queries,
 # and even malformed queries
-dhcp.client_dgram(
+ipv4::udp::broadcast(
+  src: 0.0.0.0/dhcp::CLIENT_PORT,
+  dst: 255.255.255.255/dhcp::SERVER_PORT,
   dhcp::hdr(
     opcode: dhcp::opcode::REQUEST,
     xid: 0xdeadbeef,
@@ -45,7 +42,9 @@ dhcp.client_dgram(
   dhcp::opt::END,
 );
 
-dhcp.server_dgram(
+ipv4::udp::unicast(
+  src: server,
+  dst: client,
   dhcp::hdr(
     opcode: dhcp::opcode::REPLY,
     xid: 0xdeadbeef,

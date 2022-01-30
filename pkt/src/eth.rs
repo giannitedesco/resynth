@@ -14,6 +14,8 @@ pub struct eth_hdr {
     pub proto: u16,
 }
 
+pub const BROADCAST: [u8; 6] = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+
 impl eth_hdr {
     pub fn dst_from_ip(&mut self, addr: Ipv4Addr) -> &mut Self {
         let ip = addr.octets();
@@ -29,6 +31,11 @@ impl eth_hdr {
 
     pub fn proto(&mut self, proto: u16) -> &mut Self {
         self.proto = proto.to_be();
+        self
+    }
+
+    pub fn broadcast(&mut self) -> &mut Self {
+        self.dst.octets = BROADCAST;
         self
     }
 }

@@ -1,13 +1,62 @@
 use phf::{phf_map, phf_ordered_map};
 
+use pkt::Packet;
+use ezpkt::{UdpDgram, UdpFlow};
+
 use crate::val::{ValType, Val};
 use crate::str::Buf;
 use crate::libapi::{FuncDef, ArgDecl, Class};
 use crate::sym::Symbol;
-use ezpkt::UdpFlow;
 use crate::func_def;
 
-const UDP_CL_DGRAM: FuncDef = func_def!(
+const BROADCAST: FuncDef = func_def!(
+    "ipv4::udp::broadcast";
+    ValType::Pkt;
+
+    "src" => ValType::Sock4,
+    "dst" => ValType::Sock4,
+    =>
+    =>
+    ValType::Str;
+
+    |mut args| {
+        let src = args.next();
+        let dst = args.next();
+        let buf: Buf = args.join_extra(b"").into();
+        let dgram: Packet = UdpDgram::with_capacity(buf.len())
+            .src(src.into())
+            .dst(dst.into())
+            .broadcast()
+            .push(buf)
+            .into();
+        Ok(dgram.into())
+    }
+);
+
+const UNICAST: FuncDef = func_def!(
+    "ipv4::udp::unicast";
+    ValType::Pkt;
+
+    "src" => ValType::Sock4,
+    "dst" => ValType::Sock4,
+    =>
+    =>
+    ValType::Str;
+
+    |mut args| {
+        let src = args.next();
+        let dst = args.next();
+        let buf: Buf = args.join_extra(b"").into();
+        let dgram: Packet = UdpDgram::with_capacity(buf.len())
+            .src(src.into())
+            .dst(dst.into())
+            .push(buf)
+            .into();
+        Ok(dgram.into())
+    }
+);
+
+const CL_DGRAM: FuncDef = func_def!(
     "ipv4::udp::flow.client_dgram";
     ValType::Pkt;
 
@@ -24,7 +73,7 @@ const UDP_CL_DGRAM: FuncDef = func_def!(
     }
 );
 
-const UDP_SV_DGRAM: FuncDef = func_def!(
+const SV_DGRAM: FuncDef = func_def!(
     "ipv4::udp::flow.server_dgram";
     ValType::Pkt;
 
@@ -44,8 +93,8 @@ const UDP_SV_DGRAM: FuncDef = func_def!(
 impl Class for UdpFlow {
     fn symbols(&self) -> phf::Map<&'static str, Symbol> {
         phf_map! {
-            "client_dgram" => Symbol::Func(&UDP_CL_DGRAM),
-            "server_dgram" => Symbol::Func(&UDP_SV_DGRAM),
+            "client_dgram" => Symbol::Func(&CL_DGRAM),
+            "server_dgram" => Symbol::Func(&SV_DGRAM),
         }
     }
 
@@ -54,7 +103,7 @@ impl Class for UdpFlow {
     }
 }
 
-const UDP_FLOW: FuncDef = func_def!(
+const FLOW: FuncDef = func_def!(
     "flow";
     ValType::Obj;
 
@@ -72,6 +121,8 @@ const UDP_FLOW: FuncDef = func_def!(
 );
 
 pub const UDP4: phf::Map<&'static str, Symbol> = phf_map! {
-    "flow" => Symbol::Func(&UDP_FLOW),
+    "flow" => Symbol::Func(&FLOW),
+    "broadcast" => Symbol::Func(&BROADCAST),
+    "unicast" => Symbol::Func(&UNICAST),
 };
 
