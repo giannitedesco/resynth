@@ -1,9 +1,11 @@
 use phf::{phf_map, phf_ordered_map};
 
+use std::net::Ipv4Addr;
+
 use pkt::Packet;
 use ezpkt::{UdpDgram, UdpFlow};
 
-use crate::val::{ValType, Val};
+use crate::val::{ValType, Val, ValDef};
 use crate::str::Buf;
 use crate::libapi::{FuncDef, ArgDecl, Class};
 use crate::sym::Symbol;
@@ -16,20 +18,28 @@ const BROADCAST: FuncDef = func_def!(
     "src" => ValType::Sock4,
     "dst" => ValType::Sock4,
     =>
+    "srcip" => ValDef::Type(ValType::Ip4),
     =>
     ValType::Str;
 
     |mut args| {
         let src = args.next();
         let dst = args.next();
+        let srcip: Option<Ipv4Addr> = args.next().into();
         let buf: Buf = args.join_extra(b"").into();
-        let dgram: Packet = UdpDgram::with_capacity(buf.len())
+
+        let mut dgram = UdpDgram::with_capacity(buf.len())
             .src(src.into())
             .dst(dst.into())
             .broadcast()
-            .push(buf)
-            .into();
-        Ok(dgram.into())
+            .push(buf);
+
+        if let Some(src) = srcip {
+            dgram = dgram.srcip(src);
+        }
+
+        let pkt: Packet = dgram.into();
+        Ok(pkt.into())
     }
 );
 

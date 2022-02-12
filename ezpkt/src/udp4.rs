@@ -1,4 +1,4 @@
-use std::net::SocketAddrV4;
+use std::net::{SocketAddrV4, Ipv4Addr};
 
 use pkt::eth::eth_hdr;
 use pkt::ipv4::{ip_hdr, udp_hdr};
@@ -58,6 +58,12 @@ impl UdpDgram {
     #[must_use]
     pub fn new() -> Self {
         Self::with_capacity(0)
+    }
+
+    #[must_use]
+    pub fn srcip(mut self, src: Ipv4Addr) -> Self {
+        self.pkt.get_mut_hdr(self.ip).saddr(src);
+        self
     }
 
     #[must_use]

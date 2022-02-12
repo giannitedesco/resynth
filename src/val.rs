@@ -304,6 +304,16 @@ impl From<Val> for Rc<Packet> {
     }
 }
 
+impl From<Val> for Option<Ipv4Addr> {
+    fn from(v: Val) -> Self {
+        match v {
+            Val::Nil => None,
+            Val::Ip4(ip) => Some(ip),
+            _ => unreachable!()
+        }
+    }
+}
+
 impl From<Val> for Option<u64> {
     fn from(v: Val) -> Self {
         match v {
