@@ -28,10 +28,11 @@ pub mod opt {
     pub const VENDOR_CLASS_ID: u8 = 60;
     pub const CLIENT_ID: u8 = 61;
     pub const CLIENT_FQDN: u8 = 81;
+    pub const END: u8 = 0xff;
 }
 
-pub const CLIENT_PORT: u8 = 68;
-pub const SERVER_PORT: u8 = 67;
+pub const CLIENT_PORT: u16 = 68;
+pub const SERVER_PORT: u16 = 67;
 pub const MAGIC: u32 = 0x63825363u32;
 
 #[repr(C, packed(1))]

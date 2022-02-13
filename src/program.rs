@@ -187,7 +187,7 @@ impl<'a> Program<'a> {
         let ret = (func.exec)(args)?;
 
         /* This is an assert because the stdlib is not user-defined */
-        //println!("{:?} {:?}", ret.val_type(), func.return_type);
+        //println!("{}: {:?} {:?}", func.name, ret.val_type(), func.return_type);
         debug_assert!(ret.val_type() == func.return_type);
         //println!();
 
@@ -229,7 +229,7 @@ impl<'a> Program<'a> {
                 let a_loc = self.loc;
 
                 let b = self.eval(*b)?;
-                if !b.is_type(ValType::U64) {
+                if !b.is_integral() {
                     return Err(TypeError)
                 }
 

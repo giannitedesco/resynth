@@ -72,7 +72,7 @@ const SESSION: FuncDef = func_def!(
 
     "cl" => ValType::Sock4,
     "sv" => ValType::Sock4,
-    "sessionid" => ValType::U64,
+    "sessionid" => ValType::U32,
     =>
     =>
     ValType::Void;

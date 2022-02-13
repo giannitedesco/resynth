@@ -10,10 +10,25 @@ pub enum Symbol {
     Val(ValDef),
 }
 
+trait UnsignedIntegral {}
+
 impl Symbol {
     /// This const initializer is a convenience helpers for describing modules in static/const
     /// structures where the From trait isn't allowed. Without this, the descriptions become very
-    /// ponderous. ie. `Symbol::Val(ValDef::U64(123))` vs. `Symbol::int_val(123)`
+    /// ponderous. ie. `Symbol::Val(ValDef::U64(123))` vs. `Symbol::u64(123)`
+    pub const fn u64(val: u64) -> Self {
+        Self::Val(ValDef::U64(val))
+    }
+    pub const fn u32(val: u32) -> Self {
+        Self::Val(ValDef::U32(val))
+    }
+    pub const fn u16(val: u16) -> Self {
+        Self::Val(ValDef::U16(val))
+    }
+    pub const fn u8(val: u8) -> Self {
+        Self::Val(ValDef::U8(val))
+    }
+
     pub const fn int_val(val: u64) -> Self {
         Self::Val(ValDef::U64(val))
     }

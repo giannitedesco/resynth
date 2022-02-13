@@ -15,45 +15,45 @@ use crate::func_def;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
 const OPCODE: phf::Map<&'static str, Symbol> = phf_map! {
-    "QUERY" => Symbol::int_val(opcode::QUERY as u64),
-    "IQUERY" => Symbol::int_val(opcode::IQUERY as u64),
-    "STATUS" => Symbol::int_val(opcode::STATUS as u64),
+    "QUERY" => Symbol::u8(opcode::QUERY),
+    "IQUERY" => Symbol::u8(opcode::IQUERY),
+    "STATUS" => Symbol::u8(opcode::STATUS),
 };
 
 const TYPE: phf::Map<&'static str, Symbol> = phf_map! {
-    "A" => Symbol::int_val(rrtype::A as u64),
-    "NS" => Symbol::int_val(rrtype::NS as u64),
-    "MD" => Symbol::int_val(rrtype::MD as u64),
-    "MF" => Symbol::int_val(rrtype::MF as u64),
-    "CDNS_NAME" => Symbol::int_val(rrtype::CDNS_NAME as u64),
-    "SOA" => Symbol::int_val(rrtype::SOA as u64),
-    "MB" => Symbol::int_val(rrtype::MB as u64),
-    "MG" => Symbol::int_val(rrtype::MG as u64),
-    "NMR" => Symbol::int_val(rrtype::NMR as u64),
-    "NULL" => Symbol::int_val(rrtype::NULL as u64),
-    "WKS" => Symbol::int_val(rrtype::WKS as u64),
-    "PTR" => Symbol::int_val(rrtype::PTR as u64),
-    "HINFO" => Symbol::int_val(rrtype::HINFO as u64),
-    "MINFO" => Symbol::int_val(rrtype::MINFO as u64),
-    "MX" => Symbol::int_val(rrtype::MX as u64),
-    "TXT" => Symbol::int_val(rrtype::TXT as u64),
+    "A" => Symbol::u16(rrtype::A),
+    "NS" => Symbol::u16(rrtype::NS),
+    "MD" => Symbol::u16(rrtype::MD),
+    "MF" => Symbol::u16(rrtype::MF),
+    "CDNS_NAME" => Symbol::u16(rrtype::CDNS_NAME),
+    "SOA" => Symbol::u16(rrtype::SOA),
+    "MB" => Symbol::u16(rrtype::MB),
+    "MG" => Symbol::u16(rrtype::MG),
+    "NMR" => Symbol::u16(rrtype::NMR),
+    "NULL" => Symbol::u16(rrtype::NULL),
+    "WKS" => Symbol::u16(rrtype::WKS),
+    "PTR" => Symbol::u16(rrtype::PTR),
+    "HINFO" => Symbol::u16(rrtype::HINFO),
+    "MINFO" => Symbol::u16(rrtype::MINFO),
+    "MX" => Symbol::u16(rrtype::MX),
+    "TXT" => Symbol::u16(rrtype::TXT),
 
     // QTYPE
-    "AXFR" => Symbol::int_val(rrtype::AXFR as u64),
-    "MAILB" => Symbol::int_val(rrtype::MAILB as u64),
-    "MAILA" => Symbol::int_val(rrtype::MAILA as u64),
+    "AXFR" => Symbol::u16(rrtype::AXFR),
+    "MAILB" => Symbol::u16(rrtype::MAILB),
+    "MAILA" => Symbol::u16(rrtype::MAILA),
 
-    "ALL" => Symbol::int_val(rrtype::ALL as u64),
+    "ALL" => Symbol::u16(rrtype::ALL),
 };
 
 const CLASS: phf::Map<&'static str, Symbol> = phf_map! {
-    "IN" => Symbol::int_val(class::IN as u64),
-    "CS" => Symbol::int_val(class::CS as u64),
-    "CH" => Symbol::int_val(class::CH as u64),
-    "HS" => Symbol::int_val(class::HS as u64),
+    "IN" => Symbol::u16(class::IN),
+    "CS" => Symbol::u16(class::CS),
+    "CH" => Symbol::u16(class::CH),
+    "HS" => Symbol::u16(class::HS),
 
     // QCLASS
-    "ANY" => Symbol::int_val(class::ANY as u64),
+    "ANY" => Symbol::u16(class::ANY),
 };
 
 const DNS_NAME: FuncDef = func_def! (
@@ -86,38 +86,38 @@ const DNS_NAME: FuncDef = func_def! (
 
 const DNS_FLAGS: FuncDef = func_def!(
     "dns::flags";
-    ValType::U64;
+    ValType::U16;
 
-    "opcode" => ValType::U64,
+    "opcode" => ValType::U8,
     =>
-    "response" => ValDef::U64(0),
-    "aa" => ValDef::U64(0),
-    "tc" => ValDef::U64(0),
-    "rd" => ValDef::U64(0),
-    "ra" => ValDef::U64(0),
-    "rcode" => ValDef::U64(rcode::NOERROR as u64),
+    "response" => ValDef::Bool(false),
+    "aa" => ValDef::Bool(false),
+    "tc" => ValDef::Bool(false),
+    "rd" => ValDef::Bool(false),
+    "ra" => ValDef::Bool(false),
+    "rcode" => ValDef::U8(rcode::NOERROR),
     =>
     ValType::Void;
 
     |mut args| {
-        let opcode: u64 = args.next().into();
+        let opcode: u8 = args.next().into();
 
-        let response: u64 = args.next().into();
-        let aa: u64 = args.next().into();
-        let tc: u64 = args.next().into();
-        let rd: u64 = args.next().into();
-        let ra: u64 = args.next().into();
-        let rcode: u64 = args.next().into();
+        let response: bool = args.next().into();
+        let aa: bool = args.next().into();
+        let tc: bool = args.next().into();
+        let rd: bool = args.next().into();
+        let ra: bool = args.next().into();
+        let rcode: u8 = args.next().into();
 
-        Ok(Val::U64(DnsFlags::default()
-            .response(response != 0)
-            .opcode(opcode as u8)
-            .aa(aa != 0)
-            .tc(tc != 0)
-            .rd(rd != 0)
-            .ra(ra != 0)
-            .rcode(rcode as u8)
-            .build() as u64)
+        Ok(Val::U16(DnsFlags::default()
+            .response(response)
+            .opcode(opcode)
+            .aa(aa)
+            .tc(tc)
+            .rd(rd)
+            .ra(ra)
+            .rcode(rcode)
+            .build())
         )
     }
 );
@@ -126,31 +126,31 @@ const DNS_HDR: FuncDef = func_def!(
     "dns::hdr";
     ValType::Str;
 
-    "id" => ValType::U64,
-    "flags" => ValType::U64,
+    "id" => ValType::U16,
+    "flags" => ValType::U16,
     =>
-    "qdcount" => ValDef::U64(0),
-    "ancount" => ValDef::U64(0),
-    "nscount" => ValDef::U64(0),
-    "arcount" => ValDef::U64(0),
+    "qdcount" => ValDef::U16(0),
+    "ancount" => ValDef::U16(0),
+    "nscount" => ValDef::U16(0),
+    "arcount" => ValDef::U16(0),
     =>
     ValType::Void;
 
     |mut args| {
-        let id: u64 = args.next().into();
-        let flags: u64 = args.next().into();
-        let qdcount: u64 = args.next().into();
-        let ancount: u64 = args.next().into();
-        let nscount: u64 = args.next().into();
-        let arcount: u64 = args.next().into();
+        let id: u16 = args.next().into();
+        let flags: u16 = args.next().into();
+        let qdcount: u16 = args.next().into();
+        let ancount: u16 = args.next().into();
+        let nscount: u16 = args.next().into();
+        let arcount: u16 = args.next().into();
 
         let hdr = dns_hdr::builder()
-            .id(id as u16)
-            .flags(flags as u16)
-            .qdcount(qdcount as u16)
-            .ancount(ancount as u16)
-            .nscount(nscount as u16)
-            .arcount(arcount as u16)
+            .id(id)
+            .flags(flags)
+            .qdcount(qdcount)
+            .ancount(ancount)
+            .nscount(nscount)
+            .arcount(arcount)
             .build();
 
         Ok(Val::Str(Buf::from(hdr.as_bytes())))
@@ -163,21 +163,21 @@ const DNS_QUESTION: FuncDef = func_def!(
 
     "qname" => ValType::Str,
     =>
-    "qtype" => ValDef::U64(1),
-    "qclass" => ValDef::U64(1),
+    "qtype" => ValDef::U16(1),
+    "qclass" => ValDef::U16(1),
     =>
     ValType::Void;
 
     |mut args| {
         let name: Buf = args.next().into();
-        let qtype: u64 = args.next().into();
-        let qclass: u64 = args.next().into();
+        let qtype: u16 = args.next().into();
+        let qclass: u16 = args.next().into();
 
         let mut q: Vec<u8> = Vec::new();
 
         q.extend(name.as_ref());
-        q.extend((qtype as u16).to_be_bytes());
-        q.extend((qclass as u16).to_be_bytes());
+        q.extend(qtype.to_be_bytes());
+        q.extend(qclass.to_be_bytes());
 
         Ok(Val::Str(Buf::from(q)))
     }
@@ -190,25 +190,25 @@ const DNS_ANSWER: FuncDef = func_def!(
     "aname" => ValType::Str,
     "data" => ValType::Str,
     =>
-    "atype" => ValDef::U64(1),
-    "aclass" => ValDef::U64(1),
-    "ttl" => ValDef::U64(229),
+    "atype" => ValDef::U16(1),
+    "aclass" => ValDef::U16(1),
+    "ttl" => ValDef::U32(229),
     =>
     ValType::Void;
 
     |mut args| {
         let name: Buf = args.next().into();
         let data: Buf = args.next().into();
-        let atype: u64 = args.next().into();
-        let aclass: u64 = args.next().into();
-        let ttl: u64 = args.next().into();
+        let atype: u16 = args.next().into();
+        let aclass: u16 = args.next().into();
+        let ttl: u32 = args.next().into();
 
         let mut a: Vec<u8> = Vec::new();
 
         a.extend(name.as_ref());
-        a.extend((atype as u16).to_be_bytes());
-        a.extend((aclass as u16).to_be_bytes());
-        a.extend((ttl as u32).to_be_bytes());
+        a.extend(atype.to_be_bytes());
+        a.extend(aclass.to_be_bytes());
+        a.extend(ttl.to_be_bytes());
         a.extend((data.len() as u16).to_be_bytes()); // dsize
         a.extend(data.as_ref());
 
@@ -223,7 +223,7 @@ const DNS_HOST: FuncDef = func_def!(
     "client" => ValType::Ip4,
     "qname" => ValType::Str,
     =>
-    "ttl" => ValDef::U64(229),
+    "ttl" => ValDef::U32(229),
     "ns" => ValDef::Ip4(Ipv4Addr::new(1, 1, 1, 1)),
     =>
     ValType::Ip4;
@@ -231,7 +231,7 @@ const DNS_HOST: FuncDef = func_def!(
     |mut args| {
         let client: Ipv4Addr = args.next().into();
         let qname: DnsName = DnsName::from(args.next().as_ref());
-        let ttl: u64 = args.next().into();
+        let ttl: u32 = args.next().into();
         let ns: Ipv4Addr = args.next().into();
 
         let mut pkts: Vec<Packet> = Vec::with_capacity(2);
@@ -280,7 +280,7 @@ const DNS_HOST: FuncDef = func_def!(
             msg.extend(qname.as_ref());
             msg.extend(rrtype::A.to_be_bytes());
             msg.extend(class::IN.to_be_bytes());
-            msg.extend((ttl as u32).to_be_bytes());
+            msg.extend(ttl.to_be_bytes());
             msg.extend((4u16).to_be_bytes()); // dsize
             msg.extend(u32::from(ip).to_be_bytes()); // ip
         }

@@ -32,7 +32,7 @@ def _ciphers(p: Path, pkt: bool = False, stdlib: bool = False) -> None:
         print("\nconst CIPHERS: phf::Map<&'static str, Symbol> = phf_map! {")
         for val, name in ciphers:
             print(f'    "{name}" => ')
-            print(f'        Symbol::int_val(ciphers::{name} as u64),')
+            print(f'        Symbol::u16(ciphers::{name}),')
         print('};')
 
 
@@ -69,7 +69,7 @@ def _hs(p: Path, pkt: bool = False, stdlib: bool = False) -> None:
     if stdlib:
         print("\nconst HANDSHAKE: phf::Map<&'static str, Symbol> = phf_map! {")
         for val, name in hs:
-            print(f'    "{name}" => Symbol::int_val(handshake::{name} as u64),')
+            print(f'    "{name}" => Symbol::u8(handshake::{name}),')
         print('};')
 
 
@@ -85,7 +85,7 @@ def _ext(p: Path, pkt: bool = False, stdlib: bool = False) -> None:
     if stdlib:
         print("\nconst EXT: phf::Map<&'static str, Symbol> = phf_map! {")
         for val, name in hs:
-            print(f'    "{name}" => Symbol::int_val(ext::{name} as u64),')
+            print(f'    "{name}" => Symbol::u16(ext::{name}),')
         print('};')
 
 

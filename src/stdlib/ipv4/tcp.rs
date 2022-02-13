@@ -59,7 +59,7 @@ const TCP_CL_HOLE: FuncDef = func_def!(
     "ipv4::tcp::flow.client_hole";
     ValType::Void;
 
-    "bytes" => ValType::U64,
+    "bytes" => ValType::U32,
     =>
     =>
     ValType::Void;
@@ -79,7 +79,7 @@ const TCP_SV_HOLE: FuncDef = func_def!(
     "ipv4::tcp::flow.server_hole";
     ValType::Void;
 
-    "bytes" => ValType::U64,
+    "bytes" => ValType::U32,
     =>
     =>
     ValType::Void;
@@ -101,8 +101,8 @@ const TCP_CL_MSG: FuncDef = func_def!(
 
     =>
     "send_ack" => ValDef::Bool(true),
-    "seq" => ValDef::Type(ValType::U64),
-    "ack" => ValDef::Type(ValType::U64),
+    "seq" => ValDef::Type(ValType::U32),
+    "ack" => ValDef::Type(ValType::U32),
     =>
     ValType::Str;
 
@@ -130,8 +130,8 @@ const TCP_SV_MSG: FuncDef = func_def!(
 
     =>
     "send_ack" => ValDef::Bool(true),
-    "seq" => ValDef::Type(ValType::U64),
-    "ack" => ValDef::Type(ValType::U64),
+    "seq" => ValDef::Type(ValType::U32),
+    "ack" => ValDef::Type(ValType::U32),
     =>
     ValType::Str;
 
@@ -178,8 +178,8 @@ const TCP_FLOW: FuncDef = func_def!(
     "cl" => ValType::Sock4,
     "sv" => ValType::Sock4,
     =>
-    "cl_seq" => ValDef::U64(1),
-    "sv_seq" => ValDef::U64(1),
+    "cl_seq" => ValDef::U32(1),
+    "sv_seq" => ValDef::U32(1),
     =>
     ValType::Void;
 

@@ -13,34 +13,34 @@ use crate::func_def;
 use std::net::Ipv4Addr;
 
 const OPCODE: phf::Map<&'static str, Symbol> = phf_map! {
-    "REQUEST" => Symbol::int_val(opcode::REQUEST as u64),
-    "REPLY" => Symbol::int_val(opcode::REPLY as u64),
+    "REQUEST" => Symbol::u8(opcode::REQUEST),
+    "REPLY" => Symbol::u8(opcode::REPLY),
 };
 
 const TYPE: phf::Map<&'static str, Symbol> = phf_map! {
-    "DISCOVER" => Symbol::int_val(message::DISCOVER as u64),
-    "OFFER" => Symbol::int_val(message::OFFER as u64),
-    "REQUEST" => Symbol::int_val(message::REQUEST as u64),
-    "ACK" => Symbol::int_val(message::ACK as u64),
-    "NACK" => Symbol::int_val(message::NACK as u64),
-    "RELEASE" => Symbol::int_val(message::RELEASE as u64),
-    "INFORM" => Symbol::int_val(message::INFORM as u64),
+    "DISCOVER" => Symbol::u8(message::DISCOVER),
+    "OFFER" => Symbol::u8(message::OFFER),
+    "REQUEST" => Symbol::u8(message::REQUEST),
+    "ACK" => Symbol::u8(message::ACK),
+    "NACK" => Symbol::u8(message::NACK),
+    "RELEASE" => Symbol::u8(message::RELEASE),
+    "INFORM" => Symbol::u8(message::INFORM),
 };
 
 const OPT: phf::Map<&'static str, Symbol> = phf_map! {
-    "PADDING" => Symbol::int_val(opt::PADDING as u64),
-    "CLIENT_HOSTNAME" => Symbol::int_val(opt::CLIENT_HOSTNAME as u64),
-    "VENDOR_SPECIFIC" => Symbol::int_val(opt::VENDOR_SPECIFIC as u64),
-    "REQUESTED_ADDRESS" => Symbol::int_val(opt::REQUESTED_ADDRESS as u64),
-    "MESSAGE_TYPE" => Symbol::int_val(opt::MESSAGE_TYPE as u64),
-    "SERVER_ID" => Symbol::int_val(opt::SERVER_ID as u64),
-    "PARAM_REQUEST_LIST" => Symbol::int_val(opt::PARAM_REQUEST_LIST as u64),
-    "MAX_MESSAGE_SIZE" => Symbol::int_val(opt::MAX_MESSAGE_SIZE as u64),
-    "VENDOR_CLASS_ID" => Symbol::int_val(opt::VENDOR_CLASS_ID as u64),
-    "CLIENT_ID" => Symbol::int_val(opt::CLIENT_ID as u64),
-    "CLIENT_FQDN" => Symbol::int_val(opt::CLIENT_FQDN as u64),
+    "PADDING" => Symbol::u8(opt::PADDING),
+    "CLIENT_HOSTNAME" => Symbol::u8(opt::CLIENT_HOSTNAME),
+    "VENDOR_SPECIFIC" => Symbol::u8(opt::VENDOR_SPECIFIC),
+    "REQUESTED_ADDRESS" => Symbol::u8(opt::REQUESTED_ADDRESS),
+    "MESSAGE_TYPE" => Symbol::u8(opt::MESSAGE_TYPE),
+    "SERVER_ID" => Symbol::u8(opt::SERVER_ID),
+    "PARAM_REQUEST_LIST" => Symbol::u8(opt::PARAM_REQUEST_LIST),
+    "MAX_MESSAGE_SIZE" => Symbol::u8(opt::MAX_MESSAGE_SIZE),
+    "VENDOR_CLASS_ID" => Symbol::u8(opt::VENDOR_CLASS_ID),
+    "CLIENT_ID" => Symbol::u8(opt::CLIENT_ID),
+    "CLIENT_FQDN" => Symbol::u8(opt::CLIENT_FQDN),
 
-    "END" => Symbol::Val(ValDef::Str(b"\xff")),
+    "END" => Symbol::u8(opt::END),
 };
 
 const HDR: FuncDef = func_def!(
@@ -48,12 +48,12 @@ const HDR: FuncDef = func_def!(
     ValType::Str;
 
     =>
-    "opcode" => ValDef::U64(opcode::REQUEST as u64),
-    "htype" => ValDef::U64(hrd::ETHER as u64),
-    "hlen" => ValDef::U64(6),
-    "hops" => ValDef::U64(0),
+    "opcode" => ValDef::U8(opcode::REQUEST),
+    "htype" => ValDef::U8(hrd::ETHER),
+    "hlen" => ValDef::U8(6),
+    "hops" => ValDef::U8(0),
 
-    "xid" => ValDef::U64(0),
+    "xid" => ValDef::U32(0),
 
     "ciaddr" => ValDef::Ip4(Ipv4Addr::new(0, 0, 0, 0)),
     "yiaddr" => ValDef::Ip4(Ipv4Addr::new(0, 0, 0, 0)),
@@ -65,7 +65,7 @@ const HDR: FuncDef = func_def!(
     "sname" => ValDef::Type(ValType::Str),
     "file" => ValDef::Type(ValType::Str),
 
-    "magic" => ValDef::U64(MAGIC as u64),
+    "magic" => ValDef::U32(MAGIC),
     =>
     ValType::Void;
 
@@ -119,7 +119,7 @@ const OPTION: FuncDef = func_def!(
     "dhcp::option";
     ValType::Str;
 
-    "opt" => ValType::U64,
+    "opt" => ValType::U8,
     =>
     =>
     ValType::Str;
@@ -133,8 +133,8 @@ const OPTION: FuncDef = func_def!(
 );
 
 pub const MODULE: phf::Map<&'static str, Symbol> = phf_map! {
-    "CLIENT_PORT" => Symbol::int_val(CLIENT_PORT as u64),
-    "SERVER_PORT" => Symbol::int_val(SERVER_PORT as u64),
+    "CLIENT_PORT" => Symbol::u16(CLIENT_PORT),
+    "SERVER_PORT" => Symbol::u16(SERVER_PORT),
 
     "opcode" => Symbol::Module(&OPCODE),
     "type" => Symbol::Module(&TYPE),

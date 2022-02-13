@@ -17,6 +17,9 @@ use std::rc::Rc;
 pub enum ValType {
     Void,
     Bool,
+    U8,
+    U16,
+    U32,
     U64,
     Ip4,
     Sock4,
@@ -50,6 +53,16 @@ pub trait Typed {
         self.is_type(ValType::Str)
     }
 
+    fn is_integral(&self) -> bool {
+        matches!(self.val_type(),
+            | ValType::Bool
+            | ValType::U8
+            | ValType::U16
+            | ValType::U32
+            | ValType::U64
+        )
+    }
+
     fn type_matches<T: Typed>(&self, other: &T) -> bool {
         self.is_type(other.val_type())
     }
@@ -57,13 +70,18 @@ pub trait Typed {
     fn is_string_coercible(&self) -> bool {
         matches!(self.val_type(),
             ValType::Str
+            | ValType::U8
+            | ValType::U16
+            | ValType::U32
             | ValType::U64
             | ValType::Ip4
         )
     }
 
     fn compatible_with<T: Typed>(&self, other: &T) -> bool {
-        self.type_matches(other) || (self.is_str() && other.is_string_coercible())
+        self.type_matches(other)
+            || self.is_integral() && other.is_integral()
+            || (self.is_str() && other.is_string_coercible())
     }
 }
 
@@ -79,6 +97,9 @@ impl Typed for ValType {
 pub enum ValDef {
     Nil,
     Bool(bool),
+    U8(u8),
+    U16(u16),
+    U32(u32),
     U64(u64),
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
@@ -101,6 +122,9 @@ impl Typed for ValDef {
         match self {
             ValDef::Nil => Void,
             ValDef::Bool(..) => Bool,
+            ValDef::U8(..) => U8,
+            ValDef::U16(..) => U16,
+            ValDef::U32(..) => U32,
             ValDef::U64(..) => U64,
             ValDef::Ip4(..) => Ip4,
             ValDef::Sock4(..) => Sock4,
@@ -165,6 +189,9 @@ impl<T> From<&'static T> for ValDef where T: AsRef<[u8]> + ? Sized {
 pub enum Val {
     Nil,
     Bool(bool),
+    U8(u8),
+    U16(u16),
+    U32(u32),
     U64(u64),
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
@@ -189,6 +216,9 @@ impl From<ValDef> for Val {
         match valdef {
             Nil => Val::Nil,
             Bool(b) => Val::Bool(b),
+            U8(uint) => Val::U8(uint),
+            U16(uint) => Val::U16(uint),
+            U32(uint) => Val::U32(uint),
             U64(uint) => Val::U64(uint),
             Ip4(ip) => Val::Ip4(ip),
             Sock4(sock) => Val::Sock4(sock),
@@ -244,6 +274,10 @@ impl From<Val> for bool {
     fn from(v: Val) -> Self {
         match v {
             Val::Bool(b) => b,
+            Val::U8(u) => u != 0,
+            Val::U16(u) => u != 0,
+            Val::U32(u) => u != 0,
+            Val::U64(u) => u != 0,
             _ => unreachable!()
         }
     }
@@ -252,7 +286,10 @@ impl From<Val> for bool {
 impl From<Val> for u64 {
     fn from(v: Val) -> Self {
         match v {
-            Val::U64(u) => u,
+            Val::U8(u) => u as u64,
+            Val::U16(u) => u as u64,
+            Val::U32(u) => u as u64,
+            Val::U64(u) => u as u64,
             _ => unreachable!()
         }
     }
@@ -261,6 +298,9 @@ impl From<Val> for u64 {
 impl From<Val> for u32 {
     fn from(v: Val) -> Self {
         match v {
+            Val::U8(u) => u as u32,
+            Val::U16(u) => u as u32,
+            Val::U32(u) => u as u32,
             Val::U64(u) => u as u32,
             _ => unreachable!()
         }
@@ -270,6 +310,9 @@ impl From<Val> for u32 {
 impl From<Val> for u16 {
     fn from(v: Val) -> Self {
         match v {
+            Val::U8(u) => u as u16,
+            Val::U16(u) => u as u16,
+            Val::U32(u) => u as u16,
             Val::U64(u) => u as u16,
             _ => unreachable!()
         }
@@ -279,6 +322,9 @@ impl From<Val> for u16 {
 impl From<Val> for u8 {
     fn from(v: Val) -> Self {
         match v {
+            Val::U8(u) => u as u8,
+            Val::U16(u) => u as u8,
+            Val::U32(u) => u as u8,
             Val::U64(u) => u as u8,
             _ => unreachable!()
         }
@@ -308,6 +354,9 @@ impl From<Val> for Buf {
         /* Must be implemented for all types which are Typed::is_string_coercible() */
         match v {
             Val::Str(s) => s,
+            Val::U8(u) => Buf::from(&u.to_be_bytes()),
+            Val::U16(u) => Buf::from(&u.to_be_bytes()),
+            Val::U32(u) => Buf::from(&u.to_be_bytes()),
             Val::U64(u) => Buf::from(&u.to_be_bytes()),
             Val::Ip4(ip) => Buf::from(&u32::from(ip).to_be_bytes()),
             _ => unreachable!()
@@ -347,8 +396,7 @@ impl From<Val> for Option<u64> {
     fn from(v: Val) -> Self {
         match v {
             Val::Nil => None,
-            Val::U64(u) => Some(u),
-            _ => unreachable!()
+            _ => Some(u64::from(v)),
         }
     }
 }
@@ -357,8 +405,7 @@ impl From<Val> for Option<u32> {
     fn from(v: Val) -> Self {
         match v {
             Val::Nil => None,
-            Val::U64(u) => Some(u as u32),
-            _ => unreachable!()
+            _ => Some(u32::from(v)),
         }
     }
 }
@@ -367,8 +414,7 @@ impl From<Val> for Option<u16> {
     fn from(v: Val) -> Self {
         match v {
             Val::Nil => None,
-            Val::U64(u) => Some(u as u16),
-            _ => unreachable!()
+            _ => Some(u16::from(v)),
         }
     }
 }
@@ -377,8 +423,7 @@ impl From<Val> for Option<u8> {
     fn from(v: Val) -> Self {
         match v {
             Val::Nil => None,
-            Val::U64(u) => Some(u as u8),
-            _ => unreachable!()
+            _ => Some(u8::from(v)),
         }
     }
 }
@@ -392,7 +437,6 @@ impl From<Val> for Option<Buf> {
         }
     }
 }
-
 
 impl<T: 'static + Obj> From<T> for Val {
     fn from(obj: T) -> Self {
@@ -415,6 +459,9 @@ impl Typed for Val {
         match self {
             Val::Nil => Void,
             Val::Bool(..) => Bool,
+            Val::U8(..) => U8,
+            Val::U16(..) => U16,
+            Val::U32(..) => U32,
             Val::U64(..) => U64,
             Val::Ip4(..) => Ip4,
             Val::Sock4(..) => Sock4,

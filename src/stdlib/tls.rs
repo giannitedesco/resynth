@@ -9,819 +9,819 @@ use crate::str::Buf;
 use crate::func_def;
 
 const VERSION: phf::Map<&'static str, Symbol> = phf_map! {
-    "SSL_1" => Symbol::int_val(version::SSL_1 as u64),
-    "SSL_2" => Symbol::int_val(version::SSL_2 as u64),
-    "SSL_3" => Symbol::int_val(version::SSL_3 as u64),
-    "TLS_1_0" => Symbol::int_val(version::TLS_1_0 as u64),
-    "TLS_1_1" => Symbol::int_val(version::TLS_1_1 as u64),
-    "TLS_1_2" => Symbol::int_val(version::TLS_1_2 as u64),
-    "TLS_1_3" => Symbol::int_val(version::TLS_1_3 as u64),
+    "SSL_1" => Symbol::u16(version::SSL_1),
+    "SSL_2" => Symbol::u16(version::SSL_2),
+    "SSL_3" => Symbol::u16(version::SSL_3),
+    "TLS_1_0" => Symbol::u16(version::TLS_1_0),
+    "TLS_1_1" => Symbol::u16(version::TLS_1_1),
+    "TLS_1_2" => Symbol::u16(version::TLS_1_2),
+    "TLS_1_3" => Symbol::u16(version::TLS_1_3),
 };
 
 const CONTENT: phf::Map<&'static str, Symbol> = phf_map! {
-    "INVALID" => Symbol::int_val(content::INVALID as u64),
-    "CHANGE_CIPHER_SPEC" => Symbol::int_val(content::CHANGE_CIPHER_SPEC as u64),
-    "ALERT" => Symbol::int_val(content::ALERT as u64),
-    "HANDSHAKE" => Symbol::int_val(content::HANDSHAKE as u64),
-    "APP_DATA" => Symbol::int_val(content::APP_DATA as u64),
-    "HEARTBEAT" => Symbol::int_val(content::HEARTBEAT as u64),
-    "TLS12_CID" => Symbol::int_val(content::TLS12_CID as u64),
-    "ACK" => Symbol::int_val(content::ACK as u64),
+    "INVALID" => Symbol::u8(content::INVALID),
+    "CHANGE_CIPHER_SPEC" => Symbol::u8(content::CHANGE_CIPHER_SPEC),
+    "ALERT" => Symbol::u8(content::ALERT),
+    "HANDSHAKE" => Symbol::u8(content::HANDSHAKE),
+    "APP_DATA" => Symbol::u8(content::APP_DATA),
+    "HEARTBEAT" => Symbol::u8(content::HEARTBEAT),
+    "TLS12_CID" => Symbol::u8(content::TLS12_CID),
+    "ACK" => Symbol::u8(content::ACK),
 };
 
 const HANDSHAKE: phf::Map<&'static str, Symbol> = phf_map! {
-    "HELLO_REQUEST" => Symbol::int_val(handshake::HELLO_REQUEST as u64),
-    "CLIENT_HELLO" => Symbol::int_val(handshake::CLIENT_HELLO as u64),
-    "SERVER_HELLO" => Symbol::int_val(handshake::SERVER_HELLO as u64),
-    "HELLO_VERIFY_REQUEST" => Symbol::int_val(handshake::HELLO_VERIFY_REQUEST as u64),
-    "NEW_SESSION_TICKET" => Symbol::int_val(handshake::NEW_SESSION_TICKET as u64),
-    "END_OF_EARLY_DATA" => Symbol::int_val(handshake::END_OF_EARLY_DATA as u64),
-    "HELLO_RETRY_REQUEST" => Symbol::int_val(handshake::HELLO_RETRY_REQUEST as u64),
-    "ENCRYPTED_EXTENSIONS" => Symbol::int_val(handshake::ENCRYPTED_EXTENSIONS as u64),
-    "REQUESTCONNECTIONID" => Symbol::int_val(handshake::REQUESTCONNECTIONID as u64),
-    "NEWCONNECTIONID" => Symbol::int_val(handshake::NEWCONNECTIONID as u64),
-    "CERTIFICATE" => Symbol::int_val(handshake::CERTIFICATE as u64),
-    "SERVER_KEY_EXCHANGE" => Symbol::int_val(handshake::SERVER_KEY_EXCHANGE as u64),
-    "CERTIFICATE_REQUEST" => Symbol::int_val(handshake::CERTIFICATE_REQUEST as u64),
-    "SERVER_HELLO_DONE" => Symbol::int_val(handshake::SERVER_HELLO_DONE as u64),
-    "CERTIFICATE_VERIFY" => Symbol::int_val(handshake::CERTIFICATE_VERIFY as u64),
-    "CLIENT_KEY_EXCHANGE" => Symbol::int_val(handshake::CLIENT_KEY_EXCHANGE as u64),
-    "FINISHED" => Symbol::int_val(handshake::FINISHED as u64),
-    "CERTIFICATE_URL" => Symbol::int_val(handshake::CERTIFICATE_URL as u64),
-    "CERTIFICATE_STATUS" => Symbol::int_val(handshake::CERTIFICATE_STATUS as u64),
-    "SUPPLEMENTAL_DATA" => Symbol::int_val(handshake::SUPPLEMENTAL_DATA as u64),
-    "KEY_UPDATE" => Symbol::int_val(handshake::KEY_UPDATE as u64),
-    "COMPRESSED_CERTIFICATE" => Symbol::int_val(handshake::COMPRESSED_CERTIFICATE as u64),
-    "EKT_KEY" => Symbol::int_val(handshake::EKT_KEY as u64),
-    "MESSAGE_HASH" => Symbol::int_val(handshake::MESSAGE_HASH as u64),
+    "HELLO_REQUEST" => Symbol::u8(handshake::HELLO_REQUEST),
+    "CLIENT_HELLO" => Symbol::u8(handshake::CLIENT_HELLO),
+    "SERVER_HELLO" => Symbol::u8(handshake::SERVER_HELLO),
+    "HELLO_VERIFY_REQUEST" => Symbol::u8(handshake::HELLO_VERIFY_REQUEST),
+    "NEW_SESSION_TICKET" => Symbol::u8(handshake::NEW_SESSION_TICKET),
+    "END_OF_EARLY_DATA" => Symbol::u8(handshake::END_OF_EARLY_DATA),
+    "HELLO_RETRY_REQUEST" => Symbol::u8(handshake::HELLO_RETRY_REQUEST),
+    "ENCRYPTED_EXTENSIONS" => Symbol::u8(handshake::ENCRYPTED_EXTENSIONS),
+    "REQUESTCONNECTIONID" => Symbol::u8(handshake::REQUESTCONNECTIONID),
+    "NEWCONNECTIONID" => Symbol::u8(handshake::NEWCONNECTIONID),
+    "CERTIFICATE" => Symbol::u8(handshake::CERTIFICATE),
+    "SERVER_KEY_EXCHANGE" => Symbol::u8(handshake::SERVER_KEY_EXCHANGE),
+    "CERTIFICATE_REQUEST" => Symbol::u8(handshake::CERTIFICATE_REQUEST),
+    "SERVER_HELLO_DONE" => Symbol::u8(handshake::SERVER_HELLO_DONE),
+    "CERTIFICATE_VERIFY" => Symbol::u8(handshake::CERTIFICATE_VERIFY),
+    "CLIENT_KEY_EXCHANGE" => Symbol::u8(handshake::CLIENT_KEY_EXCHANGE),
+    "FINISHED" => Symbol::u8(handshake::FINISHED),
+    "CERTIFICATE_URL" => Symbol::u8(handshake::CERTIFICATE_URL),
+    "CERTIFICATE_STATUS" => Symbol::u8(handshake::CERTIFICATE_STATUS),
+    "SUPPLEMENTAL_DATA" => Symbol::u8(handshake::SUPPLEMENTAL_DATA),
+    "KEY_UPDATE" => Symbol::u8(handshake::KEY_UPDATE),
+    "COMPRESSED_CERTIFICATE" => Symbol::u8(handshake::COMPRESSED_CERTIFICATE),
+    "EKT_KEY" => Symbol::u8(handshake::EKT_KEY),
+    "MESSAGE_HASH" => Symbol::u8(handshake::MESSAGE_HASH),
 };
 
 const EXT: phf::Map<&'static str, Symbol> = phf_map! {
-    "SERVER_NAME" => Symbol::int_val(ext::SERVER_NAME as u64),
-    "MAX_FRAGMENT_LENGTH" => Symbol::int_val(ext::MAX_FRAGMENT_LENGTH as u64),
-    "CLIENT_CERTIFICATE_URL" => Symbol::int_val(ext::CLIENT_CERTIFICATE_URL as u64),
-    "TRUSTED_CA_KEYS" => Symbol::int_val(ext::TRUSTED_CA_KEYS as u64),
-    "TRUNCATED_HMAC" => Symbol::int_val(ext::TRUNCATED_HMAC as u64),
-    "STATUS_REQUEST" => Symbol::int_val(ext::STATUS_REQUEST as u64),
-    "USER_MAPPING" => Symbol::int_val(ext::USER_MAPPING as u64),
-    "CLIENT_AUTHZ" => Symbol::int_val(ext::CLIENT_AUTHZ as u64),
-    "SERVER_AUTHZ" => Symbol::int_val(ext::SERVER_AUTHZ as u64),
-    "CERT_TYPE" => Symbol::int_val(ext::CERT_TYPE as u64),
-    "SUPPORTED_GROUPS" => Symbol::int_val(ext::SUPPORTED_GROUPS as u64),
-    "EC_POINT_FORMATS" => Symbol::int_val(ext::EC_POINT_FORMATS as u64),
-    "SRP" => Symbol::int_val(ext::SRP as u64),
-    "SIGNATURE_ALGORITHMS" => Symbol::int_val(ext::SIGNATURE_ALGORITHMS as u64),
-    "USE_SRTP" => Symbol::int_val(ext::USE_SRTP as u64),
-    "HEARTBEAT" => Symbol::int_val(ext::HEARTBEAT as u64),
+    "SERVER_NAME" => Symbol::u16(ext::SERVER_NAME),
+    "MAX_FRAGMENT_LENGTH" => Symbol::u16(ext::MAX_FRAGMENT_LENGTH),
+    "CLIENT_CERTIFICATE_URL" => Symbol::u16(ext::CLIENT_CERTIFICATE_URL),
+    "TRUSTED_CA_KEYS" => Symbol::u16(ext::TRUSTED_CA_KEYS),
+    "TRUNCATED_HMAC" => Symbol::u16(ext::TRUNCATED_HMAC),
+    "STATUS_REQUEST" => Symbol::u16(ext::STATUS_REQUEST),
+    "USER_MAPPING" => Symbol::u16(ext::USER_MAPPING),
+    "CLIENT_AUTHZ" => Symbol::u16(ext::CLIENT_AUTHZ),
+    "SERVER_AUTHZ" => Symbol::u16(ext::SERVER_AUTHZ),
+    "CERT_TYPE" => Symbol::u16(ext::CERT_TYPE),
+    "SUPPORTED_GROUPS" => Symbol::u16(ext::SUPPORTED_GROUPS),
+    "EC_POINT_FORMATS" => Symbol::u16(ext::EC_POINT_FORMATS),
+    "SRP" => Symbol::u16(ext::SRP),
+    "SIGNATURE_ALGORITHMS" => Symbol::u16(ext::SIGNATURE_ALGORITHMS),
+    "USE_SRTP" => Symbol::u16(ext::USE_SRTP),
+    "HEARTBEAT" => Symbol::u16(ext::HEARTBEAT),
     "APPLICATION_LAYER_PROTOCOL_NEGOTIATION"
-        => Symbol::int_val(ext::APPLICATION_LAYER_PROTOCOL_NEGOTIATION as u64),
+        => Symbol::u16(ext::APPLICATION_LAYER_PROTOCOL_NEGOTIATION),
     "ALPN"
-        => Symbol::int_val(ext::APPLICATION_LAYER_PROTOCOL_NEGOTIATION as u64),
-    "STATUS_REQUEST_V2" => Symbol::int_val(ext::STATUS_REQUEST_V2 as u64),
-    "SIGNED_CERTIFICATE_TIMESTAMP" => Symbol::int_val(ext::SIGNED_CERTIFICATE_TIMESTAMP as u64),
-    "CLIENT_CERTIFICATE_TYPE" => Symbol::int_val(ext::CLIENT_CERTIFICATE_TYPE as u64),
-    "SERVER_CERTIFICATE_TYPE" => Symbol::int_val(ext::SERVER_CERTIFICATE_TYPE as u64),
-    "PADDING" => Symbol::int_val(ext::PADDING as u64),
-    "ENCRYPT_THEN_MAC" => Symbol::int_val(ext::ENCRYPT_THEN_MAC as u64),
-    "EXTENDED_MASTER_SECRET" => Symbol::int_val(ext::EXTENDED_MASTER_SECRET as u64),
-    "TOKEN_BINDING" => Symbol::int_val(ext::TOKEN_BINDING as u64),
-    "CACHED_INFO" => Symbol::int_val(ext::CACHED_INFO as u64),
-    "TLS_LTS" => Symbol::int_val(ext::TLS_LTS as u64),
-    "COMPRESS_CERTIFICATE" => Symbol::int_val(ext::COMPRESS_CERTIFICATE as u64),
-    "RECORD_SIZE_LIMIT" => Symbol::int_val(ext::RECORD_SIZE_LIMIT as u64),
-    "PWD_PROTECT" => Symbol::int_val(ext::PWD_PROTECT as u64),
-    "PWD_CLEAR" => Symbol::int_val(ext::PWD_CLEAR as u64),
-    "PASSWORD_SALT" => Symbol::int_val(ext::PASSWORD_SALT as u64),
-    "TICKET_PINNING" => Symbol::int_val(ext::TICKET_PINNING as u64),
-    "TLS_CERT_WITH_EXTERN_PSK" => Symbol::int_val(ext::TLS_CERT_WITH_EXTERN_PSK as u64),
-    "DELEGATED_CREDENTIALS" => Symbol::int_val(ext::DELEGATED_CREDENTIALS as u64),
-    "SESSION_TICKET" => Symbol::int_val(ext::SESSION_TICKET as u64),
-    "TLMSP" => Symbol::int_val(ext::TLMSP as u64),
-    "TLMSP_PROXYING" => Symbol::int_val(ext::TLMSP_PROXYING as u64),
-    "TLMSP_DELEGATE" => Symbol::int_val(ext::TLMSP_DELEGATE as u64),
-    "SUPPORTED_EKT_CIPHERS" => Symbol::int_val(ext::SUPPORTED_EKT_CIPHERS as u64),
-    "PRE_SHARED_KEY" => Symbol::int_val(ext::PRE_SHARED_KEY as u64),
-    "EARLY_DATA" => Symbol::int_val(ext::EARLY_DATA as u64),
-    "SUPPORTED_VERSIONS" => Symbol::int_val(ext::SUPPORTED_VERSIONS as u64),
-    "COOKIE" => Symbol::int_val(ext::COOKIE as u64),
-    "PSK_KEY_EXCHANGE_MODES" => Symbol::int_val(ext::PSK_KEY_EXCHANGE_MODES as u64),
-    "CERTIFICATE_AUTHORITIES" => Symbol::int_val(ext::CERTIFICATE_AUTHORITIES as u64),
-    "OID_FILTERS" => Symbol::int_val(ext::OID_FILTERS as u64),
-    "POST_HANDSHAKE_AUTH" => Symbol::int_val(ext::POST_HANDSHAKE_AUTH as u64),
-    "SIGNATURE_ALGORITHMS_CERT" => Symbol::int_val(ext::SIGNATURE_ALGORITHMS_CERT as u64),
-    "KEY_SHARE" => Symbol::int_val(ext::KEY_SHARE as u64),
-    "TRANSPARENCY_INFO" => Symbol::int_val(ext::TRANSPARENCY_INFO as u64),
-    "CONNECTION_ID_DEPRECATED" => Symbol::int_val(ext::CONNECTION_ID_DEPRECATED as u64),
-    "CONNECTION_ID" => Symbol::int_val(ext::CONNECTION_ID as u64),
-    "EXTERNAL_ID_HASH" => Symbol::int_val(ext::EXTERNAL_ID_HASH as u64),
-    "EXTERNAL_SESSION_ID" => Symbol::int_val(ext::EXTERNAL_SESSION_ID as u64),
-    "QUIC_TRANSPORT_PARAMETERS" => Symbol::int_val(ext::QUIC_TRANSPORT_PARAMETERS as u64),
-    "TICKET_REQUEST" => Symbol::int_val(ext::TICKET_REQUEST as u64),
-    "DNSSEC_CHAIN" => Symbol::int_val(ext::DNSSEC_CHAIN as u64),
-    "RENEGOTIATION_INFO" => Symbol::int_val(ext::RENEGOTIATION_INFO as u64),
+        => Symbol::u16(ext::APPLICATION_LAYER_PROTOCOL_NEGOTIATION),
+    "STATUS_REQUEST_V2" => Symbol::u16(ext::STATUS_REQUEST_V2),
+    "SIGNED_CERTIFICATE_TIMESTAMP" => Symbol::u16(ext::SIGNED_CERTIFICATE_TIMESTAMP),
+    "CLIENT_CERTIFICATE_TYPE" => Symbol::u16(ext::CLIENT_CERTIFICATE_TYPE),
+    "SERVER_CERTIFICATE_TYPE" => Symbol::u16(ext::SERVER_CERTIFICATE_TYPE),
+    "PADDING" => Symbol::u16(ext::PADDING),
+    "ENCRYPT_THEN_MAC" => Symbol::u16(ext::ENCRYPT_THEN_MAC),
+    "EXTENDED_MASTER_SECRET" => Symbol::u16(ext::EXTENDED_MASTER_SECRET),
+    "TOKEN_BINDING" => Symbol::u16(ext::TOKEN_BINDING),
+    "CACHED_INFO" => Symbol::u16(ext::CACHED_INFO),
+    "TLS_LTS" => Symbol::u16(ext::TLS_LTS),
+    "COMPRESS_CERTIFICATE" => Symbol::u16(ext::COMPRESS_CERTIFICATE),
+    "RECORD_SIZE_LIMIT" => Symbol::u16(ext::RECORD_SIZE_LIMIT),
+    "PWD_PROTECT" => Symbol::u16(ext::PWD_PROTECT),
+    "PWD_CLEAR" => Symbol::u16(ext::PWD_CLEAR),
+    "PASSWORD_SALT" => Symbol::u16(ext::PASSWORD_SALT),
+    "TICKET_PINNING" => Symbol::u16(ext::TICKET_PINNING),
+    "TLS_CERT_WITH_EXTERN_PSK" => Symbol::u16(ext::TLS_CERT_WITH_EXTERN_PSK),
+    "DELEGATED_CREDENTIALS" => Symbol::u16(ext::DELEGATED_CREDENTIALS),
+    "SESSION_TICKET" => Symbol::u16(ext::SESSION_TICKET),
+    "TLMSP" => Symbol::u16(ext::TLMSP),
+    "TLMSP_PROXYING" => Symbol::u16(ext::TLMSP_PROXYING),
+    "TLMSP_DELEGATE" => Symbol::u16(ext::TLMSP_DELEGATE),
+    "SUPPORTED_EKT_CIPHERS" => Symbol::u16(ext::SUPPORTED_EKT_CIPHERS),
+    "PRE_SHARED_KEY" => Symbol::u16(ext::PRE_SHARED_KEY),
+    "EARLY_DATA" => Symbol::u16(ext::EARLY_DATA),
+    "SUPPORTED_VERSIONS" => Symbol::u16(ext::SUPPORTED_VERSIONS),
+    "COOKIE" => Symbol::u16(ext::COOKIE),
+    "PSK_KEY_EXCHANGE_MODES" => Symbol::u16(ext::PSK_KEY_EXCHANGE_MODES),
+    "CERTIFICATE_AUTHORITIES" => Symbol::u16(ext::CERTIFICATE_AUTHORITIES),
+    "OID_FILTERS" => Symbol::u16(ext::OID_FILTERS),
+    "POST_HANDSHAKE_AUTH" => Symbol::u16(ext::POST_HANDSHAKE_AUTH),
+    "SIGNATURE_ALGORITHMS_CERT" => Symbol::u16(ext::SIGNATURE_ALGORITHMS_CERT),
+    "KEY_SHARE" => Symbol::u16(ext::KEY_SHARE),
+    "TRANSPARENCY_INFO" => Symbol::u16(ext::TRANSPARENCY_INFO),
+    "CONNECTION_ID_DEPRECATED" => Symbol::u16(ext::CONNECTION_ID_DEPRECATED),
+    "CONNECTION_ID" => Symbol::u16(ext::CONNECTION_ID),
+    "EXTERNAL_ID_HASH" => Symbol::u16(ext::EXTERNAL_ID_HASH),
+    "EXTERNAL_SESSION_ID" => Symbol::u16(ext::EXTERNAL_SESSION_ID),
+    "QUIC_TRANSPORT_PARAMETERS" => Symbol::u16(ext::QUIC_TRANSPORT_PARAMETERS),
+    "TICKET_REQUEST" => Symbol::u16(ext::TICKET_REQUEST),
+    "DNSSEC_CHAIN" => Symbol::u16(ext::DNSSEC_CHAIN),
+    "RENEGOTIATION_INFO" => Symbol::u16(ext::RENEGOTIATION_INFO),
 };
 
 const CIPHER: phf::Map<&'static str, Symbol> = phf_map! {
     "NULL_WITH_NULL_NULL" => 
-        Symbol::int_val(ciphers::NULL_WITH_NULL_NULL as u64),
+        Symbol::u16(ciphers::NULL_WITH_NULL_NULL),
     "RSA_WITH_NULL_MD5" => 
-        Symbol::int_val(ciphers::RSA_WITH_NULL_MD5 as u64),
+        Symbol::u16(ciphers::RSA_WITH_NULL_MD5),
     "RSA_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_NULL_SHA),
     "RSA_EXPORT_WITH_RC4_40_MD5" => 
-        Symbol::int_val(ciphers::RSA_EXPORT_WITH_RC4_40_MD5 as u64),
+        Symbol::u16(ciphers::RSA_EXPORT_WITH_RC4_40_MD5),
     "RSA_WITH_RC4_128_MD5" => 
-        Symbol::int_val(ciphers::RSA_WITH_RC4_128_MD5 as u64),
+        Symbol::u16(ciphers::RSA_WITH_RC4_128_MD5),
     "RSA_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_RC4_128_SHA),
     "RSA_EXPORT_WITH_RC2_CBC_40_MD5" => 
-        Symbol::int_val(ciphers::RSA_EXPORT_WITH_RC2_CBC_40_MD5 as u64),
+        Symbol::u16(ciphers::RSA_EXPORT_WITH_RC2_CBC_40_MD5),
     "RSA_WITH_IDEA_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_IDEA_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_IDEA_CBC_SHA),
     "RSA_EXPORT_WITH_DES40_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_EXPORT_WITH_DES40_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_EXPORT_WITH_DES40_CBC_SHA),
     "RSA_WITH_DES_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_DES_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_DES_CBC_SHA),
     "RSA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_3DES_EDE_CBC_SHA),
     "DH_DSS_EXPORT_WITH_DES40_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_DSS_EXPORT_WITH_DES40_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_DSS_EXPORT_WITH_DES40_CBC_SHA),
     "DH_DSS_WITH_DES_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_DES_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_DES_CBC_SHA),
     "DH_DSS_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_3DES_EDE_CBC_SHA),
     "DH_RSA_EXPORT_WITH_DES40_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_RSA_EXPORT_WITH_DES40_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_RSA_EXPORT_WITH_DES40_CBC_SHA),
     "DH_RSA_WITH_DES_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_DES_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_DES_CBC_SHA),
     "DH_RSA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_3DES_EDE_CBC_SHA),
     "DHE_DSS_EXPORT_WITH_DES40_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_DSS_EXPORT_WITH_DES40_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_DSS_EXPORT_WITH_DES40_CBC_SHA),
     "DHE_DSS_WITH_DES_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_DES_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_DES_CBC_SHA),
     "DHE_DSS_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_3DES_EDE_CBC_SHA),
     "DHE_RSA_EXPORT_WITH_DES40_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_RSA_EXPORT_WITH_DES40_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_RSA_EXPORT_WITH_DES40_CBC_SHA),
     "DHE_RSA_WITH_DES_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_DES_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_DES_CBC_SHA),
     "DHE_RSA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_3DES_EDE_CBC_SHA),
     "DH_ANON_EXPORT_WITH_RC4_40_MD5" => 
-        Symbol::int_val(ciphers::DH_ANON_EXPORT_WITH_RC4_40_MD5 as u64),
+        Symbol::u16(ciphers::DH_ANON_EXPORT_WITH_RC4_40_MD5),
     "DH_ANON_WITH_RC4_128_MD5" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_RC4_128_MD5 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_RC4_128_MD5),
     "DH_ANON_EXPORT_WITH_DES40_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_ANON_EXPORT_WITH_DES40_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_ANON_EXPORT_WITH_DES40_CBC_SHA),
     "DH_ANON_WITH_DES_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_DES_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_DES_CBC_SHA),
     "DH_ANON_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_3DES_EDE_CBC_SHA),
     "KRB5_WITH_DES_CBC_SHA" => 
-        Symbol::int_val(ciphers::KRB5_WITH_DES_CBC_SHA as u64),
+        Symbol::u16(ciphers::KRB5_WITH_DES_CBC_SHA),
     "KRB5_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::KRB5_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::KRB5_WITH_3DES_EDE_CBC_SHA),
     "KRB5_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::KRB5_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::KRB5_WITH_RC4_128_SHA),
     "KRB5_WITH_IDEA_CBC_SHA" => 
-        Symbol::int_val(ciphers::KRB5_WITH_IDEA_CBC_SHA as u64),
+        Symbol::u16(ciphers::KRB5_WITH_IDEA_CBC_SHA),
     "KRB5_WITH_DES_CBC_MD5" => 
-        Symbol::int_val(ciphers::KRB5_WITH_DES_CBC_MD5 as u64),
+        Symbol::u16(ciphers::KRB5_WITH_DES_CBC_MD5),
     "KRB5_WITH_3DES_EDE_CBC_MD5" => 
-        Symbol::int_val(ciphers::KRB5_WITH_3DES_EDE_CBC_MD5 as u64),
+        Symbol::u16(ciphers::KRB5_WITH_3DES_EDE_CBC_MD5),
     "KRB5_WITH_RC4_128_MD5" => 
-        Symbol::int_val(ciphers::KRB5_WITH_RC4_128_MD5 as u64),
+        Symbol::u16(ciphers::KRB5_WITH_RC4_128_MD5),
     "KRB5_WITH_IDEA_CBC_MD5" => 
-        Symbol::int_val(ciphers::KRB5_WITH_IDEA_CBC_MD5 as u64),
+        Symbol::u16(ciphers::KRB5_WITH_IDEA_CBC_MD5),
     "KRB5_EXPORT_WITH_DES_CBC_40_SHA" => 
-        Symbol::int_val(ciphers::KRB5_EXPORT_WITH_DES_CBC_40_SHA as u64),
+        Symbol::u16(ciphers::KRB5_EXPORT_WITH_DES_CBC_40_SHA),
     "KRB5_EXPORT_WITH_RC2_CBC_40_SHA" => 
-        Symbol::int_val(ciphers::KRB5_EXPORT_WITH_RC2_CBC_40_SHA as u64),
+        Symbol::u16(ciphers::KRB5_EXPORT_WITH_RC2_CBC_40_SHA),
     "KRB5_EXPORT_WITH_RC4_40_SHA" => 
-        Symbol::int_val(ciphers::KRB5_EXPORT_WITH_RC4_40_SHA as u64),
+        Symbol::u16(ciphers::KRB5_EXPORT_WITH_RC4_40_SHA),
     "KRB5_EXPORT_WITH_DES_CBC_40_MD5" => 
-        Symbol::int_val(ciphers::KRB5_EXPORT_WITH_DES_CBC_40_MD5 as u64),
+        Symbol::u16(ciphers::KRB5_EXPORT_WITH_DES_CBC_40_MD5),
     "KRB5_EXPORT_WITH_RC2_CBC_40_MD5" => 
-        Symbol::int_val(ciphers::KRB5_EXPORT_WITH_RC2_CBC_40_MD5 as u64),
+        Symbol::u16(ciphers::KRB5_EXPORT_WITH_RC2_CBC_40_MD5),
     "KRB5_EXPORT_WITH_RC4_40_MD5" => 
-        Symbol::int_val(ciphers::KRB5_EXPORT_WITH_RC4_40_MD5 as u64),
+        Symbol::u16(ciphers::KRB5_EXPORT_WITH_RC4_40_MD5),
     "PSK_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::PSK_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::PSK_WITH_NULL_SHA),
     "DHE_PSK_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_NULL_SHA),
     "RSA_PSK_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_NULL_SHA),
     "RSA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_128_CBC_SHA),
     "DH_DSS_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_AES_128_CBC_SHA),
     "DH_RSA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_AES_128_CBC_SHA),
     "DHE_DSS_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_AES_128_CBC_SHA),
     "DHE_RSA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_128_CBC_SHA),
     "DH_ANON_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_AES_128_CBC_SHA),
     "RSA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_256_CBC_SHA),
     "DH_DSS_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_AES_256_CBC_SHA),
     "DH_RSA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_AES_256_CBC_SHA),
     "DHE_DSS_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_AES_256_CBC_SHA),
     "DHE_RSA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_256_CBC_SHA),
     "DH_ANON_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_AES_256_CBC_SHA),
     "RSA_WITH_NULL_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_NULL_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_NULL_SHA256),
     "RSA_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_128_CBC_SHA256),
     "RSA_WITH_AES_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_256_CBC_SHA256),
     "DH_DSS_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_AES_128_CBC_SHA256),
     "DH_RSA_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_AES_128_CBC_SHA256),
     "DHE_DSS_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_AES_128_CBC_SHA256),
     "RSA_WITH_CAMELLIA_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_CAMELLIA_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_CAMELLIA_128_CBC_SHA),
     "DH_DSS_WITH_CAMELLIA_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_CAMELLIA_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_CAMELLIA_128_CBC_SHA),
     "DH_RSA_WITH_CAMELLIA_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_CAMELLIA_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_CAMELLIA_128_CBC_SHA),
     "DHE_DSS_WITH_CAMELLIA_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_CAMELLIA_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_CAMELLIA_128_CBC_SHA),
     "DHE_RSA_WITH_CAMELLIA_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_CAMELLIA_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_CAMELLIA_128_CBC_SHA),
     "DH_ANON_WITH_CAMELLIA_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_CAMELLIA_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_CAMELLIA_128_CBC_SHA),
     "DHE_RSA_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_128_CBC_SHA256),
     "DH_DSS_WITH_AES_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_AES_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_AES_256_CBC_SHA256),
     "DH_RSA_WITH_AES_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_AES_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_AES_256_CBC_SHA256),
     "DHE_DSS_WITH_AES_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_AES_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_AES_256_CBC_SHA256),
     "DHE_RSA_WITH_AES_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_256_CBC_SHA256),
     "DH_ANON_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_AES_128_CBC_SHA256),
     "DH_ANON_WITH_AES_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_AES_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_AES_256_CBC_SHA256),
     "RSA_WITH_CAMELLIA_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_CAMELLIA_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_CAMELLIA_256_CBC_SHA),
     "DH_DSS_WITH_CAMELLIA_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_CAMELLIA_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_CAMELLIA_256_CBC_SHA),
     "DH_RSA_WITH_CAMELLIA_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_CAMELLIA_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_CAMELLIA_256_CBC_SHA),
     "DHE_DSS_WITH_CAMELLIA_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_CAMELLIA_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_CAMELLIA_256_CBC_SHA),
     "DHE_RSA_WITH_CAMELLIA_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_CAMELLIA_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_CAMELLIA_256_CBC_SHA),
     "DH_ANON_WITH_CAMELLIA_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_CAMELLIA_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_CAMELLIA_256_CBC_SHA),
     "PSK_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::PSK_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::PSK_WITH_RC4_128_SHA),
     "PSK_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::PSK_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::PSK_WITH_3DES_EDE_CBC_SHA),
     "PSK_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_128_CBC_SHA),
     "PSK_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_256_CBC_SHA),
     "DHE_PSK_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_RC4_128_SHA),
     "DHE_PSK_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_3DES_EDE_CBC_SHA),
     "DHE_PSK_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_AES_128_CBC_SHA),
     "DHE_PSK_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_AES_256_CBC_SHA),
     "RSA_PSK_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_RC4_128_SHA),
     "RSA_PSK_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_3DES_EDE_CBC_SHA),
     "RSA_PSK_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_AES_128_CBC_SHA),
     "RSA_PSK_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_AES_256_CBC_SHA),
     "RSA_WITH_SEED_CBC_SHA" => 
-        Symbol::int_val(ciphers::RSA_WITH_SEED_CBC_SHA as u64),
+        Symbol::u16(ciphers::RSA_WITH_SEED_CBC_SHA),
     "DH_DSS_WITH_SEED_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_SEED_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_SEED_CBC_SHA),
     "DH_RSA_WITH_SEED_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_SEED_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_SEED_CBC_SHA),
     "DHE_DSS_WITH_SEED_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_SEED_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_SEED_CBC_SHA),
     "DHE_RSA_WITH_SEED_CBC_SHA" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_SEED_CBC_SHA as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_SEED_CBC_SHA),
     "DH_ANON_WITH_SEED_CBC_SHA" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_SEED_CBC_SHA as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_SEED_CBC_SHA),
     "RSA_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_128_GCM_SHA256),
     "RSA_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_256_GCM_SHA384),
     "DHE_RSA_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_128_GCM_SHA256),
     "DHE_RSA_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_256_GCM_SHA384),
     "DH_RSA_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_AES_128_GCM_SHA256),
     "DH_RSA_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_AES_256_GCM_SHA384),
     "DHE_DSS_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_AES_128_GCM_SHA256),
     "DHE_DSS_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_AES_256_GCM_SHA384),
     "DH_DSS_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_AES_128_GCM_SHA256),
     "DH_DSS_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_AES_256_GCM_SHA384),
     "DH_ANON_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_AES_128_GCM_SHA256),
     "DH_ANON_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_AES_256_GCM_SHA384),
     "PSK_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_128_GCM_SHA256),
     "PSK_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_256_GCM_SHA384),
     "DHE_PSK_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_AES_128_GCM_SHA256),
     "DHE_PSK_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_AES_256_GCM_SHA384),
     "RSA_PSK_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_AES_128_GCM_SHA256),
     "RSA_PSK_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_AES_256_GCM_SHA384),
     "PSK_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_128_CBC_SHA256),
     "PSK_WITH_AES_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_256_CBC_SHA384),
     "PSK_WITH_NULL_SHA256" => 
-        Symbol::int_val(ciphers::PSK_WITH_NULL_SHA256 as u64),
+        Symbol::u16(ciphers::PSK_WITH_NULL_SHA256),
     "PSK_WITH_NULL_SHA384" => 
-        Symbol::int_val(ciphers::PSK_WITH_NULL_SHA384 as u64),
+        Symbol::u16(ciphers::PSK_WITH_NULL_SHA384),
     "DHE_PSK_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_AES_128_CBC_SHA256),
     "DHE_PSK_WITH_AES_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_AES_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_AES_256_CBC_SHA384),
     "DHE_PSK_WITH_NULL_SHA256" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_NULL_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_NULL_SHA256),
     "DHE_PSK_WITH_NULL_SHA384" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_NULL_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_NULL_SHA384),
     "RSA_PSK_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_AES_128_CBC_SHA256),
     "RSA_PSK_WITH_AES_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_AES_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_AES_256_CBC_SHA384),
     "RSA_PSK_WITH_NULL_SHA256" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_NULL_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_NULL_SHA256),
     "RSA_PSK_WITH_NULL_SHA384" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_NULL_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_NULL_SHA384),
     "RSA_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_CAMELLIA_128_CBC_SHA256),
     "DH_DSS_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_CAMELLIA_128_CBC_SHA256),
     "DH_RSA_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_CAMELLIA_128_CBC_SHA256),
     "DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256),
     "DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256),
     "DH_ANON_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_CAMELLIA_128_CBC_SHA256),
     "RSA_WITH_CAMELLIA_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_CAMELLIA_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_CAMELLIA_256_CBC_SHA256),
     "DH_DSS_WITH_CAMELLIA_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_CAMELLIA_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_CAMELLIA_256_CBC_SHA256),
     "DH_RSA_WITH_CAMELLIA_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_CAMELLIA_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_CAMELLIA_256_CBC_SHA256),
     "DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256),
     "DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256),
     "DH_ANON_WITH_CAMELLIA_256_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_CAMELLIA_256_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_CAMELLIA_256_CBC_SHA256),
     "SM4_GCM_SM3" => 
-        Symbol::int_val(ciphers::SM4_GCM_SM3 as u64),
+        Symbol::u16(ciphers::SM4_GCM_SM3),
     "SM4_CCM_SM3" => 
-        Symbol::int_val(ciphers::SM4_CCM_SM3 as u64),
+        Symbol::u16(ciphers::SM4_CCM_SM3),
     "EMPTY_RENEGOTIATION_INFO_SCSV" => 
-        Symbol::int_val(ciphers::EMPTY_RENEGOTIATION_INFO_SCSV as u64),
+        Symbol::u16(ciphers::EMPTY_RENEGOTIATION_INFO_SCSV),
     "AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::AES_128_GCM_SHA256),
     "AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::AES_256_GCM_SHA384),
     "CHACHA20_POLY1305_SHA256" => 
-        Symbol::int_val(ciphers::CHACHA20_POLY1305_SHA256 as u64),
+        Symbol::u16(ciphers::CHACHA20_POLY1305_SHA256),
     "AES_128_CCM_SHA256" => 
-        Symbol::int_val(ciphers::AES_128_CCM_SHA256 as u64),
+        Symbol::u16(ciphers::AES_128_CCM_SHA256),
     "AES_128_CCM_8_SHA256" => 
-        Symbol::int_val(ciphers::AES_128_CCM_8_SHA256 as u64),
+        Symbol::u16(ciphers::AES_128_CCM_8_SHA256),
     "FALLBACK_SCSV" => 
-        Symbol::int_val(ciphers::FALLBACK_SCSV as u64),
+        Symbol::u16(ciphers::FALLBACK_SCSV),
     "ECDH_ECDSA_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_NULL_SHA),
     "ECDH_ECDSA_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_RC4_128_SHA),
     "ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA),
     "ECDH_ECDSA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_AES_128_CBC_SHA),
     "ECDH_ECDSA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_AES_256_CBC_SHA),
     "ECDHE_ECDSA_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_NULL_SHA),
     "ECDHE_ECDSA_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_RC4_128_SHA),
     "ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA),
     "ECDHE_ECDSA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_128_CBC_SHA),
     "ECDHE_ECDSA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_256_CBC_SHA),
     "ECDH_RSA_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_NULL_SHA),
     "ECDH_RSA_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_RC4_128_SHA),
     "ECDH_RSA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_3DES_EDE_CBC_SHA),
     "ECDH_RSA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_AES_128_CBC_SHA),
     "ECDH_RSA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_AES_256_CBC_SHA),
     "ECDHE_RSA_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_NULL_SHA),
     "ECDHE_RSA_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_RC4_128_SHA),
     "ECDHE_RSA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_3DES_EDE_CBC_SHA),
     "ECDHE_RSA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_AES_128_CBC_SHA),
     "ECDHE_RSA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_AES_256_CBC_SHA),
     "ECDH_ANON_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ANON_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ANON_WITH_NULL_SHA),
     "ECDH_ANON_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ANON_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ANON_WITH_RC4_128_SHA),
     "ECDH_ANON_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ANON_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ANON_WITH_3DES_EDE_CBC_SHA),
     "ECDH_ANON_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ANON_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ANON_WITH_AES_128_CBC_SHA),
     "ECDH_ANON_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDH_ANON_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDH_ANON_WITH_AES_256_CBC_SHA),
     "SRP_SHA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_WITH_3DES_EDE_CBC_SHA),
     "SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA),
     "SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA),
     "SRP_SHA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_WITH_AES_128_CBC_SHA),
     "SRP_SHA_RSA_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_RSA_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_RSA_WITH_AES_128_CBC_SHA),
     "SRP_SHA_DSS_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_DSS_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_DSS_WITH_AES_128_CBC_SHA),
     "SRP_SHA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_WITH_AES_256_CBC_SHA),
     "SRP_SHA_RSA_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_RSA_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_RSA_WITH_AES_256_CBC_SHA),
     "SRP_SHA_DSS_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::SRP_SHA_DSS_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::SRP_SHA_DSS_WITH_AES_256_CBC_SHA),
     "ECDHE_ECDSA_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_128_CBC_SHA256),
     "ECDHE_ECDSA_WITH_AES_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_256_CBC_SHA384),
     "ECDH_ECDSA_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_AES_128_CBC_SHA256),
     "ECDH_ECDSA_WITH_AES_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_AES_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_AES_256_CBC_SHA384),
     "ECDHE_RSA_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_AES_128_CBC_SHA256),
     "ECDHE_RSA_WITH_AES_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_AES_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_AES_256_CBC_SHA384),
     "ECDH_RSA_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_AES_128_CBC_SHA256),
     "ECDH_RSA_WITH_AES_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_AES_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_AES_256_CBC_SHA384),
     "ECDHE_ECDSA_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_128_GCM_SHA256),
     "ECDHE_ECDSA_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_256_GCM_SHA384),
     "ECDH_ECDSA_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_AES_128_GCM_SHA256),
     "ECDH_ECDSA_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_AES_256_GCM_SHA384),
     "ECDHE_RSA_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_AES_128_GCM_SHA256),
     "ECDHE_RSA_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_AES_256_GCM_SHA384),
     "ECDH_RSA_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_AES_128_GCM_SHA256),
     "ECDH_RSA_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_AES_256_GCM_SHA384),
     "ECDHE_PSK_WITH_RC4_128_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_RC4_128_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_RC4_128_SHA),
     "ECDHE_PSK_WITH_3DES_EDE_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_3DES_EDE_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_3DES_EDE_CBC_SHA),
     "ECDHE_PSK_WITH_AES_128_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_AES_128_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_AES_128_CBC_SHA),
     "ECDHE_PSK_WITH_AES_256_CBC_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_AES_256_CBC_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_AES_256_CBC_SHA),
     "ECDHE_PSK_WITH_AES_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_AES_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_AES_128_CBC_SHA256),
     "ECDHE_PSK_WITH_AES_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_AES_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_AES_256_CBC_SHA384),
     "ECDHE_PSK_WITH_NULL_SHA" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_NULL_SHA as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_NULL_SHA),
     "ECDHE_PSK_WITH_NULL_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_NULL_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_NULL_SHA256),
     "ECDHE_PSK_WITH_NULL_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_NULL_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_NULL_SHA384),
     "RSA_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_ARIA_128_CBC_SHA256),
     "RSA_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::RSA_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_WITH_ARIA_256_CBC_SHA384),
     "DH_DSS_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_ARIA_128_CBC_SHA256),
     "DH_DSS_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_ARIA_256_CBC_SHA384),
     "DH_RSA_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_ARIA_128_CBC_SHA256),
     "DH_RSA_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_ARIA_256_CBC_SHA384),
     "DHE_DSS_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_ARIA_128_CBC_SHA256),
     "DHE_DSS_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_ARIA_256_CBC_SHA384),
     "DHE_RSA_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_ARIA_128_CBC_SHA256),
     "DHE_RSA_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_ARIA_256_CBC_SHA384),
     "DH_ANON_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_ARIA_128_CBC_SHA256),
     "DH_ANON_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_ARIA_256_CBC_SHA384),
     "ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256),
     "ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384),
     "ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256),
     "ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384),
     "ECDHE_RSA_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_ARIA_128_CBC_SHA256),
     "ECDHE_RSA_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_ARIA_256_CBC_SHA384),
     "ECDH_RSA_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_ARIA_128_CBC_SHA256),
     "ECDH_RSA_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_ARIA_256_CBC_SHA384),
     "RSA_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_ARIA_128_GCM_SHA256),
     "RSA_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::RSA_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_WITH_ARIA_256_GCM_SHA384),
     "DHE_RSA_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_ARIA_128_GCM_SHA256),
     "DHE_RSA_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_ARIA_256_GCM_SHA384),
     "DH_RSA_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_ARIA_128_GCM_SHA256),
     "DH_RSA_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_ARIA_256_GCM_SHA384),
     "DHE_DSS_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_ARIA_128_GCM_SHA256),
     "DHE_DSS_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_ARIA_256_GCM_SHA384),
     "DH_DSS_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_ARIA_128_GCM_SHA256),
     "DH_DSS_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_ARIA_256_GCM_SHA384),
     "DH_ANON_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_ARIA_128_GCM_SHA256),
     "DH_ANON_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_ARIA_256_GCM_SHA384),
     "ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256),
     "ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384),
     "ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256),
     "ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384),
     "ECDHE_RSA_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_ARIA_128_GCM_SHA256),
     "ECDHE_RSA_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_ARIA_256_GCM_SHA384),
     "ECDH_RSA_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_ARIA_128_GCM_SHA256),
     "ECDH_RSA_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_ARIA_256_GCM_SHA384),
     "PSK_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::PSK_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::PSK_WITH_ARIA_128_CBC_SHA256),
     "PSK_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::PSK_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::PSK_WITH_ARIA_256_CBC_SHA384),
     "DHE_PSK_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_ARIA_128_CBC_SHA256),
     "DHE_PSK_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_ARIA_256_CBC_SHA384),
     "RSA_PSK_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_ARIA_128_CBC_SHA256),
     "RSA_PSK_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_ARIA_256_CBC_SHA384),
     "PSK_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::PSK_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::PSK_WITH_ARIA_128_GCM_SHA256),
     "PSK_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::PSK_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::PSK_WITH_ARIA_256_GCM_SHA384),
     "DHE_PSK_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_ARIA_128_GCM_SHA256),
     "DHE_PSK_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_ARIA_256_GCM_SHA384),
     "RSA_PSK_WITH_ARIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_ARIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_ARIA_128_GCM_SHA256),
     "RSA_PSK_WITH_ARIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_ARIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_ARIA_256_GCM_SHA384),
     "ECDHE_PSK_WITH_ARIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_ARIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_ARIA_128_CBC_SHA256),
     "ECDHE_PSK_WITH_ARIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_ARIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_ARIA_256_CBC_SHA384),
     "ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256),
     "ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384),
     "ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256),
     "ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384),
     "ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256),
     "ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384),
     "ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256),
     "ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384),
     "RSA_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::RSA_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_WITH_CAMELLIA_128_GCM_SHA256),
     "RSA_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::RSA_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_WITH_CAMELLIA_256_GCM_SHA384),
     "DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256),
     "DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384),
     "DH_RSA_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_CAMELLIA_128_GCM_SHA256),
     "DH_RSA_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_RSA_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_RSA_WITH_CAMELLIA_256_GCM_SHA384),
     "DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256),
     "DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384),
     "DH_DSS_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_CAMELLIA_128_GCM_SHA256),
     "DH_DSS_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_DSS_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_DSS_WITH_CAMELLIA_256_GCM_SHA384),
     "DH_ANON_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_CAMELLIA_128_GCM_SHA256),
     "DH_ANON_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DH_ANON_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DH_ANON_WITH_CAMELLIA_256_GCM_SHA384),
     "ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256),
     "ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384),
     "ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256),
     "ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384),
     "ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256),
     "ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384),
     "ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256),
     "ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384),
     "PSK_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::PSK_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::PSK_WITH_CAMELLIA_128_GCM_SHA256),
     "PSK_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::PSK_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::PSK_WITH_CAMELLIA_256_GCM_SHA384),
     "DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256),
     "DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384),
     "RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256),
     "RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384),
     "PSK_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::PSK_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::PSK_WITH_CAMELLIA_128_CBC_SHA256),
     "PSK_WITH_CAMELLIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::PSK_WITH_CAMELLIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::PSK_WITH_CAMELLIA_256_CBC_SHA384),
     "DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256),
     "DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384),
     "RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256),
     "RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384),
     "ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256),
     "ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384),
     "RSA_WITH_AES_128_CCM" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_128_CCM as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_128_CCM),
     "RSA_WITH_AES_256_CCM" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_256_CCM as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_256_CCM),
     "DHE_RSA_WITH_AES_128_CCM" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_128_CCM as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_128_CCM),
     "DHE_RSA_WITH_AES_256_CCM" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_256_CCM as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_256_CCM),
     "RSA_WITH_AES_128_CCM_8" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_128_CCM_8 as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_128_CCM_8),
     "RSA_WITH_AES_256_CCM_8" => 
-        Symbol::int_val(ciphers::RSA_WITH_AES_256_CCM_8 as u64),
+        Symbol::u16(ciphers::RSA_WITH_AES_256_CCM_8),
     "DHE_RSA_WITH_AES_128_CCM_8" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_128_CCM_8 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_128_CCM_8),
     "DHE_RSA_WITH_AES_256_CCM_8" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_AES_256_CCM_8 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_AES_256_CCM_8),
     "PSK_WITH_AES_128_CCM" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_128_CCM as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_128_CCM),
     "PSK_WITH_AES_256_CCM" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_256_CCM as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_256_CCM),
     "DHE_PSK_WITH_AES_128_CCM" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_AES_128_CCM as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_AES_128_CCM),
     "DHE_PSK_WITH_AES_256_CCM" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_AES_256_CCM as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_AES_256_CCM),
     "PSK_WITH_AES_128_CCM_8" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_128_CCM_8 as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_128_CCM_8),
     "PSK_WITH_AES_256_CCM_8" => 
-        Symbol::int_val(ciphers::PSK_WITH_AES_256_CCM_8 as u64),
+        Symbol::u16(ciphers::PSK_WITH_AES_256_CCM_8),
     "PSK_DHE_WITH_AES_128_CCM_8" => 
-        Symbol::int_val(ciphers::PSK_DHE_WITH_AES_128_CCM_8 as u64),
+        Symbol::u16(ciphers::PSK_DHE_WITH_AES_128_CCM_8),
     "PSK_DHE_WITH_AES_256_CCM_8" => 
-        Symbol::int_val(ciphers::PSK_DHE_WITH_AES_256_CCM_8 as u64),
+        Symbol::u16(ciphers::PSK_DHE_WITH_AES_256_CCM_8),
     "ECDHE_ECDSA_WITH_AES_128_CCM" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_128_CCM as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_128_CCM),
     "ECDHE_ECDSA_WITH_AES_256_CCM" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_256_CCM as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_256_CCM),
     "ECDHE_ECDSA_WITH_AES_128_CCM_8" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_128_CCM_8 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_128_CCM_8),
     "ECDHE_ECDSA_WITH_AES_256_CCM_8" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_AES_256_CCM_8 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_AES_256_CCM_8),
     "ECCPWD_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECCPWD_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECCPWD_WITH_AES_128_GCM_SHA256),
     "ECCPWD_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECCPWD_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECCPWD_WITH_AES_256_GCM_SHA384),
     "ECCPWD_WITH_AES_128_CCM_SHA256" => 
-        Symbol::int_val(ciphers::ECCPWD_WITH_AES_128_CCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECCPWD_WITH_AES_128_CCM_SHA256),
     "ECCPWD_WITH_AES_256_CCM_SHA384" => 
-        Symbol::int_val(ciphers::ECCPWD_WITH_AES_256_CCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECCPWD_WITH_AES_256_CCM_SHA384),
     "SHA256_SHA256" => 
-        Symbol::int_val(ciphers::SHA256_SHA256 as u64),
+        Symbol::u16(ciphers::SHA256_SHA256),
     "SHA384_SHA384" => 
-        Symbol::int_val(ciphers::SHA384_SHA384 as u64),
+        Symbol::u16(ciphers::SHA384_SHA384),
     "GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC" => 
-        Symbol::int_val(ciphers::GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC as u64),
+        Symbol::u16(ciphers::GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC),
     "GOSTR341112_256_WITH_MAGMA_CTR_OMAC" => 
-        Symbol::int_val(ciphers::GOSTR341112_256_WITH_MAGMA_CTR_OMAC as u64),
+        Symbol::u16(ciphers::GOSTR341112_256_WITH_MAGMA_CTR_OMAC),
     "GOSTR341112_256_WITH_28147_CNT_IMIT" => 
-        Symbol::int_val(ciphers::GOSTR341112_256_WITH_28147_CNT_IMIT as u64),
+        Symbol::u16(ciphers::GOSTR341112_256_WITH_28147_CNT_IMIT),
     "GOSTR341112_256_WITH_KUZNYECHIK_MGM_L" => 
-        Symbol::int_val(ciphers::GOSTR341112_256_WITH_KUZNYECHIK_MGM_L as u64),
+        Symbol::u16(ciphers::GOSTR341112_256_WITH_KUZNYECHIK_MGM_L),
     "GOSTR341112_256_WITH_MAGMA_MGM_L" => 
-        Symbol::int_val(ciphers::GOSTR341112_256_WITH_MAGMA_MGM_L as u64),
+        Symbol::u16(ciphers::GOSTR341112_256_WITH_MAGMA_MGM_L),
     "GOSTR341112_256_WITH_KUZNYECHIK_MGM_S" => 
-        Symbol::int_val(ciphers::GOSTR341112_256_WITH_KUZNYECHIK_MGM_S as u64),
+        Symbol::u16(ciphers::GOSTR341112_256_WITH_KUZNYECHIK_MGM_S),
     "GOSTR341112_256_WITH_MAGMA_MGM_S" => 
-        Symbol::int_val(ciphers::GOSTR341112_256_WITH_MAGMA_MGM_S as u64),
+        Symbol::u16(ciphers::GOSTR341112_256_WITH_MAGMA_MGM_S),
     "ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256),
     "ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256),
     "DHE_RSA_WITH_CHACHA20_POLY1305_SHA256" => 
-        Symbol::int_val(ciphers::DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_RSA_WITH_CHACHA20_POLY1305_SHA256),
     "PSK_WITH_CHACHA20_POLY1305_SHA256" => 
-        Symbol::int_val(ciphers::PSK_WITH_CHACHA20_POLY1305_SHA256 as u64),
+        Symbol::u16(ciphers::PSK_WITH_CHACHA20_POLY1305_SHA256),
     "ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256),
     "DHE_PSK_WITH_CHACHA20_POLY1305_SHA256" => 
-        Symbol::int_val(ciphers::DHE_PSK_WITH_CHACHA20_POLY1305_SHA256 as u64),
+        Symbol::u16(ciphers::DHE_PSK_WITH_CHACHA20_POLY1305_SHA256),
     "RSA_PSK_WITH_CHACHA20_POLY1305_SHA256" => 
-        Symbol::int_val(ciphers::RSA_PSK_WITH_CHACHA20_POLY1305_SHA256 as u64),
+        Symbol::u16(ciphers::RSA_PSK_WITH_CHACHA20_POLY1305_SHA256),
     "ECDHE_PSK_WITH_AES_128_GCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_AES_128_GCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_AES_128_GCM_SHA256),
     "ECDHE_PSK_WITH_AES_256_GCM_SHA384" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_AES_256_GCM_SHA384 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_AES_256_GCM_SHA384),
     "ECDHE_PSK_WITH_AES_128_CCM_8_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_AES_128_CCM_8_SHA256),
     "ECDHE_PSK_WITH_AES_128_CCM_SHA256" => 
-        Symbol::int_val(ciphers::ECDHE_PSK_WITH_AES_128_CCM_SHA256 as u64),
+        Symbol::u16(ciphers::ECDHE_PSK_WITH_AES_128_CCM_SHA256),
 };
 
 const TLS_MESSAGE: FuncDef = func_def! (
@@ -829,19 +829,19 @@ const TLS_MESSAGE: FuncDef = func_def! (
     ValType::Str;
 
     =>
-    "version" => ValDef::U64(version::TLS_1_2 as u64),
-    "content" => ValDef::U64(content::HANDSHAKE as u64),
+    "version" => ValDef::U16(version::TLS_1_2),
+    "content" => ValDef::U8(content::HANDSHAKE),
     =>
     ValType::Str;
 
     |mut args| {
-        let version: u64 = args.next().into();
-        let content: u64 = args.next().into();
+        let version: u16= args.next().into();
+        let content: u8 = args.next().into();
         let bytes: Buf = args.join_extra(b"").into();
         let mut msg: Vec<u8> = Vec::with_capacity(bytes.len() + 5);
 
-        msg.extend((content as u8).to_be_bytes());
-        msg.extend((version as u16).to_be_bytes());
+        msg.extend(content.to_be_bytes());
+        msg.extend(version.to_be_bytes());
         msg.extend((bytes.len() as u16).to_be_bytes());
 
 		/* extensions I guess? */
@@ -862,7 +862,7 @@ const TLS_CIPHERS: FuncDef = func_def! (
 
     =>
     =>
-    ValType::U64;
+    ValType::U16;
 
     |mut args| {
         let extra = args.extra_args();
@@ -873,8 +873,8 @@ const TLS_CIPHERS: FuncDef = func_def! (
 
         msg.extend((list_len as u16).to_be_bytes());
         for cipher in extra {
-            let id: u64 = cipher.into();
-            msg.extend((id as u16).to_be_bytes());
+            let id: u16 = cipher.into();
+            msg.extend(id.to_be_bytes());
         }
 
         Ok(Val::Str(Buf::from(msg)))
@@ -886,7 +886,7 @@ const TLS_CLIENT_HELLO: FuncDef = func_def! (
     ValType::Str;
 
     =>
-    "version" => ValDef::U64(version::TLS_1_2 as u64),
+    "version" => ValDef::U16(version::TLS_1_2),
     "sessionid" => ValDef::Str(b"\x00"),
     "ciphers" => ValDef::Str(b"\x00\x02\x00\x00"), // null cipher
     "compression" => ValDef::Str(b"\x01\x00"), // null compression
@@ -894,7 +894,7 @@ const TLS_CLIENT_HELLO: FuncDef = func_def! (
     ValType::Str;
 
     |mut args| {
-        let version: u64 = args.next().into();
+        let version: u16 = args.next().into();
         let sessionid: Buf = args.next().into();
         let ciphers: Buf = args.next().into();
         let compression: Buf = args.next().into();
@@ -914,7 +914,7 @@ const TLS_CLIENT_HELLO: FuncDef = func_def! (
         msg.extend(len24(hlen));
 
         /* 34 bytes version + random */
-        msg.extend((version as u16).to_be_bytes());
+        msg.extend(version.to_be_bytes());
         msg.extend(b"_client__random__client__random_");
 
         msg.extend(sessionid.as_ref());
@@ -935,10 +935,10 @@ const TLS_SERVER_HELLO: FuncDef = func_def! (
     ValType::Str;
 
     =>
-    "version" => ValDef::U64(version::TLS_1_2 as u64),
+    "version" => ValDef::U16(version::TLS_1_2),
     "sessionid" => ValDef::Str(b"\x00"),
-    "cipher" => ValDef::U64(ciphers::NULL_WITH_NULL_NULL as u64),
-    "compression" => ValDef::U64(0),
+    "cipher" => ValDef::U16(ciphers::NULL_WITH_NULL_NULL),
+    "compression" => ValDef::U8(0),
     =>
     ValType::Str;
 
