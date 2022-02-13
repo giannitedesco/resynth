@@ -188,7 +188,7 @@ const DNS_ANSWER: FuncDef = func_def!(
     ValType::Str;
 
     "aname" => ValType::Str,
-    "data" => ValType::Ip4,
+    "data" => ValType::Str,
     =>
     "atype" => ValDef::U64(1),
     "aclass" => ValDef::U64(1),
@@ -198,7 +198,7 @@ const DNS_ANSWER: FuncDef = func_def!(
 
     |mut args| {
         let name: Buf = args.next().into();
-        let data: Ipv4Addr = args.next().into();
+        let data: Buf = args.next().into();
         let atype: u64 = args.next().into();
         let aclass: u64 = args.next().into();
         let ttl: u64 = args.next().into();
@@ -209,8 +209,8 @@ const DNS_ANSWER: FuncDef = func_def!(
         a.extend((atype as u16).to_be_bytes());
         a.extend((aclass as u16).to_be_bytes());
         a.extend((ttl as u32).to_be_bytes());
-        a.extend((4u16).to_be_bytes()); // dsize
-        a.extend(u32::from(data).to_be_bytes()); // ip
+        a.extend((data.len() as u16).to_be_bytes()); // dsize
+        a.extend(data.as_ref());
 
         Ok(Val::Str(Buf::from(a)))
     }

@@ -26,7 +26,7 @@ ipv4::udp::broadcast(
   ),
   dhcp::option(
     dhcp::opt::REQUESTED_ADDRESS,
-    "|00 00 00 00|"
+    0.0.0.0
   ),
   dhcp::option(
     dhcp::opt::PARAM_REQUEST_LIST,

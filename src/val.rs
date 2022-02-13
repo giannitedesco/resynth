@@ -45,6 +45,32 @@ pub trait Typed {
     fn is_nil(&self) -> bool {
         self.is_type(ValType::Void)
     }
+
+    fn is_str(&self) -> bool {
+        self.is_type(ValType::Str)
+    }
+
+    fn type_matches<T: Typed>(&self, other: &T) -> bool {
+        self.is_type(other.val_type())
+    }
+
+    fn is_string_coercible(&self) -> bool {
+        matches!(self.val_type(),
+            ValType::Str
+            | ValType::U64
+            | ValType::Ip4
+        )
+    }
+
+    fn compatible_with<T: Typed>(&self, other: &T) -> bool {
+        self.type_matches(other) || (self.is_str() && other.is_string_coercible())
+    }
+}
+
+impl Typed for ValType {
+    fn val_type(&self) -> ValType {
+        *self
+    }
 }
 
 /// Represents a static or const version of [Val]. This is used when defining constants in the
@@ -61,10 +87,10 @@ pub enum ValDef {
 }
 
 impl ValDef {
-    pub fn arg_compatible(&self, v: &Val) -> bool {
+    pub fn arg_compatible<T: Typed>(&self, other: &T) -> bool {
         match self {
-            ValDef::Type(t) => v.is_nil() || v.val_type() == *t,
-            _ => self.val_type() == v.val_type()
+            ValDef::Type(t) => other.is_nil() || t.compatible_with(other),
+            _ => self.compatible_with(other),
         }
     }
 }
@@ -279,8 +305,11 @@ impl From<Val> for Ipv4Addr {
 
 impl From<Val> for Buf {
     fn from(v: Val) -> Self {
+        /* Must be implemented for all types which are Typed::is_string_coercible() */
         match v {
             Val::Str(s) => s,
+            Val::U64(u) => Buf::from(&u.to_be_bytes()),
+            Val::Ip4(ip) => Buf::from(&u32::from(ip).to_be_bytes()),
             _ => unreachable!()
         }
     }

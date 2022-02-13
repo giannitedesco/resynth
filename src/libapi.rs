@@ -147,7 +147,7 @@ impl FuncDef {
             return Err(TypeError);
         }
 
-        if self.is_collect() && extra.iter().any(|x| !x.is_type(self.collect_type)) {
+        if self.is_collect() && extra.iter().any(|x| !self.collect_type.compatible_with(x)) {
             println!("ERR: Collect argument of wrong type");
             return Err(TypeError);
         }
@@ -195,12 +195,12 @@ impl FuncDef {
         }
 
         // 6. Final type-check of all positional args
-        for (spec, arg) in self.args.values().zip(args.iter()) {
+        for ((name, spec), arg) in self.args.entries().zip(args.iter()) {
             if !match spec {
-                ArgDecl::Positional(typ) => { arg.val_type() == *typ },
+                ArgDecl::Positional(typ) => { typ.compatible_with(arg) }
                 ArgDecl::Named(dfl) => { dfl.arg_compatible(arg) },
             } {
-                println!("ERR: Argument type-check failed");
+                println!("ERR: Argument type-check failed for {:?}", name);
                 return Err(TypeError);
             }
         }

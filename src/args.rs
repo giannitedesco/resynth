@@ -152,6 +152,15 @@ impl From<ValDef> for ArgSpec {
     }
 }
 
+impl From<bool> for ArgSpec {
+    fn from(val: bool) -> Self {
+        Self {
+            name: None,
+            val: Val::Bool(val),
+        }
+    }
+}
+
 impl From<u64> for ArgSpec {
     fn from(val: u64) -> Self {
         Self {

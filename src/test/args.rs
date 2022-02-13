@@ -77,7 +77,7 @@ fn argvec_nullable() {
 fn argvec_type_mismatch_1() {
     let args = vec!(
         ArgSpec::from(1),
-        ArgSpec::from(2),
+        ArgSpec::from(true),
     );
 
     assert_eq!(
@@ -91,7 +91,7 @@ fn argvec_type_mismatch_1() {
 fn argvec_type_mismatch_2() {
     let args = vec!(
         ArgSpec::from(1),
-        ArgSpec::from(("b", ValDef::U64(2))),
+        ArgSpec::from(("b", ValDef::Bool(true))),
     );
 
     assert_eq!(
@@ -107,7 +107,7 @@ fn argvec_type_mismatch_3() {
         ArgSpec::from(1),
         ArgSpec::from(b"hello"),
         ArgSpec::from(("c", ValDef::U64(3))),
-        ArgSpec::from(("d", ValDef::U64(4))),
+        ArgSpec::from(("d", ValDef::Bool(true))),
     );
 
     assert_eq!(
@@ -275,7 +275,7 @@ fn collect_bad_type() {
         ArgSpec::from(1),
         ArgSpec::from(("b", ValDef::U64(234))),
         ArgSpec::from(b"hello"),
-        ArgSpec::from(1),
+        ArgSpec::from(true),
     );
     assert_eq!(
         Err(Error::TypeError),
