@@ -1,0 +1,62 @@
+import ipv4;
+import tls;
+import io;
+
+let tls = ipv4::tcp::flow(
+  192.168.238.112:13749,
+  109.107.38.8:443,
+);
+
+let clhello = io::bufio(
+  tls::client_hello(
+    ciphers: tls::ciphers(
+      tls::cipher::ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+      tls::cipher::ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+      tls::cipher::ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+      tls::cipher::ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+      tls::cipher::ECDHE_ECDSA_WITH_AES_256_CCM,
+      tls::cipher::ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+      tls::cipher::ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+    ),
+    version: tls::version::TLS_1_2,
+    tls::sni("test.local", "test"),
+  ),
+);
+
+tls.client_message(
+  send_ack: false,
+  tls::message(
+    version: tls::version::TLS_1_0,
+    content: tls::content::HANDSHAKE,
+    clhello.read(10),
+  )
+);
+
+tls.client_message(
+  send_ack: false,
+  tls::message(
+    version: tls::version::TLS_1_0,
+    content: tls::content::HANDSHAKE,
+    clhello.read_all(),
+  )
+);
+
+tls.server_message(
+  send_ack: false,
+  tls::message(
+    version: tls::version::TLS_1_2,
+    content: tls::content::HANDSHAKE,
+    tls::server_hello(
+      version: tls::version::TLS_1_2,
+      cipher: tls::cipher::ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+      compression: 0x00,
+    )
+  ),
+  tls::message(
+    version: tls::version::TLS_1_2,
+    content: tls::content::HANDSHAKE,
+    tls::certificates(
+      io::file("examples/rsa4096.x509.cert.der"),
+    )
+  )
+);
