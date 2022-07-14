@@ -20,6 +20,20 @@ const OPCODE: phf::Map<&'static str, Symbol> = phf_map! {
     "STATUS" => Symbol::u8(opcode::STATUS),
 };
 
+const RCODE: phf::Map<&'static str, Symbol> = phf_map! {
+    "NOERROR" => Symbol::u8(rcode::NOERROR),
+    "FORMERR" => Symbol::u8(rcode::FORMERR),
+    "SERVFAIL" => Symbol::u8(rcode::SERVFAIL),
+    "NXDOMAIN" => Symbol::u8(rcode::NXDOMAIN),
+    "NOTIMP" => Symbol::u8(rcode::NOTIMP),
+    "REFUSED" => Symbol::u8(rcode::REFUSED),
+    "YXDOMAIN" => Symbol::u8(rcode::YXDOMAIN),
+    "YXRRSET" => Symbol::u8(rcode::YXRRSET),
+    "NXRRSET" => Symbol::u8(rcode::NXRRSET),
+    "NOTAUTH" => Symbol::u8(rcode::NOTAUTH),
+    "NOTZONE" => Symbol::u8(rcode::NOTZONE),
+};
+
 const TYPE: phf::Map<&'static str, Symbol> = phf_map! {
     "A" => Symbol::u16(rrtype::A),
     "NS" => Symbol::u16(rrtype::NS),
@@ -294,6 +308,7 @@ const DNS_HOST: FuncDef = func_def!(
 
 pub const DNS: phf::Map<&'static str, Symbol> = phf_map! {
     "opcode" => Symbol::Module(&OPCODE),
+    "rcode" => Symbol::Module(&RCODE),
     "type" => Symbol::Module(&TYPE),
     "class" => Symbol::Module(&CLASS),
     "flags" => Symbol::Func(&DNS_FLAGS),

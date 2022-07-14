@@ -8,15 +8,16 @@ pub mod opcode {
 
 pub mod rcode {
     pub const NOERROR: u8 = 0;
-    pub const FORMERROR: u8 = 1;
+    pub const FORMERR: u8 = 1;
     pub const SERVFAIL: u8 = 2;
     pub const NXDOMAIN: u8 = 3;
     pub const NOTIMP: u8 = 4;
     pub const REFUSED: u8 = 5;
     pub const YXDOMAIN: u8 = 6;
-    pub const XRRSET: u8 = 7;
-    pub const NOTAUTH: u8 = 8;
-    pub const NOTZONE: u8 = 9;
+    pub const YXRRSET: u8 = 7;
+    pub const NXRRSET: u8 = 8;
+    pub const NOTAUTH: u8 = 9;
+    pub const NOTZONE: u8 = 10;
 }
 
 pub mod flags {
