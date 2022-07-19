@@ -4,11 +4,10 @@ use resynth::{Error, Loc, Lexer, EOF, Parser, Program};
 use resynth::{warn, error, ok};
 
 use std::path::{Path, PathBuf};
-use std::fs;
-use std::io;
 use std::io::BufRead;
+use std::{fs, io};
 
-use clap::{Arg, App};
+use clap::{Arg, Command, ErrorKind};
 use termcolor::{ColorChoice, StandardStream, Color, ColorSpec, WriteColor};
 
 /// A [source code location](Loc) and an [error code](Error)
@@ -103,7 +102,7 @@ pub fn process_file(stdout: &mut StandardStream,
 fn resynth() -> Result<(), ()> {
     let mut ret = Ok(());
 
-    let argv = App::new("resynth")
+    let mut cmd = Command::new("resynth")
         .version("0.1")
         .author("Gianni Teesco <gianni@scaramanga.co.uk>")
         .about("Packet synthesis language")
@@ -120,18 +119,26 @@ fn resynth() -> Result<(), ()> {
             .help("Keep pcap files on error"))
         .arg(Arg::new("out")
             .short('o')
+            .long("output")
+            .value_name("FILE")
+            .required(false)
+            .multiple_values(true)
+            .help("Filenames for pcap output"))
+        .arg(Arg::new("outdir")
             .long("out-dir")
             .value_name("DIR")
             .required(true)
+            .conflicts_with("out")
             .help("Directory to write pcap files to")
             .takes_value(true))
         .arg(Arg::new("in")
             .help("Sets the input file to use")
             .value_name("FILE")
             .required(true)
-            .multiple_occurrences(true)
-            .index(1))
-        .get_matches();
+            .multiple_values(true)
+            .index(1));
+
+    let argv = cmd.clone().get_matches();
 
     let verbose = argv.is_present("verbose");
     let keep = argv.is_present("keep");
@@ -151,16 +158,35 @@ fn resynth() -> Result<(), ()> {
     };
     let mut stdout = StandardStream::stdout(color);
 
-    let mut out = argv.value_of("out").map_or(
-        PathBuf::new(),
-        PathBuf::from,
-    );
+    let use_filenames = argv.contains_id("out");
 
-    for arg in argv.values_of("in").unwrap() {
-        let p = Path::new(arg);
+    let in_args = argv.get_many::<String>("in").unwrap();
 
-        out.push(p.file_stem().unwrap());
-        out.set_extension("pcap");
+    let out_args = argv.get_many::<String>("out").unwrap_or_default().collect::<Vec<_>>();
+    let out_dir = argv.get_one::<String>("outdir");
+
+    if use_filenames && out_args.len() != in_args.len() {
+        cmd.error(
+            ErrorKind::WrongNumberOfValues,
+            format!(
+                "Received {} output(s), expected: {}",
+                out_args.len(),
+                in_args.len(),
+            ),
+        )
+        .exit();
+    }
+
+    for (i, input) in in_args.enumerate() {
+        let p = Path::new(input);
+        let out = if use_filenames {
+            PathBuf::from(out_args[i])
+        } else {
+            let mut out = PathBuf::from(out_dir.unwrap());
+            out.push(p.file_stem().unwrap());
+            out.set_extension("pcap");
+            out
+        };
 
         let result = process_file(&mut stdout, p, &out, verbose);
 
@@ -189,8 +215,6 @@ fn resynth() -> Result<(), ()> {
             ok!(stdout, "ok");
             println!();
         }
-
-        out.pop();
     }
 
     ret
