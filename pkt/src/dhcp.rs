@@ -10,21 +10,36 @@ pub mod message {
     pub const DISCOVER: u8 = 1;
     pub const OFFER: u8 = 2;
     pub const REQUEST: u8 = 3;
+    pub const DECLINE: u8 = 4;
     pub const ACK: u8 = 5;
     pub const NACK: u8 = 6;
     pub const RELEASE: u8 = 7;
     pub const INFORM: u8 = 8;
+    pub const FORCERENEW: u8 = 9;
+    pub const LEASEQUERY: u8 = 10;
+    pub const LEASEUNASSIGNED: u8 = 11;
+    pub const LEASEUNKNOWN: u8 = 12;
+    pub const LEASEACTIVE: u8 = 13;
+    pub const BULKLEASEQUERY: u8 = 14;
+    pub const LEASEQUERYDONE: u8 = 15;
+    pub const ACTIVELEASEQUERY: u8 = 16;
+    pub const LEASEQUERYSTATUS: u8 = 17;
+    pub const TLS: u8 = 18;
 }
 
 pub mod opt {
     pub const PADDING: u8 = 0;
+    pub const SUBNET_MASK: u8 = 1;
     pub const CLIENT_HOSTNAME: u8 = 12;
     pub const VENDOR_SPECIFIC: u8 = 43;
     pub const REQUESTED_ADDRESS: u8 = 50;
+    pub const ADDRESS_LEASE_TIME: u8 = 51;
     pub const MESSAGE_TYPE: u8 = 53;
     pub const SERVER_ID: u8 = 54;
     pub const PARAM_REQUEST_LIST: u8 = 55;
     pub const MAX_MESSAGE_SIZE: u8 = 57;
+    pub const RENEWAL_TIME: u8 = 58;
+    pub const REBINDING_TIME: u8 = 59;
     pub const VENDOR_CLASS_ID: u8 = 60;
     pub const CLIENT_ID: u8 = 61;
     pub const CLIENT_FQDN: u8 = 81;
