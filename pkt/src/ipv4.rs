@@ -92,7 +92,7 @@ impl tcp_hdr {
     pub fn init(&mut self) -> &mut Self {
         let sz = std::mem::size_of::<Self>() as u8;
         self.doff = (sz >> 2) << 4;
-        self.win = 1024u16.to_be();
+        self.win = u16::MAX.to_be();
         self
     }
 
