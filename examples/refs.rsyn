@@ -1,8 +1,13 @@
+import ipv4;
+import text;
+
+let flow = text::crlflines;
+
 flow();
-flow("tcp");
-flow("tcp",);
-flow("tcp", 1,);
-ipv4.tcp.flow("tcp", 1);
-ipv4::tcp.flow("tcp");
-ipv4::tcp::flow("tcp");
-ipv4::tcp::flow.new("tcp");
+flow("test");
+flow("test",);
+flow("test", 1,);
+ipv4.tcp.flow("test", 1);
+ipv4::tcp.flow("test");
+ipv4::tcp::flow("test");
+ipv4::tcp::flow.new("test");

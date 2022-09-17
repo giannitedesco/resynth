@@ -2,13 +2,13 @@ digraph {
 	/* Key:
 	 *
 	 * blue edges indicate consuming a token
+	 * red edges indicate non-consuming GOTO transitions
 	 * green edges indicate non-consuming catchall transitions
+	 * magenta edges represent popping a state from the stack and transitioning to it
 	 *
 	 * 3dbox nodes indicate a reduction step
-	 * red edges indicate non-consuming GOTO transitions
 	 *
 	 * filled nodes indicate pushing a state transition to the stack
-	 * magenta edges represent popping a state from the stack and transitioning to it
 	 */
 	graph [rankdir=LR];
 	node [shape=rectangle];
@@ -17,7 +17,7 @@ digraph {
 	arg_val [style=filled];
 	expr_stmt [style=filled];
 	expr_rvalue [style=filled];
-	slash [style=filled];
+	infix [style=filled];
 
 	initial [shape="circle"];
 	accept [shape="doublecircle"];
@@ -40,27 +40,18 @@ digraph {
 
 	ref_component -> reduce_module [label="discard\n\"::\""];
 
-	ref_component -> reduce_object [label="discard\n\".\""];
 	ref_component -> reduce_ref_call [label="discard\n\"(\""];
 	ref_component -> reduce_ref_naked [label="*" color=green];
 
-	reduce_object -> ref_object [color=red];
-	reduce_object [label="reduce\nobject" shape=box3d];
 
 	reduce_ref_call -> expr_arg [color=red];
-	reduce_ref_call [label="reduce\nref\nnew arglist" shape=box3d];
+	reduce_ref_call [label="reduce\nref_call\nnew arglist" shape=box3d];
 
 
 	reduce_module -> ref_module [color=red];
 	reduce_module [label="reduce\nmodule" shape=box3d];
 
 	ref_module -> ref_component [label="shift\nIDENTIFIER"];
-
-	ref_object -> ref_obj_end [label="shift\nIDENTIFIER"];
-
-	ref_obj_end -> reduce_object [label="shift\n\".\""];
-	ref_obj_end -> reduce_ref_call [label="shift\n\"(\""];
-	ref_obj_end -> reduce_ref_naked [label="*" color=green];
 
 	arg_next -> expr_arg [label="discard\n\",\""];
 	arg_next -> reduce_call [label="discard\n\")\""];
@@ -93,20 +84,25 @@ digraph {
 	reduce_bop -> reduce_expr [color=red];
 	reduce_bop [label="reduce\nbop" shape=box3d];
 
-	reduce_literal_expr -> slash [color=red];
+	reduce_literal_expr -> infix [color=red];
 	reduce_literal_expr [label="reduce\nliteral_expr" shape=box3d];
 
 	reduce_ref_naked -> reduce_ref_expr [color=red];
 	reduce_ref_naked [label="reduce\nref" shape=box3d];
 
-	reduce_ref_expr -> slash [color=red];
+	reduce_ref_expr -> infix [color=red];
 	reduce_ref_expr [label="reduce\nref_expr" shape=box3d];
 
-	reduce_call_expr -> slash [color=red];
+	reduce_call_expr -> infix [color=red];
 	reduce_call_expr [label="reduce\ncall_expr" shape=box3d];
 
-	slash -> expr [label="shift\n\"/\""];
-	slash -> reduce_expr [label="*" color=green];
+	field -> reduce_field [label="shift\nIDENTIFIER"];
+	reduce_field [label="reduce\nfield" shape=box3d];
+	reduce_field -> infix [color=red];
+
+	infix -> expr [label="shift\n\"/\""];
+	infix -> field [label="shift\n\".\""];
+	infix -> reduce_expr [label="*" color=green];
 
 	reduce_expr -> reduce_arg [color=magenta];
 	reduce_expr -> reduce_bop [color=magenta];

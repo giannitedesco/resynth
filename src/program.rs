@@ -106,7 +106,7 @@ impl<'a> Program<'a> {
             }
         }
 
-        let topvar = &obj.components[0];
+        let topvar = &obj.sym;
         let ret: Val = match top.get(topvar) {
             Some(Symbol::Val(valdef)) => (*valdef).into(),
             Some(Symbol::Func(fndef)) => (*fndef).into(),
@@ -120,39 +120,21 @@ impl<'a> Program<'a> {
             },
         };
 
-        for c in obj.components.iter().skip(1) {
-            /* We only support functions and string variables in stdlib right now */
-            println!(" > comp: lookup {}", c);
-            unreachable!();
-        }
-
         Ok(ret)
     }
 
     pub fn eval_local_ref(&self, obj: ObjectRef) -> Result<Val, Error> {
-        if obj.components.len() > 2 {
-            println!("too many components in object: {:?}", obj);
-            return Err(NameError)
-        }
-
-        let var_name = &obj.components[0];
+        let var_name = &obj.sym;
         let val = self.regs.get(var_name).ok_or(NameError)?;
 
-        if obj.components.len() == 1 {
-            return Ok(val.clone());
-        }
-
-        let method_name = &obj.components[1];
-        val.method_lookup(method_name)
+        Ok(val.clone())
     }
 
     pub fn eval_obj_ref(&self, obj: ObjectRef) -> Result<Val, Error> {
-        if obj.modules.len() > 0 {
-            self.eval_extern_ref(obj)
-        }else if obj.components.len() > 0 {
+        if obj.modules.len() == 0 {
             self.eval_local_ref(obj)
         } else {
-            unreachable!();
+            self.eval_extern_ref(obj)
         }
     }
 
@@ -219,6 +201,10 @@ impl<'a> Program<'a> {
             Expr::Call(call) => {
                 self.loc = call.obj.loc;
                 self.eval_call(call)?
+            },
+            Expr::Dot(ex, ref name) => {
+                let val = self.eval(*ex)?;
+                val.method_lookup(name)?
             },
             Expr::Slash(a, b) => {
                 let a = self.eval(*a)?;

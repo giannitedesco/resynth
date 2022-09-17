@@ -1,4 +1,4 @@
-program := [ ( stmt | stmt program ) ]
+program := [ ( stmt | program stmt ) ]
 
 stmt := ( import | assignment | expr ) ";"
 
@@ -6,23 +6,25 @@ import := "import" IDENTIFIER
 
 assignment := "let" IDENTIFIER "=" expr
 
-call := ref args_list
+qname := IDENTIFIER
+	| qname "::" IDENTIFIER
 
-ref := [ qname "." ] object
+primary := literal | qname | call
 
-qname := ( IDENTIFIER | IDENTIFIER "::" qname )
+call := expr args_list
 
-object := ( IDENTIFIER | IDENTIFIER "." object )
+arg := expr
+	| ( IDENTIFIER ":" expr )
 
-args_list := "(" args ")" ;
+args := arg
+	| arg "," args
 
-arg := ( IDENTIFIER ":" expr ) | expr
+args_list :=  "(" ")"
+	| "(" args ")" ;
 
-args := [ ( arg | arg "," args ) ]
-
-term := literal | ref | call
-
-expr := ( expr "/" term ) | term
+expr := primary
+	| ( expr "/" primary )
+	| ( expr "." IDENTIFIER )
 
 literal := BOOL | INTEGER | STRING | IPV4 | v4socket
 
