@@ -46,9 +46,9 @@ dns.server_dgram(
   ),
   dns::answer(
     aname: dns::name("www", "google", "com"),
-    data: server,
     atype: dns::type::A,
     aclass: dns::class::IN,
+    server,
   ),
 );
 

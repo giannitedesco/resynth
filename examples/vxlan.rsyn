@@ -49,9 +49,9 @@ vxlan.dgram(dns.server_dgram(
     ),
     dns::answer(
       aname: dns::name("www", "google", "com"),
-      data: 142.250.196.100,
       atype: dns::type::A,
       aclass: dns::class::IN,
+      142.250.196.100,
     ),
 ));
 

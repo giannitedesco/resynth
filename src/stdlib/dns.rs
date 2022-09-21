@@ -244,20 +244,19 @@ const DNS_ANSWER: FuncDef = func_def!(
     ValType::Str;
 
     "aname" => ValType::Str,
-    "data" => ValType::Str,
     =>
     "atype" => ValDef::U16(1),
     "aclass" => ValDef::U16(1),
     "ttl" => ValDef::U32(229),
     =>
-    ValType::Void;
+    ValType::Str;
 
     |mut args| {
         let name: Buf = args.next().into();
-        let data: Buf = args.next().into();
         let atype: u16 = args.next().into();
         let aclass: u16 = args.next().into();
         let ttl: u32 = args.next().into();
+        let data: Buf = args.join_extra(b"").into();
 
         let mut a: Vec<u8> = Vec::new();
 
