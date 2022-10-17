@@ -151,7 +151,7 @@ impl TokType {
         TokType::HexIntegerLiteral => Some(val),
         TokType::IntegerLiteral => Some(val),
         TokType::BooleanLiteral => Some(val),
-        TokType::StringLiteral => Some(val),
+        TokType::StringLiteral => Some(&val[1..val.len()-1]),
         TokType::IPv4Literal => Some(val),
         _ => None,
         }
