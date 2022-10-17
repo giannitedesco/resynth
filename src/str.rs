@@ -76,13 +76,12 @@ fn hex_decode(chr: char) -> u8 {
 impl FromStr for Buf {
     type Err = StringLiteralParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let inner = &s[1..s.len() - 1];
         let mut hex = false;
         let mut v: Vec<u8> = Vec::new();
         let mut h: [u8; 2] = [0, 0];
         let mut ix: usize = 0;
 
-        for chr in inner.chars() {
+        for chr in s.chars() {
             if !hex {
                 if chr == '|' {
                     hex = true;
