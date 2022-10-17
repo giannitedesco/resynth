@@ -78,7 +78,7 @@ pub fn process_file(stdout: &mut StandardStream,
         };
 
         for tok in toks {
-            if let Err(err) = parse.feed(tok) {
+            if let Err(err) = parse.feed(&tok) {
                 return Err(ErrorLoc::new(tok.loc(), err));
             }
         }
@@ -88,7 +88,7 @@ pub fn process_file(stdout: &mut StandardStream,
         }
     }
 
-    if let Err(err) = parse.feed(EOF) {
+    if let Err(err) = parse.feed(&EOF) {
         return Err(ErrorLoc::new(lex.loc(), err));
     }
 

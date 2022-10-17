@@ -163,7 +163,7 @@ impl TokType {
 /// ## Lifetime
 /// For things like identifiers and string literals, a reference is included to the original
 /// string. So the [Token] must outlive that buffer.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Token<'a> {
     loc: Loc,
     typ: TokType,
@@ -188,8 +188,8 @@ impl<'a> Token<'a> {
     }
 }
 
-impl From<Token<'_>> for String {
-    fn from(tok: Token) -> String {
+impl From<&Token<'_>> for String {
+    fn from(tok: &Token) -> String {
         tok.val.unwrap().to_owned()
     }
 }
