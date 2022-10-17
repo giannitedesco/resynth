@@ -476,7 +476,7 @@ impl Typed for Val {
 }
 
 impl Val {
-    pub fn from_token(tok: Token) -> Result<Self, Error> {
+    pub fn from_token(tok: &Token) -> Result<Self, Error> {
         use Val::*;
         use TokType::*;
         let v = tok.val();

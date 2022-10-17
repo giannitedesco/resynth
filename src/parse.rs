@@ -491,7 +491,7 @@ impl Parser {
         self.stmts.push(stmt.into());
     }
 
-    fn state_initial(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_initial(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::ImportKeyword => Ok(Action::Discard(State::Import)),
             TokType::LetKeyword => Ok(Action::Discard(State::Let)),
@@ -501,7 +501,7 @@ impl Parser {
         }
     }
 
-    fn state_import(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_import(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::Identifier => {
                 self.push(Node::Loc(tok.loc()));
@@ -511,19 +511,19 @@ impl Parser {
         }
     }
 
-    fn state_import_end(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_import_end(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::SemiColon => Ok(Action::Discard(State::ReduceImport)),
             _ => Err(ParseError)
         }
     }
 
-    fn state_reduce_import(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_import(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_import_stmt();
         Ok(Action::Goto(State::ReduceStmt))
     }
 
-    fn state_let(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_let(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::Identifier => {
                 self.push(Node::Loc(tok.loc()));
@@ -533,14 +533,14 @@ impl Parser {
         }
     }
 
-    fn state_assign(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_assign(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::Equals => Ok(Action::Discard(State::ExprRvalue)),
             _ => Err(ParseError)
         }
     }
 
-    fn state_ref_component(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_ref_component(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::DoubleColon => Ok(Action::Discard(State::ReduceModule)),
             TokType::Dot => Ok(Action::Discard(State::ReduceObject)),
@@ -549,28 +549,28 @@ impl Parser {
         }
     }
 
-    fn state_reduce_object(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_object(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_object();
         Ok(Action::Goto(State::RefObject))
     }
 
-    fn state_reduce_ref_call(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_ref_call(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_ref();
         self.push(Node::ArgList(Vec::new()));
         Ok(Action::Goto(State::ExprArg))
     }
 
-    fn state_reduce_ref_naked(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_ref_naked(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_ref();
         Ok(Action::Goto(State::ReduceRefExpr))
     }
 
-    fn state_reduce_module(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_module(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_module();
         Ok(Action::Goto(State::RefModule))
     }
 
-    fn state_ref_module(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_ref_module(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::Identifier => Ok(
                 Action::Shift(State::RefComponent, Node::Component(tok.into()))
@@ -579,7 +579,7 @@ impl Parser {
         }
     }
 
-    fn state_ref_object(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_ref_object(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::Identifier => Ok(
                 Action::Shift(State::RefObjEnd, Node::Component(tok.into())),
@@ -588,7 +588,7 @@ impl Parser {
         }
     }
 
-    fn state_ref_obj_end(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_ref_obj_end(&mut self, tok: &Token) -> Result<Action, Error> {
         Ok(match tok.tok_type() {
             TokType::Dot => Action::Discard(State::ReduceObject),
             TokType::LParen => Action::Discard(State::ReduceRefCall),
@@ -596,7 +596,7 @@ impl Parser {
         })
     }
 
-    fn state_arg_next(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_arg_next(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::Comma => Ok(Action::Discard(State::ExprArg)),
             TokType::RParen => Ok(Action::Shift(State::ReduceCall, Node::State(State::ReduceArg))),
@@ -605,7 +605,7 @@ impl Parser {
     }
 
     #[inline(always)]
-    fn push_literal(&mut self, tok: Token) -> Result<Action, Error> {
+    fn push_literal(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::StringLiteral
             | TokType::BooleanLiteral
@@ -622,7 +622,7 @@ impl Parser {
         }
     }
 
-    fn state_expr_arg(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_expr_arg(&mut self, tok: &Token) -> Result<Action, Error> {
         Ok(match tok.tok_type() {
             TokType::Identifier => Action::Shift(State::ArgName, Node::ArgName(Some(tok.into()))),
             _ => {
@@ -632,7 +632,7 @@ impl Parser {
         })
     }
 
-    fn state_arg_name(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_arg_name(&mut self, tok: &Token) -> Result<Action, Error> {
         Ok(match tok.tok_type() {
             TokType::Colon => Action::Discard(State::ArgVal),
             _ => {
@@ -646,7 +646,7 @@ impl Parser {
         })
     }
 
-    fn state_arg_val(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_arg_val(&mut self, tok: &Token) -> Result<Action, Error> {
         self.push_goto(State::ReduceArg);
         match tok.tok_type() {
             TokType::Identifier => {
@@ -668,12 +668,12 @@ impl Parser {
         }
     }
 
-    fn state_expr_stmt(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_expr_stmt(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.push_goto(State::ExprStmtEnd);
         Ok(Action::Goto(State::Expr))
     }
 
-    fn state_expr(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_expr(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::Identifier => {
                 self.push(Node::Path(PathBuilder::new(tok.loc())));
@@ -688,19 +688,19 @@ impl Parser {
         }
     }
 
-    fn state_expr_rvalue(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_expr_rvalue(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.push_goto(State::AssignStmtEnd);
         Ok(Action::Goto(State::Expr))
     }
 
-    fn state_ipv4(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_ipv4(&mut self, tok: &Token) -> Result<Action, Error> {
         Ok(match tok.tok_type() {
             TokType::Colon => Action::Discard(State::IPv4Colon),
             _ => Action::Goto(State::ReduceLiteralExpr)
         })
     }
 
-    fn state_ipv4_colon(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_ipv4_colon(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::IntegerLiteral => {
                 self.push(Node::Loc(tok.loc()));
@@ -710,27 +710,27 @@ impl Parser {
         }
     }
 
-    fn state_reduce_arg(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_arg(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_arg();
         Ok(Action::Goto(State::ArgNext))
     }
 
-    fn state_reduce_literal_expr(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_literal_expr(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_literal_expr();
         Ok(Action::Goto(State::Slash))
     }
 
-    fn state_reduce_ref_expr(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_ref_expr(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_ref_expr();
         Ok(Action::Goto(State::Slash))
     }
 
-    fn state_reduce_call_expr(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_call_expr(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_call_expr();
         Ok(Action::Goto(State::Slash))
     }
 
-    fn state_slash(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_slash(&mut self, tok: &Token) -> Result<Action, Error> {
         Ok(match tok.tok_type() {
             TokType::Slash => {
                 self.push(Node::Slash);
@@ -741,64 +741,64 @@ impl Parser {
         })
     }
 
-    fn state_reduce_expr(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_expr(&mut self, _tok: &Token) -> Result<Action, Error> {
         let expr = self.pop();
         let st = self.pop();
         self.push(expr);
         Ok(Action::Goto(st.into()))
     }
 
-    fn state_reduce_sockaddr(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_sockaddr(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_sockaddr();
         Ok(Action::Goto(State::ReduceLiteralExpr))
     }
 
-    fn state_reduce_call(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_call(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.pop(); // state for next arg
         self.reduce_call();
         Ok(Action::Goto(State::ReduceCallExpr))
     }
 
-    fn state_expr_stmt_end(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_expr_stmt_end(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::SemiColon => Ok(Action::Discard(State::ReduceExprStmt)),
             _ => Err(ParseError)
         }
     }
 
-    fn state_assign_stmt_end(&mut self, tok: Token) -> Result<Action, Error> {
+    fn state_assign_stmt_end(&mut self, tok: &Token) -> Result<Action, Error> {
         match tok.tok_type() {
             TokType::SemiColon => Ok(Action::Discard(State::ReduceAssign)),
             _ => Err(ParseError)
         }
     }
 
-    fn state_reduce_bop(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_bop(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_bop_expr();
         Ok(Action::Goto(State::ReduceExpr))
     }
 
-    fn state_reduce_assign(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_assign(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_assign();
         Ok(Action::Goto(State::ReduceAssignStmt))
     }
 
-    fn state_reduce_expr_stmt(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_expr_stmt(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_expr_stmt();
         Ok(Action::Goto(State::ReduceStmt))
     }
 
-    fn state_reduce_assign_stmt(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_assign_stmt(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_assign_stmt();
         Ok(Action::Goto(State::ReduceStmt))
     }
 
-    fn state_reduce_stmt(&mut self, _tok: Token) -> Result<Action, Error> {
+    fn state_reduce_stmt(&mut self, _tok: &Token) -> Result<Action, Error> {
         self.reduce_stmt();
         Ok(Action::Goto(State::Initial))
     }
 
-    fn dispatch(&mut self, tok: Token) -> Result<Action, Error> {
+    fn dispatch(&mut self, tok: &Token) -> Result<Action, Error> {
         //println!("{:<24} {:?} {:?}", format!("State::{:?}", self.state), tok.tok_type(), tok.optval());
         match self.state {
             State::Initial => self.state_initial(tok),
@@ -855,7 +855,7 @@ impl Parser {
         }
     }
 
-    pub fn feed(&mut self, tok: Token) -> Result<(), Error> {
+    pub fn feed(&mut self, tok: &Token) -> Result<(), Error> {
         loop {
             let action = self.dispatch(tok)?;
             match action {
