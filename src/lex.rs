@@ -223,6 +223,7 @@ impl Lexer {
     pub fn line<'a>(&mut self, lno: usize, line: &'a str) -> Result<Vec<Token<'a>>, Error> {
         let mut ret = Vec::new();
         let mut pos = 0_usize;
+        let mut string_literals = Vec::new();
         let mut caps = LEX_RE.capture_locations();
 
         self.loc = Loc::new(lno, pos + 1);
@@ -256,12 +257,24 @@ impl Lexer {
             );
             */
 
-            if !tok_type.ignore() {
-                ret.push(Token {
-                    loc: Loc::new(lno, pos + 1),
-                    typ: tok_type,
-                    val: tok_type.get_val(tok_val).map(Cow::from),
-                });
+            if !tok_type.ignore() || !string_literals.is_empty() && !matches!(tok_type, TokType::Whitespace) {
+                if matches!(tok_type, TokType::StringLiteral) {
+                    string_literals.push(&tok_val[1..m.end()-1]);
+                } else {
+                    if !string_literals.is_empty() {
+                        ret.push(Token {
+                            loc: Loc::new(lno, pos + 1),
+                            typ: TokType::StringLiteral,
+                            val: Some(Cow::from(string_literals.concat())),
+                        });
+                        string_literals.clear();
+                    }
+                    ret.push(Token {
+                        loc: Loc::new(lno, pos + 1),
+                        typ: tok_type,
+                        val: tok_type.get_val(tok_val).map(Cow::from),
+                    });
+                }
             }
 
             pos += m.end();
