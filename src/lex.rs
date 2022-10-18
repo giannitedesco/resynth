@@ -148,12 +148,12 @@ impl TokType {
 
     pub fn get_val(self, val: &str) -> Option<&str> {
         match self {
-        TokType::Identifier => Some(val),
-        TokType::HexIntegerLiteral => Some(val),
-        TokType::IntegerLiteral => Some(val),
-        TokType::BooleanLiteral => Some(val),
-        TokType::StringLiteral => Some(&val[1..val.len()-1]),
-        TokType::IPv4Literal => Some(val),
+            TokType::Identifier => Some(val),
+            TokType::HexIntegerLiteral => Some(val),
+            TokType::IntegerLiteral => Some(val),
+            TokType::BooleanLiteral => Some(val),
+            TokType::StringLiteral => Some(&val[1..val.len()-1]),
+            TokType::IPv4Literal => Some(val),
         _ => None,
         }
     }
