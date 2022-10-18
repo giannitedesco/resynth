@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::slice::Iter;
 
 use lazy_regex::*;
@@ -167,7 +168,7 @@ impl TokType {
 pub struct Token<'a> {
     loc: Loc,
     typ: TokType,
-    val: Option<&'a str>,
+    val: Option<Cow<'a, str>>,
 }
 
 impl<'a> Token<'a> {
@@ -179,18 +180,18 @@ impl<'a> Token<'a> {
         self.typ
     }
 
-    pub fn optval(&self) -> Option<&'a str> {
-        self.val
+    pub fn optval(&self) -> Option<Cow<'a, str>> {
+        self.val.to_owned()
     }
 
-    pub fn val(&self) -> &'a str {
-        self.val.unwrap()
+    pub fn val(&self) -> Cow<'a, str> {
+        self.val.as_ref().unwrap().to_owned()
     }
 }
 
 impl From<&Token<'_>> for String {
     fn from(tok: &Token) -> String {
-        tok.val.unwrap().to_owned()
+        tok.val.as_ref().unwrap().to_string()
     }
 }
 
@@ -259,7 +260,7 @@ impl Lexer {
                 ret.push(Token {
                     loc: Loc::new(lno, pos + 1),
                     typ: tok_type,
-                    val: tok_type.get_val(tok_val),
+                    val: tok_type.get_val(tok_val).map(Cow::from),
                 });
             }
 
