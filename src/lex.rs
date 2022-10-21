@@ -208,6 +208,7 @@ pub const EOF: Token = Token {
 #[derive(Debug, Default)]
 pub struct Lexer {
     loc: Loc,
+    concatenated_strings: String,
 }
 
 impl Lexer {
@@ -223,8 +224,12 @@ impl Lexer {
     pub fn line<'a>(&mut self, lno: usize, line: &'a str) -> Result<Vec<Token<'a>>, Error> {
         let mut ret = Vec::new();
         let mut pos = 0_usize;
-        let mut string_literals = Vec::new();
+        let mut string_literals: Vec<&str> = Vec::new();
         let mut caps = LEX_RE.capture_locations();
+
+        if !self.concatenated_strings.is_empty() {
+            string_literals.push(&self.concatenated_strings);
+        }
 
         self.loc = Loc::new(lno, pos + 1);
 
@@ -279,6 +284,12 @@ impl Lexer {
 
             pos += m.end();
         }
+
+        self.concatenated_strings = if string_literals.is_empty() {
+            String::new()
+        } else {
+            string_literals.concat()
+        };
 
         self.loc = Loc::new(lno, pos + 1);
 
