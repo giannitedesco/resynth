@@ -70,7 +70,7 @@ const TCP_CL_HOLE: FuncDef = func_def!(
         let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
         let bytes: u32 = args.next().into();
 
-        this.server_hole(bytes);
+        this.client_hole(bytes);
         Ok(Val::Nil)
     }
 );
