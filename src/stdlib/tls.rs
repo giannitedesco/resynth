@@ -907,7 +907,7 @@ const TLS_CLIENT_HELLO: FuncDef = func_def! (
             + if extensions.len() > 0 { 2 } else { 0 }
             + extensions.len();
 
-        let mut msg: Vec<u8> = Vec::with_capacity(4 + hlen as usize);
+        let mut msg: Vec<u8> = Vec::with_capacity(4 + hlen);
 
         /* 4 bytes handshake header */
         msg.push(handshake::CLIENT_HELLO);
@@ -956,7 +956,7 @@ const TLS_SERVER_HELLO: FuncDef = func_def! (
             + if extensions.len() > 0 { 2 } else { 0 }
             + extensions.len();
 
-        let mut msg: Vec<u8> = Vec::with_capacity(4 + hlen as usize);
+        let mut msg: Vec<u8> = Vec::with_capacity(4 + hlen);
 
         /* 4 bytes handshake header */
         msg.push(handshake::SERVER_HELLO);

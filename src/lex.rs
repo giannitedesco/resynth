@@ -185,7 +185,7 @@ impl<'a> Token<'a> {
     }
 
     pub fn val(&self) -> Cow<'a, str> {
-        self.val.as_ref().unwrap().to_owned()
+        self.val.as_ref().unwrap().clone()
     }
 }
 

@@ -289,7 +289,7 @@ impl From<Val> for u64 {
             Val::U8(u) => u as u64,
             Val::U16(u) => u as u64,
             Val::U32(u) => u as u64,
-            Val::U64(u) => u as u64,
+            Val::U64(u) => u,
             _ => unreachable!()
         }
     }
@@ -300,7 +300,7 @@ impl From<Val> for u32 {
         match v {
             Val::U8(u) => u as u32,
             Val::U16(u) => u as u32,
-            Val::U32(u) => u as u32,
+            Val::U32(u) => u,
             Val::U64(u) => u as u32,
             _ => unreachable!()
         }
@@ -311,7 +311,7 @@ impl From<Val> for u16 {
     fn from(v: Val) -> Self {
         match v {
             Val::U8(u) => u as u16,
-            Val::U16(u) => u as u16,
+            Val::U16(u) => u,
             Val::U32(u) => u as u16,
             Val::U64(u) => u as u16,
             _ => unreachable!()
@@ -322,7 +322,7 @@ impl From<Val> for u16 {
 impl From<Val> for u8 {
     fn from(v: Val) -> Self {
         match v {
-            Val::U8(u) => u as u8,
+            Val::U8(u) => u,
             Val::U16(u) => u as u8,
             Val::U32(u) => u as u8,
             Val::U64(u) => u as u8,

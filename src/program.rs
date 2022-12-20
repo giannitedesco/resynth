@@ -15,13 +15,15 @@ use std::rc::Rc;
 use std::collections::HashMap;
 use std::net::SocketAddrV4;
 
+type WarningCallback<'a> = &'a mut dyn FnMut(Loc, &str);
+
 /// The interpreter and program-state
 pub struct Program<'a> {
     regs: HashMap<String, Val>,
     imports: HashMap<String, &'static Module>,
     wr: Option<PcapWriter>,
     loc: Loc,
-    warning: Option<&'a mut dyn FnMut(Loc, &str)>,
+    warning: Option<WarningCallback<'a>>,
 }
 
 impl<'a> Program<'a> {
@@ -49,7 +51,7 @@ impl<'a> Program<'a> {
         self.loc
     }
 
-    pub fn set_warning(&mut self, warning: &'a mut dyn FnMut(Loc, &str)) {
+    pub fn set_warning(&mut self, warning: WarningCallback<'a>) {
         self.warning = Some(warning);
     }
 
