@@ -127,7 +127,7 @@ fn resynth() -> Result<(), ()> {
         .arg(Arg::new("outdir")
             .long("out-dir")
             .value_name("DIR")
-            .required(true)
+            .default_value(".")
             .conflicts_with("out")
             .help("Directory to write pcap files to")
             .takes_value(true))
