@@ -67,6 +67,12 @@ impl UdpDgram {
     }
 
     #[must_use]
+    pub fn frag_off(mut self, frag_off: u16) -> Self {
+        self.pkt.get_mut_hdr(self.ip).frag_off(frag_off);
+        self
+    }
+
+    #[must_use]
     pub fn src(mut self, src: SocketAddrV4) -> Self {
         self.pkt.get_mut_hdr(self.eth).src_from_ip(*src.ip());
         self.pkt.get_mut_hdr(self.ip).saddr(*src.ip());
@@ -149,5 +155,21 @@ impl UdpFlow {
     pub fn server_dgram(&mut self, bytes: &[u8]) -> Packet {
         //println!("trace: udp:server({} bytes)", bytes.len());
         self.srvr().push(bytes).into()
+    }
+
+    pub fn client_dgram_with_frag_off(&mut self,
+                                      bytes: &[u8],
+                                      frag_off: u16,
+                                      ) -> Packet {
+        //println!("trace: udp:client({} bytes)", bytes.len());
+        self.clnt().push(bytes).frag_off(frag_off).into()
+    }
+
+    pub fn server_dgram_with_frag_off(&mut self,
+                                      bytes: &[u8],
+                                      frag_off: u16,
+                                      ) -> Packet {
+        //println!("trace: udp:server({} bytes)", bytes.len());
+        self.srvr().push(bytes).frag_off(frag_off).into()
     }
 }

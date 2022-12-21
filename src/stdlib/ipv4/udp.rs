@@ -71,6 +71,7 @@ const CL_DGRAM: FuncDef = func_def!(
     ValType::Pkt;
 
     =>
+    "frag_off" => ValDef::U16(0),
     =>
     ValType::Str;
 
@@ -78,8 +79,9 @@ const CL_DGRAM: FuncDef = func_def!(
         let obj = args.take_this();
         let mut r = obj.borrow_mut();
         let this: &mut UdpFlow = r.as_mut_any().downcast_mut().unwrap();
+        let frag_off: u16 = args.next().into();
         let bytes: Buf = args.join_extra(b"").into();
-        Ok(this.client_dgram(bytes.as_ref()).into())
+        Ok(this.client_dgram_with_frag_off(bytes.as_ref(), frag_off).into())
     }
 );
 
@@ -88,6 +90,7 @@ const SV_DGRAM: FuncDef = func_def!(
     ValType::Pkt;
 
     =>
+    "frag_off" => ValDef::U16(0),
     =>
     ValType::Str;
 
@@ -95,8 +98,9 @@ const SV_DGRAM: FuncDef = func_def!(
         let obj = args.take_this();
         let mut r = obj.borrow_mut();
         let this: &mut UdpFlow = r.as_mut_any().downcast_mut().unwrap();
+        let frag_off: u16 = args.next().into();
         let bytes: Buf = args.join_extra(b"").into();
-        Ok(this.server_dgram(bytes.as_ref()).into())
+        Ok(this.server_dgram_with_frag_off(bytes.as_ref(), frag_off).into())
     }
 );
 

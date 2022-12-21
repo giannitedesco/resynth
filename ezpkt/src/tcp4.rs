@@ -108,6 +108,11 @@ impl TcpSeg {
         self
     }
 
+    fn frag_off(mut self, frag_off: u16) -> Self {
+        self.pkt.get_mut_hdr(self.ip).frag_off(frag_off);
+        self
+    }
+
     fn update_tot_len(mut self) -> Self {
         self.pkt.get_mut_hdr(self.ip)
             .tot_len(self.tot_len as u16);
@@ -235,8 +240,9 @@ impl TcpFlow {
     pub fn client_message(&mut self,
                           bytes: &[u8],
                           send_ack: bool,
+                          frag_off: u16,
                           ) -> Vec<Packet> {
-        self.cl_tx(self.cl().push(bytes));
+        self.sv_tx(self.cl().frag_off(frag_off).push(bytes));
         if send_ack {
             self.sv_tx(self.sv().ack());
         }
@@ -247,8 +253,9 @@ impl TcpFlow {
     pub fn server_message(&mut self,
                           bytes: &[u8],
                           send_ack: bool,
+                          frag_off: u16,
                           ) -> Vec<Packet> {
-        self.sv_tx(self.sv().push(bytes));
+        self.sv_tx(self.sv().frag_off(frag_off).push(bytes));
         if send_ack {
             self.cl_tx(self.cl().ack());
         }

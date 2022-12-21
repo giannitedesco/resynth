@@ -33,6 +33,11 @@ impl ip_hdr {
         self
     }
 
+    pub fn frag_off(&mut self, frag_off: u16) -> &mut Self {
+        self.frag_off = frag_off.to_be();
+        self
+    }
+
     pub fn ttl(&mut self, ttl: u8) -> &mut Self {
         self.ttl = ttl;
         self
