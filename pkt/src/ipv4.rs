@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 
-use bytemuck::{bytes_of, Pod, Zeroable};
+use bytemuck::{Pod, Zeroable, bytes_of};
 
 pub mod proto {
     pub const ICMP: u8 = 1;

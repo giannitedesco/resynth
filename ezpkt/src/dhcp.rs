@@ -1,4 +1,4 @@
-use pkt::dhcp::{dhcp_hdr, dhcp_opt, MAGIC};
+use pkt::dhcp::{MAGIC, dhcp_hdr, dhcp_opt};
 use pkt::{Hdr, Packet};
 
 use bytemuck::bytes_of;

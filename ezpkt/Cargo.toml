@@ -1,5 +1,5 @@
 [package]
-edition = "2018"
+edition = "2024"
 name = "ezpkt"
 version = "0.6.0"
 description = "A packet construction library"

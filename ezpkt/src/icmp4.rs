@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 
 use pkt::eth::{eth_hdr, ethertype};
-use pkt::ipv4::{icmp_echo_hdr, icmp_hdr, ip_csum, ip_hdr, proto, ICMP_ECHO, ICMP_ECHOREPLY};
+use pkt::ipv4::{ICMP_ECHO, ICMP_ECHOREPLY, icmp_echo_hdr, icmp_hdr, ip_csum, ip_hdr, proto};
 use pkt::{Hdr, Packet};
 
 #[derive(Debug, PartialEq, Eq)]

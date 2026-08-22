@@ -3,7 +3,7 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 
-use bytemuck::{bytes_of, Pod, Zeroable};
+use bytemuck::{Pod, Zeroable, bytes_of};
 
 use super::Packet;
 

@@ -1,9 +1,9 @@
 use std::net::Ipv4Addr;
 
-use pkt::erspan3::{erspan3_hdr, Erspan3, Erspan3Platform};
+use pkt::Packet;
+use pkt::erspan3::{Erspan3, Erspan3Platform, erspan3_hdr};
 use pkt::eth::ethertype;
 use pkt::gre::GreFlags;
-use pkt::Packet;
 
 use crate::GreFrame;
 

@@ -3,7 +3,7 @@ use std::net::Ipv4Addr;
 use bytemuck::Pod;
 
 use pkt::eth::{eth_hdr, ethertype};
-use pkt::gre::{gre_hdr, gre_hdr_seq, GreFlags};
+use pkt::gre::{GreFlags, gre_hdr, gre_hdr_seq};
 use pkt::ipv4::{ip_hdr, proto};
 use pkt::{Hdr, Packet};
 

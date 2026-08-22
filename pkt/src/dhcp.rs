@@ -1,4 +1,4 @@
-use bytemuck::{bytes_of, Pod, Zeroable};
+use bytemuck::{Pod, Zeroable, bytes_of};
 
 pub mod opcode {
     pub const REQUEST: u8 = 1;

@@ -1,8 +1,8 @@
 use std::net::Ipv4Addr;
 
+use pkt::Packet;
 use pkt::eth::ethertype;
 use pkt::gre::GreFlags;
-use pkt::Packet;
 
 use crate::GreFrame;
 

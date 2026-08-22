@@ -1,6 +1,6 @@
 use std::net::SocketAddrV4;
 
-use pkt::{vxlan::vxlan_hdr, Packet};
+use pkt::{Packet, vxlan::vxlan_hdr};
 
 use bytemuck::bytes_of;
 
