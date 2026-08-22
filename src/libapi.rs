@@ -408,7 +408,7 @@ impl FuncDef {
                         let arg_pos = (self.arg_pos)(&name);
 
                         if arg_pos.is_none() {
-                            println!("ERR: {}: No such argument: \"{}\"", self.name, &name);
+                            println!("ERR: {}: No such argument: \"{}\"", self.name, name);
                             return Err(TypeError);
                         }
 
@@ -422,7 +422,7 @@ impl FuncDef {
                         if arg_index < positional.len() {
                             println!(
                                 "ERR: {}: Positional argument \"{}\" multiply specified",
-                                self.name, &name
+                                self.name, name
                             );
                             return Err(TypeError);
                         }
@@ -431,7 +431,7 @@ impl FuncDef {
                         if named.contains_key(&name) {
                             println!(
                                 "ERR: {}: Optional argument \"{}\" multiply specified",
-                                self.name, &name
+                                self.name, name
                             );
                             return Err(TypeError);
                         }
