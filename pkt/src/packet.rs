@@ -28,9 +28,9 @@ impl<T> DerefMut for RefMut<'_, T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut T {
         let off = self.off;
-        let bytes = &self.buf[off..off + Self::size_of()];
+        let bytes = &mut self.buf[off..off + Self::size_of()];
 
-        unsafe { &mut *(bytes.as_ptr() as *mut T) }
+        unsafe { &mut *(bytes.as_mut_ptr() as *mut T) }
     }
 }
 
@@ -177,7 +177,7 @@ impl<T: Pod> Hdr<T> {
         let off = self.off;
         let bytes = &mut buf[off..off + Self::size_of()];
 
-        f(unsafe { &mut *(bytes.as_ptr() as *mut T) });
+        f(unsafe { &mut *(bytes.as_mut_ptr() as *mut T) });
     }
 
     pub fn mutate_as_bytes<F>(&self, pkt: &Packet, f: F)
