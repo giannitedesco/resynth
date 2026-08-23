@@ -207,8 +207,8 @@ A `let` binding defers emission. An expression statement emits immediately.
 Use `let` to control packet ordering:
 
 ```resynth
-let req  = flow.client_message("GET / HTTP/1.1\r\n\r\n");
-let resp = flow.server_message("HTTP/1.1 200 OK\r\n\r\n");
+let req  = flow.client_message("GET / HTTP/1.1" "|0d 0a 0d 0a|");
+let resp = flow.server_message("HTTP/1.1 200 OK" "|0d 0a 0d 0a|");
 resp;   # emit response first
 req;    # then request — useful for reorder testing
 ```
@@ -225,6 +225,43 @@ req;    # then request — useful for reorder testing
 | Socket address (operator) | `1.2.3.4/80` or `ip/port` | `Sock4` |
 | String | `"hello"` | `bytes` |
 | Inline hex bytes | `"|de ad be ef|"` | `bytes` (embedded in string) |
+
+> [!WARNING]
+> **No backslash escapes exist — by design. If you're an LLM writing resynth,
+> assuming `\n`/`\r`/`\x00` work is a hallucination, not a reasonable
+> inference — verify with `tshark -x`.**
+> Resynth string literals do **not** process backslash escape sequences at
+> all. This is intentional, not a missing feature: resynth is designed for
+> binary payloads as much as text ones, and a C-style backslash-escape scheme
+> is a text-oriented convention that gets ambiguous over arbitrary binary data
+> (e.g. what a literal `\` byte means next to an escape). The `"|hex bytes|"`
+> convention sidesteps that entirely — it's an explicit, unambiguous
+> mode-switch that works the same way for text and binary content alike, so
+> there's no separate "binary vs. text" escaping story to get wrong.
+>
+> Every language you were trained on treats backslash-escapes as a near-
+> universal string-literal default, which is exactly why this is worth
+> stating explicitly rather than trusting pattern-matching from other
+> languages: resynth deliberately does not follow that convention.
+>
+> Practically, this means `\n`, `\r`, `\t`, `\x00`, etc. are **not** special —
+> they are two literal ASCII characters each. `"\r\n"` compiles fine but
+> produces the four bytes `5c 72 5c 6e` (`\`, `r`, `\`, `n`), **not** a
+> carriage-return/linefeed. This is invisible from the source alone: the
+> program compiles and looks correct, and the mistake only shows up as wrong
+> bytes on the wire.
+>
+> The **only** special embedded-byte syntax is the `"|hex bytes|"` form shown
+> above. For a real byte value, use one of:
+> - `"|0d 0a|"` — write the bytes directly as inline hex
+> - `text::crlflines(...)` / `text::CRLF` — for CRLF-joined line-oriented text
+> - `std::u8(0x00)`, `std::be16(...)`, etc. — for a single encoded value
+>
+> Never write `\x00`, `\n`, `\r`, `\t` etc. expecting escape processing —
+> always use one of the forms above instead. **After writing any payload that
+> looks like it contains an escape sequence, validate with `tshark -x`** (not
+> just `resynth -v`) to confirm the actual bytes on the wire, since a
+> compile success proves nothing here.
 
 Adjacent string literals are concatenated by the lexer — no operator needed:
 
@@ -390,8 +427,8 @@ let flow = ipv4::tcp::flow(
 );
 
 flow.open();                              # 3-way handshake (SYN/SYN-ACK/ACK)
-flow.client_message("GET / HTTP/1.1\r\n\r\n");
-flow.server_message("HTTP/1.1 200 OK\r\n\r\n");
+flow.client_message("GET / HTTP/1.1" "|0d 0a 0d 0a|");
+flow.server_message("HTTP/1.1 200 OK" "|0d 0a 0d 0a|");
 flow.close();                             # FIN/FIN-ACK/ACK
 ```
 
@@ -709,7 +746,7 @@ flow.client_message(
   std::be32(0x00000000),   # expected data transfer length
   std::be32(0x01),         # cmd_sn
   std::be32(0x00),         # exp_stat_sn
-  "INQUIRY\x00\x00\x00\x00\x00\x00\x00\x00\x00",  # CDB (16 bytes)
+  "INQUIRY" "|00 00 00 00 00 00 00 00 00|",  # CDB (16 bytes)
 );
 ```
 
@@ -720,10 +757,10 @@ import ipv4;
 
 ipv4::udp::unicast(10.0.0.1/5000, 10.0.0.2/53,
   "|00 01|"                # transaction ID
-  "|01 00|"                # flags: standard query
+  "|01 00|",               # flags: standard query
   std::be16(1),            # questions: 1
   "|00 00 00 00 00 00|",   # answer/auth/additional: 0
-  std::len_u8("\x07example\x03com\x00"),  # QNAME
+  std::len_u8("example"), std::len_u8("com"), "|00|",  # QNAME: len-prefixed labels + terminator
   std::be16(1),            # QTYPE: A
   std::be16(1),            # QCLASS: IN
 );
