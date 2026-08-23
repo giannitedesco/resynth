@@ -8,7 +8,10 @@ use derive_more::Display;
 
 use crate::args::{ArgSpec, ArgVec, Args};
 use crate::err::Error;
-use crate::err::Error::TypeError;
+use crate::err::Error::{
+    ArgMultiplySpecified, ArgTypeMismatch, CollectArgTypeMismatch, MissingArg, NoSuchArg,
+    TooFewArgs, TooManyArgs, UnexpectedCollectArgs, UnexpectedNamedArg,
+};
 use crate::object::ObjRef;
 use crate::sym::Symbol;
 use crate::val::{Typed, Val, ValDef, ValType};
@@ -385,13 +388,11 @@ impl FuncDef {
                                 state = State::CollectOnly;
                                 continue;
                             }
-                            println!(
-                                "ERR: {}: Too many arguments: {} > {}",
-                                self.name,
-                                positional.len(),
-                                self.args.len()
-                            );
-                            return Err(TypeError);
+                            return Err(TooManyArgs {
+                                func: self.name.into(),
+                                got: positional.len(),
+                                want: self.args.len(),
+                            });
                         } else {
                             positional.push(arg.val);
                             break;
@@ -408,8 +409,10 @@ impl FuncDef {
                         let arg_pos = (self.arg_pos)(&name);
 
                         if arg_pos.is_none() {
-                            println!("ERR: {}: No such argument: \"{}\"", self.name, name);
-                            return Err(TypeError);
+                            return Err(NoSuchArg {
+                                func: self.name.into(),
+                                arg: name.into(),
+                            });
                         }
 
                         let arg_index = arg_pos.unwrap();
@@ -420,20 +423,18 @@ impl FuncDef {
                         // then a positional has been specified by position, and is now attempting
                         // to be specified by name. So nope.
                         if arg_index < positional.len() {
-                            println!(
-                                "ERR: {}: Positional argument \"{}\" multiply specified",
-                                self.name, name
-                            );
-                            return Err(TypeError);
+                            return Err(ArgMultiplySpecified {
+                                func: self.name.into(),
+                                arg: name.into(),
+                            });
                         }
 
                         // b) if we've named the same arg twice then that's also not allowed.
                         if named.contains_key(&name) {
-                            println!(
-                                "ERR: {}: Optional argument \"{}\" multiply specified",
-                                self.name, name
-                            );
-                            return Err(TypeError);
+                            return Err(ArgMultiplySpecified {
+                                func: self.name.into(),
+                                arg: name.into(),
+                            });
                         }
 
                         named.insert(name, arg.val);
@@ -441,16 +442,15 @@ impl FuncDef {
                     }
                     State::CollectOnly => {
                         if !self.is_collect() {
-                            println!("ERR: {}: Unexpected collect-arguments", self.name);
-                            return Err(TypeError);
+                            return Err(UnexpectedCollectArgs {
+                                func: self.name.into(),
+                            });
                         }
                         if arg.is_named() {
-                            println!(
-                                "ERR: {}: Unexpected named argument: \"{}\"",
-                                self.name,
-                                arg.name.unwrap()
-                            );
-                            return Err(TypeError);
+                            return Err(UnexpectedNamedArg {
+                                func: self.name.into(),
+                                arg: arg.name.unwrap().into(),
+                            });
                         }
                         extra.push(arg.val);
                         break;
@@ -482,11 +482,11 @@ impl FuncDef {
 
         // Now do some basic sanity checks to stup us shooting ourselves in the foot later
         if nr_specified < self.min_args {
-            println!(
-                "ERR: {}: Not enough specified args: {} ({} + {}) < {}",
-                self.name, nr_specified, nr_positional, nr_named, self.min_args
-            );
-            return Err(TypeError);
+            return Err(TooFewArgs {
+                func: self.name.into(),
+                got: nr_specified,
+                want: self.min_args,
+            });
         }
 
         let mut args: Vec<Val> = Vec::with_capacity(self.args.len());
@@ -510,11 +510,10 @@ impl FuncDef {
                 args.push((*dfl).into());
             } else {
                 // not specified, and we're mandatory, barf
-                println!(
-                    "ERR: {}: Positional argument \"{}\" not specified",
-                    self.name, name
-                );
-                return Err(TypeError);
+                return Err(MissingArg {
+                    func: self.name.into(),
+                    arg: (*name).into(),
+                });
             }
         }
 
@@ -526,18 +525,18 @@ impl FuncDef {
                 ArgDecl::Positional(typ) => typ.compatible_with(arg),
                 ArgDecl::Optional(dfl) => dfl.arg_compatible(arg),
             } {
-                println!(
-                    "ERR: {}: Argument type-check failed for {:?}",
-                    self.name, name
-                );
-                return Err(TypeError);
+                return Err(ArgTypeMismatch {
+                    func: self.name.into(),
+                    arg: (*name).into(),
+                });
             }
         }
 
         // 4. Type-check the collect-args
         if extra.iter().any(|x| !self.collect_type.compatible_with(x)) {
-            println!("ERR: {}: Collect argument of wrong type", self.name);
-            return Err(TypeError);
+            return Err(CollectArgTypeMismatch {
+                func: self.name.into(),
+            });
         }
 
         Ok(ArgVec::new(this, args, extra))

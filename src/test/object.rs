@@ -95,7 +95,10 @@ fn method_lookup() {
 #[test]
 fn method_lookup_fail() {
     let a = Val::from(Tcp::new(123, 456));
-    assert_eq!(a.lookup_symbol("client_massage"), Err(NameError));
+    assert_eq!(
+        a.lookup_symbol("client_massage"),
+        Err(NameError("client_massage".into()))
+    );
 }
 
 #[test]

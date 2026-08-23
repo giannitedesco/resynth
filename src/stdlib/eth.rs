@@ -15,7 +15,9 @@ fn ether<T: AsRef<[u8]>>(val: T) -> Result<eth_addr, Error> {
     let val = val.as_ref();
 
     if val.len() != 6 {
-        return Err(Error::RuntimeError);
+        return Err(Error::LibError(
+            format!("ethernet address must be 6 bytes, got {}", val.len()).into(),
+        ));
     }
 
     let mut octets: [u8; 6] = [0; 6];

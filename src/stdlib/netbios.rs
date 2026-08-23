@@ -1,7 +1,7 @@
 use pkt::dns::{DnsFlags, rcode};
 use pkt::netbios::{name, ns};
 
-use crate::err::Error::RuntimeError;
+use crate::err::Error;
 use crate::libapi::{FuncDef, Module};
 use crate::str::Buf;
 use crate::sym::Symbol;
@@ -203,7 +203,9 @@ const NAME_ENTRY: FuncDef = func!(
         let flags: u16 = args.next().into();
         let data: Buf  = args.join_extra(b"").into();
 
-        let padded = name::pad(data.as_ref(), suffix).ok_or(RuntimeError)?;
+        let padded = name::pad(data.as_ref(), suffix).ok_or_else(|| {
+            Error::LibError(format!("netbios name too long: {} bytes (max 15)", data.len()).into())
+        })?;
 
         let mut out = Vec::with_capacity(18);
         out.extend_from_slice(&padded); // 15-byte padded name + 1-byte suffix
@@ -298,7 +300,9 @@ const NAME_ENCODE: FuncDef = func! (
     |mut args| {
         let suffix: u8 = args.next().into();
         let data: Buf = args.join_extra(b"").into();
-        let res = name::encode(data.as_ref(), suffix).ok_or(RuntimeError)?;
+        let res = name::encode(data.as_ref(), suffix).ok_or_else(|| {
+            Error::LibError(format!("netbios name too long: {} bytes (max 15)", data.len()).into())
+        })?;
 
         Ok(Val::Str(res.as_ref().into()))
     }

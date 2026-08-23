@@ -3,7 +3,7 @@
 
 use crate::args::Args;
 use crate::err::Error;
-use crate::err::Error::RuntimeError;
+use crate::err::Error::LibTodo;
 use crate::libapi::{ArgDecl, ClassDef, ClassMap, Documented, FuncDef, Module, SymDesc};
 use crate::sym::Symbol;
 use crate::val::{Typed, Val, ValDef, ValType};
@@ -16,9 +16,8 @@ use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde_json::{Map, Value, json};
 
 pub fn unimplemented(mut args: Args) -> Result<Val, Error> {
-    println!("Unimplemented stdlib call");
     args.void();
-    Err(RuntimeError)
+    Err(LibTodo)
 }
 
 mod arp;

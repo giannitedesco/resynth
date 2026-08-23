@@ -574,7 +574,9 @@ impl Val {
             }
         };
 
-        let sym = obj.lookup_symbol(name).ok_or(NameError)?;
+        let sym = obj
+            .lookup_symbol(name)
+            .ok_or_else(|| NameError(name.into()))?;
 
         match sym {
             Symbol::Func(fndef) => Ok(Val::Method(obj.clone(), fndef)),
@@ -587,7 +589,9 @@ impl Val {
 
     pub fn lookup_symbol(&self, name: &str) -> Result<Symbol, Error> {
         match self {
-            Val::Obj(obj) => obj.lookup_symbol(name).ok_or(NameError),
+            Val::Obj(obj) => obj
+                .lookup_symbol(name)
+                .ok_or_else(|| NameError(name.into())),
             _ => {
                 println!("no symbols for non-object: {:?}", self.val_type());
                 Err(TypeError)

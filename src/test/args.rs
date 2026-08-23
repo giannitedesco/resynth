@@ -77,7 +77,13 @@ fn argvec_nullable() {
 fn argvec_type_mismatch_1() {
     let args = vec![ArgSpec::from(1), ArgSpec::from(true)];
 
-    assert_eq!(Err(Error::TypeError), PLAIN.argvec(None, args))
+    assert_eq!(
+        Err(Error::ArgTypeMismatch {
+            func: "PLAIN".into(),
+            arg: "b".into()
+        }),
+        PLAIN.argvec(None, args)
+    )
 }
 
 /// Supply a type-mismatched positional argument
@@ -85,7 +91,13 @@ fn argvec_type_mismatch_1() {
 fn argvec_type_mismatch_2() {
     let args = vec![ArgSpec::from(1), ArgSpec::from(("b", ValDef::Bool(true)))];
 
-    assert_eq!(Err(Error::TypeError), PLAIN.argvec(None, args))
+    assert_eq!(
+        Err(Error::ArgTypeMismatch {
+            func: "PLAIN".into(),
+            arg: "b".into()
+        }),
+        PLAIN.argvec(None, args)
+    )
 }
 
 /// Supply a type-mismatched named argument
@@ -98,7 +110,13 @@ fn argvec_type_mismatch_3() {
         ArgSpec::from(("d", ValDef::Bool(true))),
     ];
 
-    assert_eq!(Err(Error::TypeError), PLAIN.argvec(None, args))
+    assert_eq!(
+        Err(Error::ArgTypeMismatch {
+            func: "PLAIN".into(),
+            arg: "d".into()
+        }),
+        PLAIN.argvec(None, args)
+    )
 }
 
 /// Positional arguments can optionally be named
@@ -148,7 +166,14 @@ fn argvec_too_many_positionals() {
 #[test]
 fn argvec_not_enough_args() {
     let args = vec![ArgSpec::from(1)];
-    assert_eq!(Err(Error::TypeError), PLAIN.argvec(None, args),)
+    assert_eq!(
+        Err(Error::TooFewArgs {
+            func: "PLAIN".into(),
+            got: 1,
+            want: 2
+        }),
+        PLAIN.argvec(None, args),
+    )
 }
 
 /// Specify a positional argument positionally, and also by name
@@ -159,7 +184,13 @@ fn argvec_multiple_positional() {
         ArgSpec::from(b"hello"),
         ArgSpec::from(("a", ValDef::U64(2))),
     ];
-    assert_eq!(Err(Error::TypeError), PLAIN.argvec(None, args),)
+    assert_eq!(
+        Err(Error::ArgMultiplySpecified {
+            func: "PLAIN".into(),
+            arg: "a".into()
+        }),
+        PLAIN.argvec(None, args),
+    )
 }
 
 /// Specify an optional argument positionally, and also by name
@@ -171,7 +202,13 @@ fn argvec_multiple_optional() {
         ArgSpec::from(111),
         ArgSpec::from(("c", ValDef::U64(222))),
     ];
-    assert_eq!(Err(Error::TypeError), PLAIN.argvec(None, args),)
+    assert_eq!(
+        Err(Error::ArgMultiplySpecified {
+            func: "PLAIN".into(),
+            arg: "c".into()
+        }),
+        PLAIN.argvec(None, args),
+    )
 }
 
 /// Specify an optional argument by name, twice
@@ -183,7 +220,13 @@ fn argvec_multiple_named_optional() {
         ArgSpec::from(("c", ValDef::U64(111))),
         ArgSpec::from(("c", ValDef::U64(222))),
     ];
-    assert_eq!(Err(Error::TypeError), PLAIN.argvec(None, args),)
+    assert_eq!(
+        Err(Error::ArgMultiplySpecified {
+            func: "PLAIN".into(),
+            arg: "c".into()
+        }),
+        PLAIN.argvec(None, args),
+    )
 }
 
 const COLLECT: FuncDef = func! {
@@ -258,7 +301,12 @@ fn collect_bad_type() {
         ArgSpec::from(b"hello"),
         ArgSpec::from(true),
     ];
-    assert_eq!(Err(Error::TypeError), COLLECT.argvec(None, args),)
+    assert_eq!(
+        Err(Error::CollectArgTypeMismatch {
+            func: "COLLECT".into()
+        }),
+        COLLECT.argvec(None, args),
+    )
 }
 
 const EMPTY: FuncDef = func! {
@@ -392,7 +440,9 @@ fn argvec_optional_collect_u64() {
     let args = vec![ArgSpec::from(1u64), ArgSpec::from(b"supplied")];
 
     assert_eq!(
-        Err(Error::TypeError),
+        Err(Error::CollectArgTypeMismatch {
+            func: "OPTIONAL_COLLECT_U64".into()
+        }),
         OPTIONAL_COLLECT_U64.argvec(None, args)
     )
 }

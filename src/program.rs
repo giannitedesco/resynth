@@ -1,6 +1,9 @@
 use crate::args::{ArgExpr, ArgSpec};
 use crate::err::Error;
-use crate::err::Error::{ImportError, MultipleAssignError, NameError, TypeError};
+use crate::err::Error::{
+    ImportError, MultipleAssignError, NameError, NotAModule, NotAValue, NotCallable, NotImported,
+    TooManyComponents, TypeError,
+};
 use crate::libapi::{FuncDef, Module};
 use crate::loc::Loc;
 use crate::object::ObjRef;
@@ -70,8 +73,6 @@ impl<'a> Program<'a> {
     }
 
     fn store(&mut self, name: &str, val: Val) -> Result<(), Error> {
-        //println!("let {} := {:?}", name, val);
-        //println!();
         self.regs.insert(name.to_owned(), val);
         Ok(())
     }
@@ -79,29 +80,18 @@ impl<'a> Program<'a> {
     pub fn eval_extern_ref(&self, obj: ObjectRef) -> Result<Val, Error> {
         let toplevel = &obj.modules[0];
 
-        //println!("eval extern {:?}", obj);
-
         /* Lookup the first item in the imports table */
-        let mut top = match self.imports.get(toplevel) {
-            None => {
-                println!("You have not imported {}", toplevel);
-                return Err(NameError);
-            }
-            Some(module) => module,
-        };
+        let mut top = self
+            .imports
+            .get(toplevel)
+            .ok_or_else(|| NotImported(toplevel.as_str().into()))?;
 
         /* All the double-colon components must be submodules */
         for c in obj.modules.iter().skip(1) {
             top = match top.get(c) {
                 Some(Symbol::Module(module)) => module,
-                None => {
-                    println!("Can't find module component: {}", c);
-                    return Err(NameError);
-                }
-                _ => {
-                    println!("Component is not module: {}", c);
-                    return Err(TypeError);
-                }
+                None => return Err(NameError(c.as_str().into())),
+                _ => return Err(NotAModule(c.as_str().into())),
             }
         }
 
@@ -109,26 +99,15 @@ impl<'a> Program<'a> {
         let ret: Val = match top.get(topvar) {
             Some(Symbol::Val(valdef)) => (*valdef).into(),
             Some(Symbol::Func(fndef)) => (*fndef).into(),
-            Some(Symbol::Module(_)) => {
-                println!("Component is a module, cannot be a variable: {}", topvar);
-                return Err(TypeError);
+            Some(Symbol::Module(_)) | Some(Symbol::Class(_)) => {
+                return Err(NotAValue(topvar.as_str().into()));
             }
-            Some(Symbol::Class(_)) => {
-                println!("Component is a class, cannot be a variable: {}", topvar);
-                return Err(TypeError);
-            }
-            None => {
-                println!("Can't find ref component: {}", topvar);
-                return Err(NameError);
-            }
+            None => return Err(NameError(topvar.as_str().into())),
         };
 
         /* We only support functions and string variables in stdlib right now */
         if obj.components.len() > 1 {
-            for c in obj.components.iter().skip(1) {
-                println!(" > comp: lookup {}", c);
-            }
-            unreachable!();
+            unreachable!("multi-component external references are not supported");
         }
 
         Ok(ret)
@@ -136,12 +115,14 @@ impl<'a> Program<'a> {
 
     pub fn eval_local_ref(&self, obj: ObjectRef) -> Result<Val, Error> {
         if obj.components.len() > 2 {
-            println!("too many components in object: {:?}", obj);
-            return Err(NameError);
+            return Err(TooManyComponents(obj.components.join(".").into()));
         }
 
         let var_name = &obj.components[0];
-        let val = self.regs.get(var_name).ok_or(NameError)?;
+        let val = self
+            .regs
+            .get(var_name)
+            .ok_or_else(|| NameError(var_name.as_str().into()))?;
 
         if obj.components.len() == 1 {
             return Ok(val.clone());
@@ -180,21 +161,14 @@ impl<'a> Program<'a> {
         this: Option<ObjRef>,
         argexprs: Vec<ArgExpr>,
     ) -> Result<Val, Error> {
-        //dbg!(func);
-        //dbg!(&argexprs);
-
         let argvals = self.eval_args(argexprs)?;
-        //dbg!(&argvals);
-
         let args = func.args(this, argvals)?;
-        //dbg!(&args);
 
         /* Finally, we're ready to make the call */
         let ret = (func.exec)(args)?;
 
         /* This is a debug_assert because the stdlib is not user-defined */
         debug_assert!(ret.val_type() == func.return_type);
-        //println!();
 
         Ok(ret)
     }
@@ -203,10 +177,7 @@ impl<'a> Program<'a> {
         match self.eval_obj_ref(call.obj)? {
             Val::Func(f) => self.eval_callable(f, None, call.args),
             Val::Method(obj, f) => self.eval_callable(f, Some(obj), call.args),
-            other => {
-                println!("Not callable: {:?}", other);
-                Err(TypeError)
-            }
+            other => Err(NotCallable(other.val_type())),
         }
     }
 
@@ -255,9 +226,7 @@ impl<'a> Program<'a> {
     }
 
     pub fn add_stmt(&mut self, stmt: Stmt) -> Result<(), Error> {
-        //println!("{:?}", stmt);
         match stmt {
-            //Stmt::Nop => self,
             Stmt::Import(import) => self.add_import(import)?,
             Stmt::Assign(assign) => self.add_assign(assign)?,
             Stmt::Expr(expr) => self.add_expr(expr)?,
@@ -271,7 +240,9 @@ impl<'a> Program<'a> {
         self.loc = import.loc;
 
         if self.imports.contains_key(name) {
-            println!("Multiple imports of {:?}", name);
+            if let Some(ref mut func) = self.warning {
+                (func)(self.loc, &format!("multiple imports of {:?}", name));
+            }
             return Ok(());
         }
 
@@ -304,8 +275,6 @@ impl<'a> Program<'a> {
     }
 
     pub fn update_time(&mut self, ns: u64) {
-        // println!("time advance: {} ns", ns);
-
         self.now += ns;
     }
 
