@@ -5,7 +5,7 @@ use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 
 #[derive(Debug, PartialEq, Eq)]
-pub(self) struct Tcp {
+struct Tcp {
     pub cl_seq: u32,
     pub sv_seq: u32,
 }
@@ -31,7 +31,7 @@ impl Tcp {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(self) struct Udp {}
+struct Udp {}
 
 const UDP: ClassDef = class!(
     /// UDP Session
