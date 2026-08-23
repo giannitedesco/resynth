@@ -25,7 +25,7 @@ struct pcap_hdr {
 }
 
 #[derive(Pod, Zeroable, Debug, Copy, Clone)]
-#[repr(C)]
+#[repr(C, packed(1))]
 struct pcap_pkt {
     sec: u32,
     nsec: u32,

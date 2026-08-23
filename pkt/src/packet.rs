@@ -131,6 +131,12 @@ pub struct Hdr<T> {
 
 impl<T: Pod> Hdr<T> {
     fn new(off: usize) -> Self {
+        const {
+            assert!(
+                std::mem::align_of::<T>() <= std::mem::align_of::<u8>(),
+                "wire header types must be repr(packed(1)))"
+            )
+        };
         Self {
             off,
             phantom: std::marker::PhantomData,
