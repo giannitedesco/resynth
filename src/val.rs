@@ -7,11 +7,11 @@ use derive_more::Display;
 use pkt::Packet;
 
 use crate::err::Error;
-use crate::err::Error::{IntLiteralError, NameError, ParseError, TypeError};
+use crate::err::Error::{IntLiteralError, NameError, TypeError};
 use crate::lex::Tok;
 use crate::libapi::{ClassDef, FuncDef};
 use crate::object::{Obj, ObjRef};
-use crate::str::Buf;
+use crate::str::{Buf, Literal};
 use crate::sym::Symbol;
 use crate::traits::Dispatchable;
 
@@ -179,14 +179,7 @@ impl Display for ValDef {
             ValDef::U64(val) => write!(f, "{:#018x}", val),
             ValDef::Ip4(val) => write!(f, "{}", val),
             ValDef::Sock4(val) => write!(f, "{}", val),
-            ValDef::Str(val) => {
-                let s: String = val
-                    .iter()
-                    .copied()
-                    .map(|x| std::ascii::escape_default(x).to_string())
-                    .collect();
-                write!(f, "\"{}\"", s)
-            }
+            ValDef::Str(val) => write!(f, "{}", Literal(val)),
             ValDef::Type(val) => write!(f, "{:?}", val),
         }
     }
@@ -548,7 +541,7 @@ impl Val {
     /// [Val::U64] here.
     pub fn from_tok(tok: &Tok) -> Result<Self, Error> {
         Ok(match tok {
-            Tok::StringLiteral(body) => Self::Str(body.parse().or(Err(ParseError))?),
+            Tok::StringLiteral(buf) => Self::Str(buf.clone()),
             Tok::IPv4Literal(addr) => Self::Ip4(*addr),
             Tok::BooleanLiteral(b) => Self::Bool(*b),
             Tok::HexLiteral(i) | Tok::DecLiteral(i) => {

@@ -16,7 +16,7 @@
 
 | Name | Value |
 | ---- | ----- |
-| CRLF | `(bytes)"\r\n"` |
+| CRLF | `(bytes)"\|0d 0a\|"` |
 
 
 

@@ -168,7 +168,12 @@ pub trait Documented {
             for SymDesc { name, sym } in &consts {
                 if let Symbol::Val(val) = sym {
                     wr.write_all(
-                        format!("| {} | `({}){}` |\n", name, val.val_type(), val,).as_bytes(),
+                        format!(
+                            "| {} | {} |\n",
+                            name,
+                            table_cell(&format!("`({}){}`", val.val_type(), val))
+                        )
+                        .as_bytes(),
                     )?;
                 }
             }
@@ -577,7 +582,9 @@ impl FuncDef {
                 } else {
                     doc.trim().to_string()
                 };
-                wr.write_all(format!("| `{}` | {} | {} |\n", name, type_str, desc).as_bytes())?;
+                wr.write_all(
+                    format!("| `{}` | {} | {} |\n", name, type_str, table_cell(&desc)).as_bytes(),
+                )?;
             }
             if !self.collect_type.is_nil() {
                 let type_str = fmt_type_link(&self.collect_type, class_map, doc_root);

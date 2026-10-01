@@ -193,9 +193,9 @@ Build a TLS cipher suites list
 ```resynth
 resynth fn client_hello (
     version: u16 = 0x0303,
-    sessionid: bytes = "\x00",
-    ciphers: bytes = "\x00\x02\x00\x00",
-    compression: bytes = "\x01\x00",
+    sessionid: bytes = "|00|",
+    ciphers: bytes = "|00 02 00 00|",
+    compression: bytes = "|01 00|",
     =>
     *collect_args: bytes,
 ) -> bytes;
@@ -210,9 +210,9 @@ Construct a TLS ClientHello handshake message
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `version` | `u16` | Requested [TLS version](version/README.md) _(default: `0x0303`)_ |
-| `sessionid` | `bytes` | Session ID bytes (u8 length-prefixed; `\x00` means no session resumption) _(default: `"\x00"`)_ |
-| `ciphers` | `bytes` | Supported cipher suites list — use [tls::ciphers()](#ciphers) to construct _(default: `"\x00\x02\x00\x00"`)_ |
-| `compression` | `bytes` | Supported compression methods list (essentially defunct; null compression = `\x01\x00`) _(default: `"\x01\x00"`)_ |
+| `sessionid` | `bytes` | Session ID bytes (u8 length-prefixed; `"\|00\|"` means no session resumption) _(default: `"\|00\|"`)_ |
+| `ciphers` | `bytes` | Supported cipher suites list — use [tls::ciphers()](#ciphers) to construct _(default: `"\|00 02 00 00\|"`)_ |
+| `compression` | `bytes` | Supported compression methods list (essentially defunct; null compression = `"\|01 00\|"`) _(default: `"\|01 00\|"`)_ |
 | `…` | `bytes` | Zero or more additional values |
 
 ### Returns
@@ -294,7 +294,7 @@ Construct a TLS record
 ```resynth
 resynth fn server_hello (
     version: u16 = 0x0303,
-    sessionid: bytes = "\x00",
+    sessionid: bytes = "|00|",
     cipher: u16 = 0x0000,
     compression: u8 = 0x00,
     =>
@@ -311,7 +311,7 @@ Construct a TLS ServerHello handshake message
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `version` | `u16` | Negotiated [TLS version](version/README.md) _(default: `0x0303`)_ |
-| `sessionid` | `bytes` | Session ID bytes (u8 length-prefixed; `\x00` means no session resumption) _(default: `"\x00"`)_ |
+| `sessionid` | `bytes` | Session ID bytes (u8 length-prefixed; `"\|00\|"` means no session resumption) _(default: `"\|00\|"`)_ |
 | `cipher` | `u16` | Negotiated [cipher suite](cipher/README.md) _(default: `0x0000`)_ |
 | `compression` | `u8` | Negotiated compression method (essentially defunct; 0 = null compression) _(default: `0x00`)_ |
 | `…` | `bytes` | Zero or more additional values |

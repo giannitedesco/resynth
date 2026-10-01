@@ -1,6 +1,8 @@
 use crate::err::Error;
 use crate::lex::{Lexer, Tok, Token};
 use crate::loc::Loc;
+use crate::str::Buf;
+use crate::str::StringLiteralErrorKind::{self, *};
 
 use std::net::Ipv4Addr;
 
@@ -19,8 +21,12 @@ fn tok(line: usize, col: usize, tok: Tok) -> Token {
     }
 }
 
-fn str_tok(line: usize, col: usize, body: &str) -> Token {
-    tok(line, col, Tok::StringLiteral(body.into()))
+fn str_tok(line: usize, col: usize, bytes: &[u8]) -> Token {
+    tok(line, col, Tok::StringLiteral(Buf::from(bytes)))
+}
+
+fn str_err(line: usize, col: usize, kind: StringLiteralErrorKind) -> (Loc, Error) {
+    (Loc::new(line, col), Error::StringLiteralError(kind))
 }
 
 fn ident(line: usize, col: usize, name: &str) -> Token {
@@ -62,7 +68,7 @@ fn lex_backslash() {
     assert_eq!(
         lex("\"\\\";"),
         vec![
-            str_tok(1, 1, "\\"),
+            str_tok(1, 1, b"\\"),
             tok(1, 4, Tok::SemiColon),
             tok(1, 5, Tok::Eof),
         ]
@@ -72,19 +78,19 @@ fn lex_backslash() {
 #[test]
 fn lex_string_chars() {
     let body = concat!(
-        "!#$%&'()*+,-./", // " is not allowed
+        " !#$%&'()*+,-./", // " is not allowed
         "0123456789",
         ":;<=>?",
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
         "[\\]^_`",
         "abcdefghijklmnopqrstuvwxyz",
-        "{|}~",
+        "{}~", // | is not allowed
     );
 
     assert_eq!(
         lex(&format!("\"{body}\";\n")),
         vec![
-            str_tok(1, 1, body),
+            str_tok(1, 1, body.as_bytes()),
             tok(1, 95, Tok::SemiColon),
             tok(1, 96, Tok::Eof),
         ]
@@ -92,11 +98,11 @@ fn lex_string_chars() {
 }
 
 #[test]
-fn lex_string_is_not_decoded() {
+fn lex_hex() {
     assert_eq!(
         lex("\"|78:24:af:23:f0:a9|\";"),
         vec![
-            str_tok(1, 1, "|78:24:af:23:f0:a9|"),
+            str_tok(1, 1, &[0x78, 0x24, 0xaf, 0x23, 0xf0, 0xa9]),
             tok(1, 22, Tok::SemiColon),
             tok(1, 23, Tok::Eof),
         ]
@@ -108,7 +114,7 @@ fn lex_adjacent_strings_join_across_lines() {
     assert_eq!(
         lex("\"abc\" # comment\n  \"def\";"),
         vec![
-            str_tok(1, 1, "abcdef"),
+            str_tok(1, 1, b"abcdef"),
             tok(2, 8, Tok::SemiColon),
             tok(2, 9, Tok::Eof),
         ]
@@ -121,7 +127,7 @@ fn lex_adjacent_strings_located_at_first() {
         lex("x \"a\" \"b\";"),
         vec![
             ident(1, 1, "x"),
-            str_tok(1, 3, "ab"),
+            str_tok(1, 3, b"ab"),
             tok(1, 10, Tok::SemiColon),
             tok(1, 11, Tok::Eof),
         ]
@@ -132,7 +138,7 @@ fn lex_adjacent_strings_located_at_first() {
 fn lex_string_at_eof() {
     assert_eq!(
         lex("\"abc\""),
-        vec![str_tok(1, 1, "abc"), tok(1, 6, Tok::Eof)]
+        vec![str_tok(1, 1, b"abc"), tok(1, 6, Tok::Eof)]
     );
 }
 
@@ -219,8 +225,35 @@ fn lex_newline_in_line_is_error() {
 
 #[test]
 fn lex_columns_count_bytes() {
+    // Non-ASCII can only appear in comments, which run to the end of the line
+    assert_eq!(lex("x # é"), vec![ident(1, 1, "x"), tok(1, 7, Tok::Eof)]);
+}
+
+#[test]
+fn lex_non_ascii_outside_string_is_error() {
+    assert_eq!(lex_err("x é"), (Loc::new(1, 3), Error::LexError));
+}
+
+#[test]
+fn lex_string_bad_char() {
+    assert_eq!(lex_err("let x = \"aé\";"), str_err(1, 11, BadChar('é')));
+    assert_eq!(lex_err("let x = \"a\tb\";"), str_err(1, 11, BadChar('\t')));
+}
+
+#[test]
+fn lex_hex_split_across_literals_is_error() {
+    assert_eq!(lex_err("\"|00 \" \"01|\";"), str_err(1, 2, UnterminatedHex));
+}
+
+#[test]
+fn lex_hex_error_points_at_character() {
     assert_eq!(
-        lex("\"é\" x"),
-        vec![str_tok(1, 1, "é"), ident(1, 6, "x"), tok(1, 7, Tok::Eof)]
+        lex_err("let x = \"|0g|\";"),
+        str_err(1, 12, BadHexDigit('g'))
     );
+}
+
+#[test]
+fn lex_string_error_on_second_line_of_join() {
+    assert_eq!(lex_err("\"ab\"\n  \"|0|\";"), str_err(2, 6, OddHexDigits));
 }

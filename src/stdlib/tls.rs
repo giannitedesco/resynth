@@ -948,11 +948,11 @@ const TLS_CLIENT_HELLO: FuncDef = func! (
         =>
         /// Requested [TLS version](version/README.md)
         version: U16 = version::TLS_1_2,
-        /// Session ID bytes (u8 length-prefixed; `\x00` means no session resumption)
+        /// Session ID bytes (u8 length-prefixed; `"|00|"` means no session resumption)
         sessionid: Str = b"\x00",
         /// Supported cipher suites list — use [tls::ciphers()](#ciphers) to construct
         ciphers: Str = b"\x00\x02\x00\x00", // null cipher
-        /// Supported compression methods list (essentially defunct; null compression = `\x01\x00`)
+        /// Supported compression methods list (essentially defunct; null compression = `"|01 00|"`)
         compression: Str = b"\x01\x00", // null compression
         =>
         Str
@@ -1003,7 +1003,7 @@ const TLS_SERVER_HELLO: FuncDef = func! (
         =>
         /// Negotiated [TLS version](version/README.md)
         version: U16 = version::TLS_1_2,
-        /// Session ID bytes (u8 length-prefixed; `\x00` means no session resumption)
+        /// Session ID bytes (u8 length-prefixed; `"|00|"` means no session resumption)
         sessionid: Str = b"\x00",
         /// Negotiated [cipher suite](cipher/README.md)
         cipher: U16 = ciphers::NULL_WITH_NULL_NULL,

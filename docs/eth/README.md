@@ -21,7 +21,7 @@
 
 | Name | Value |
 | ---- | ----- |
-| BROADCAST | `(bytes)"\xff\xff\xff\xff\xff\xff"` |
+| BROADCAST | `(bytes)"\|ff ff ff ff ff ff\|"` |
 
 
 

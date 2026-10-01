@@ -7,6 +7,7 @@ use regex::CaptureLocations;
 use crate::err::Error;
 use crate::err::Error::{IntLiteralError, LexError};
 use crate::loc::Loc;
+use crate::str::Buf;
 
 static LEX_RE: Lazy<Regex> = lazy_regex!(
     "^\
@@ -140,9 +141,8 @@ pub enum Tok {
     Identifier(Box<str>),
     BooleanLiteral(bool),
     IPv4Literal(Ipv4Addr),
-    /// The text between the quotes of one or more adjacent string literals, joined. It is not
-    /// decoded yet.
-    StringLiteral(Box<str>),
+    /// The decoded bytes of one or more adjacent string literals, joined
+    StringLiteral(Buf),
     /// In `0..=i128::MAX`
     HexLiteral(i128),
     /// In `0..=i128::MAX`
@@ -208,14 +208,14 @@ impl Token {
 #[derive(Debug)]
 struct PendingStr {
     loc: Loc,
-    body: String,
+    bytes: Vec<u8>,
 }
 
 impl PendingStr {
     fn into_token(self) -> Token {
         Token {
             loc: self.loc,
-            tok: Tok::StringLiteral(self.body.into()),
+            tok: Tok::StringLiteral(Buf::from(self.bytes)),
         }
     }
 }
@@ -273,9 +273,15 @@ impl Lexer {
                 Rule::StringLiteral => {
                     let pend = self.pending.get_or_insert_with(|| PendingStr {
                         loc,
-                        body: String::new(),
+                        bytes: Vec::new(),
                     });
-                    pend.body.push_str(&lexeme[1..len - 1]);
+                    // Each literal is decoded on its own, so a hex sequence can't span two
+                    let body = &lexeme[1..len - 1];
+                    if let Err(err) = Buf::decode_literal_into(body, &mut pend.bytes) {
+                        // The error's location goes in `self.loc`, so only its kind is returned
+                        self.loc = Loc::new(self.lno, loc.col() + 1 + err.offset);
+                        return Err(err.kind.into());
+                    }
                 }
                 rule => {
                     self.toks
