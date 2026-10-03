@@ -211,7 +211,7 @@ fn resynth() -> Result<(), ()> {
                 print!("{}:{}:{}: ", p.display(), loc.line(), loc.col());
             }
             error!(stdout, "error");
-            println!(": process_file: {}", err);
+            println!(": {}", err);
 
             if !argv.keep
                 && let Err(rm_err) = fs::remove_file(out.as_ref())
