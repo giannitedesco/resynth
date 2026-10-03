@@ -7,10 +7,53 @@ use resynth::{error, ok, warn};
 use std::borrow::Cow;
 use std::io::{BufRead, IsTerminal};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::{fs, io};
 
+use chrono::DateTime;
 use clap::{ArgGroup, Parser as ClapParser};
+use derive_more::{Display, Error};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
+#[derive(Debug, Display, Error)]
+enum StartTimeError {
+    #[display("{}: expected unix seconds, RFC 3339: YYYY-MM-DDTHH:MM:SSZ", _0)]
+    #[error(ignore)]
+    Format(Box<str>),
+
+    #[display("{}: Outside of pcap timestamp range (1970 - 2106)", _0)]
+    #[error(ignore)]
+    OutOfRange(Box<str>),
+}
+
+/// Nanoseconds since the Unix epoch (1970-01-01 00:00:00 UTC), within pcap's u32 seconds range
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+struct StartTime(u64);
+
+impl StartTime {
+    const MAX_NANOS: i64 = (u32::MAX as i64 + 1) * 1_000_000_000 - 1;
+
+    const fn as_nanos(&self) -> u64 {
+        self.0
+    }
+}
+
+impl FromStr for StartTime {
+    type Err = StartTimeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let ns = match s.parse::<i64>() {
+            Ok(secs) => secs.checked_mul(1_000_000_000),
+            Err(_) => DateTime::parse_from_rfc3339(s)
+                .map_err(|_| StartTimeError::Format(s.into()))?
+                .timestamp_nanos_opt(),
+        };
+        ns.filter(|ns| (0..=Self::MAX_NANOS).contains(ns))
+            .and_then(|ns| u64::try_from(ns).ok())
+            .map(Self)
+            .ok_or_else(|| StartTimeError::OutOfRange(s.into()))
+    }
+}
 
 #[derive(ClapParser, Debug)]
 #[command(
@@ -57,6 +100,10 @@ struct Cli {
     )]
     outdir: PathBuf,
 
+    /// Start time for pcap files (unix seconds, RFC 3339: YYYY-MM-DDTHH:MM:SSZ)
+    #[arg(long, default_value = "1981-08-15T00:00:00Z")]
+    start_time: StartTime,
+
     /// Input .rsyn files
     #[arg(value_name = "FILE")]
     input: Vec<String>,
@@ -64,7 +111,7 @@ struct Cli {
 
 /// A [source code location](Loc) and an [error code](Error)
 #[derive(Debug)]
-pub struct ErrorLoc {
+struct ErrorLoc {
     pub loc: Loc,
     pub err: Error,
 }
@@ -87,10 +134,11 @@ impl From<io::Error> for ErrorLoc {
     }
 }
 
-pub fn process_file(
+fn process_file(
     stdout: &mut StandardStream,
     inp: &Path,
     out: &Path,
+    start_time: StartTime,
     verbose: bool,
 ) -> Result<(), ErrorLoc> {
     let file = fs::File::open(inp)?;
@@ -102,6 +150,8 @@ pub fn process_file(
     let mut prog = Program::with_pcap_writer(wr)?;
     let mut parse = Parser::default();
     let mut lex = Lexer::default();
+
+    prog.update_time(start_time.as_nanos());
 
     let mut warning = |loc: Loc, warn: &str| {
         if loc.is_nil() {
@@ -200,7 +250,7 @@ fn resynth() -> Result<(), ()> {
             Cow::Owned(out)
         };
 
-        let result = process_file(&mut stdout, p, &out, argv.verbose);
+        let result = process_file(&mut stdout, p, &out, argv.start_time, argv.verbose);
 
         if let Err(error) = result {
             let ErrorLoc { loc, err } = error;
