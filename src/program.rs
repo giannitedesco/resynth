@@ -31,26 +31,26 @@ pub struct Program<'a> {
 }
 
 impl<'a> Program<'a> {
-    pub fn dummy() -> Result<Self, Error> {
-        Ok(Program {
+    pub fn dummy() -> Self {
+        Program {
             now: 0,
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: None,
             loc: Loc::nil(),
             warning: None,
-        })
+        }
     }
 
-    pub fn with_pcap_writer(wr: PcapWriter) -> Result<Self, Error> {
-        Ok(Program {
+    pub fn with_pcap_writer(wr: PcapWriter) -> Self {
+        Program {
             now: 0,
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: Some(wr),
             loc: Loc::nil(),
             warning: None,
-        })
+        }
     }
 
     pub fn loc(&self) -> Loc {
@@ -62,7 +62,7 @@ impl<'a> Program<'a> {
     }
 
     pub fn execute(stmts: Vec<Stmt>, wr: PcapWriter) -> Result<Self, Error> {
-        let mut prog = Self::with_pcap_writer(wr)?;
+        let mut prog = Self::with_pcap_writer(wr);
         prog.add_stmts(stmts)?;
         Ok(prog)
     }

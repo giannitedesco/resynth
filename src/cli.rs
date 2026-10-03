@@ -147,7 +147,7 @@ fn process_file(
         let wr = PcapWriter::create(out)?;
         if verbose { wr.debug() } else { wr }
     };
-    let mut prog = Program::with_pcap_writer(wr)?;
+    let mut prog = Program::with_pcap_writer(wr);
     let mut parse = Parser::default();
     let mut lex = Lexer::default();
 
