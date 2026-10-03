@@ -41,7 +41,7 @@ impl pcap_hdr {
             ver_min: 4,
             gmt_off: 0,
             sig_fig: 0,
-            mtu: 0,
+            mtu: 262144, // 256kB
             linktype: LinkType::Ethernet as u32,
         }
     }
