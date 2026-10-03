@@ -427,8 +427,7 @@ pub fn ip_csum_fold(running: u32) -> u16 {
 pub fn ip_csum_partial(buf: &[u8]) -> u32 {
     let mut sum: u32 = 0;
 
-    let it = buf.chunks_exact(2);
-    let remainder = it.remainder();
+    let (it, remainder) = buf.as_chunks::<2>();
 
     for chunk in it {
         /* hopefully this temporary bounce and bounds-check is optimized out? But I guess it
