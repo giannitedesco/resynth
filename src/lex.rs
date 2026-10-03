@@ -52,7 +52,7 @@ static LEX_RE: Lazy<Regex> = lazy_regex!(
     |\
     (?P<hex_integer_literal>0x[0-9a-fA-F][0-9a-fA-F]*)\
     |\
-    (?P<integer_literal>[-]?[0-9][0-9]*)\
+    (?P<integer_literal>[0-9][0-9]*)\
     )\
 "
 );

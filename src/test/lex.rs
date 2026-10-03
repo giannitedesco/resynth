@@ -156,6 +156,11 @@ fn lex_integers() {
 }
 
 #[test]
+fn lex_negative_is_error() {
+    assert_eq!(lex_err("-1"), (Loc::new(1, 1), Error::LexError));
+}
+
+#[test]
 fn lex_integer_limits() {
     let max = format!("{:#x}", i128::MAX);
     assert_eq!(
