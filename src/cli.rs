@@ -12,7 +12,7 @@ use std::str::FromStr;
 use std::{fs, io};
 
 use chrono::DateTime;
-use clap::{ArgGroup, Args, CommandFactory, Parser as ClapParser, error::ErrorKind};
+use clap::{Args, CommandFactory, Parser as ClapParser, Subcommand, error::ErrorKind};
 use derive_more::{Display, Error};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
@@ -125,11 +125,8 @@ impl OutputArgs {
     version,
     author,
     about,
-    group(
-        ArgGroup::new("run_mode")
-            .args(["docs", "stdlib_json", "input"])
-            .required(true)
-    ),
+    args_conflicts_with_subcommands = true,
+    subcommand_negates_reqs = true
 )]
 struct Cli {
     #[command(flatten)]
@@ -155,13 +152,19 @@ struct Cli {
     #[arg(value_name = "FILE")]
     input: Vec<PathBuf>,
 
+    #[command(subcommand)]
+    introspection: Option<Introspection>,
+}
+
+#[derive(Subcommand, Debug)]
+enum Introspection {
     /// Output documentation to DIR
-    #[arg(long = "output-docs", value_name = "DIR")]
-    docs: Option<PathBuf>,
+    #[command(hide = true, long_flag = "output-docs")]
+    Docs { dir: PathBuf },
 
     /// Output stdlib as JSON to FILE (omit FILE to write to stdout)
-    #[arg(long = "output-stdlib-json", value_name = "FILE", num_args = 0..=1, default_missing_value = "")]
-    stdlib_json: Option<String>,
+    #[command(hide = true, long_flag = "output-stdlib-json")]
+    StdlibJson { file: Option<PathBuf> },
 }
 
 /// A [source code location](Loc) and an [error code](Error)
@@ -252,6 +255,18 @@ fn process_file(
 fn resynth() -> Result<(), ()> {
     let argv = Cli::parse();
 
+    match argv.introspection {
+        Some(Introspection::Docs { dir }) => {
+            write_docs(&dir);
+            return Ok(());
+        }
+        Some(Introspection::StdlibJson { file }) => {
+            write_stdlib_json(file.as_deref());
+            return Ok(());
+        }
+        None => {}
+    }
+
     let color = match argv.color.as_str() {
         "always" => ColorChoice::Always,
         "ansi" => ColorChoice::AlwaysAnsi,
@@ -265,21 +280,6 @@ fn resynth() -> Result<(), ()> {
         _ => ColorChoice::Never,
     };
     let mut stdout = StandardStream::stdout(color);
-
-    if let Some(docs_dir) = &argv.docs {
-        write_docs(docs_dir);
-        return Ok(());
-    }
-
-    if let Some(json_path) = &argv.stdlib_json {
-        let path = if json_path.is_empty() {
-            None
-        } else {
-            Some(PathBuf::from(json_path))
-        };
-        write_stdlib_json(path.as_deref());
-        return Ok(());
-    }
 
     let mode = match argv.output.into_mode(argv.input.len()) {
         Ok(mode) => mode,
