@@ -1,3 +1,4 @@
 /target
+/examples/*.pcap
 /Cargo.lock
 .*.swp
