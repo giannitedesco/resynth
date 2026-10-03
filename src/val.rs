@@ -7,8 +7,8 @@ use derive_more::Display;
 use pkt::Packet;
 
 use crate::err::Error;
-use crate::err::Error::{NameError, ParseError, TypeError};
-use crate::lex::{TokType, Token};
+use crate::err::Error::{IntLiteralError, NameError, ParseError, TypeError};
+use crate::lex::Tok;
 use crate::libapi::{ClassDef, FuncDef};
 use crate::object::{Obj, ObjRef};
 use crate::str::Buf;
@@ -544,25 +544,18 @@ impl Val {
         Val::Str(Buf::from(v))
     }
 
-    pub fn from_token(tok: &Token) -> Result<Self, Error> {
-        use TokType::*;
-        use Val::*;
-        let v = tok.val();
-        match tok.tok_type() {
-            StringLiteral => Ok(Str(v.parse().or(Err(ParseError))?)),
-            IPv4Literal => Ok(Ip4(v.parse().or(Err(ParseError))?)),
-            IntegerLiteral => Ok(U64(v.parse().or(Err(ParseError))?)),
-            BooleanLiteral => Ok(Bool(v.parse().or(Err(ParseError))?)),
-            HexIntegerLiteral => {
-                let hex = v.strip_prefix("0x").unwrap();
-
-                // XXX: This looks horrendously inefficient
-                let val: u64 = u64::from_str_radix(hex, 16).or(Err(ParseError))?;
-
-                Ok(U64(val))
+    /// Convert a literal token in to a value. Integer literals are lexed as `i128` and become
+    /// [Val::U64] here.
+    pub fn from_tok(tok: &Tok) -> Result<Self, Error> {
+        Ok(match tok {
+            Tok::StringLiteral(body) => Self::Str(body.parse().or(Err(ParseError))?),
+            Tok::IPv4Literal(addr) => Self::Ip4(*addr),
+            Tok::BooleanLiteral(b) => Self::Bool(*b),
+            Tok::HexLiteral(i) | Tok::DecLiteral(i) => {
+                Self::U64(u64::try_from(*i).or(Err(IntLiteralError))?)
             }
-            _ => unreachable!(),
-        }
+            _ => unreachable!("not a literal: {tok:?}"),
+        })
     }
 
     pub fn method_lookup(&self, name: &str) -> Result<Self, Error> {

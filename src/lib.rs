@@ -17,9 +17,10 @@
 //!   resynth programs to use the functionality in [pkt] and [ezpkt]
 //!
 //! ## Compiler Phases
-//! 1. [Lexer] uses a static regex to parse each line in to a stream of tokens
-//! 2. [Parser] is a hand-written LR-parser which takes a token at a time and whenever a complete
-//!    [statement](Stmt) is encountered, the [statement](Stmt) is pushed in to a
+//! 1. [Lexer] uses a static regex to split a source file, a line at a time, in to a queue of
+//!    [tokens](Token), decoding identifiers, integers and IP addresses as it goes
+//! 2. [Parser] is a hand-written pushdown parser which takes a token at a time and whenever a
+//!    complete [statement](Stmt) is encountered, the [statement](Stmt) is pushed in to a
 //!    [results vector](Parser::get_results) which can later be [retreived](Parser::get_results)
 //! 3. [Program] maintains the execution state of any given program. It takes one statement at a
 //!    time, and updates the program state based on that. If the program has a [pkt::PcapWriter]
@@ -47,7 +48,7 @@ pub mod stdlib;
 mod test;
 
 pub use err::Error;
-pub use lex::{EOF, Lexer, Token};
+pub use lex::{Lexer, Tok, Token};
 pub use loc::Loc;
 pub use parse::{Parser, Stmt};
 pub use program::Program;

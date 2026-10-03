@@ -1,7 +1,7 @@
 use crate::args::ArgExpr;
 use crate::err::Error;
 use crate::err::Error::ParseError;
-use crate::lex::{TokType, Token};
+use crate::lex::{Tok, Token};
 use crate::loc::Loc;
 use crate::val::Val;
 
@@ -478,28 +478,31 @@ impl Parser {
     }
 
     fn state_initial(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::ImportKeyword => Ok(Action::Discard(State::Import)),
-            TokType::LetKeyword => Ok(Action::Discard(State::Let)),
-            TokType::Identifier => Ok(Action::Goto(State::ExprStmt)),
-            TokType::Eof => Ok(Action::Accept),
+        match tok.tok() {
+            Tok::ImportKeyword => Ok(Action::Discard(State::Import)),
+            Tok::LetKeyword => Ok(Action::Discard(State::Let)),
+            Tok::Identifier(_) => Ok(Action::Goto(State::ExprStmt)),
+            Tok::Eof => Ok(Action::Accept),
             _ => Err(ParseError),
         }
     }
 
     fn state_import(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::Identifier => {
+        match tok.tok() {
+            Tok::Identifier(name) => {
                 self.push(Node::Loc(tok.loc()));
-                Ok(Action::Shift(State::ImportEnd, Node::Module(tok.into())))
+                Ok(Action::Shift(
+                    State::ImportEnd,
+                    Node::Module(name.to_string()),
+                ))
             }
             _ => Err(ParseError),
         }
     }
 
     fn state_import_end(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::SemiColon => Ok(Action::Discard(State::ReduceImport)),
+        match tok.tok() {
+            Tok::SemiColon => Ok(Action::Discard(State::ReduceImport)),
             _ => Err(ParseError),
         }
     }
@@ -510,27 +513,30 @@ impl Parser {
     }
 
     fn state_let(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::Identifier => {
+        match tok.tok() {
+            Tok::Identifier(name) => {
                 self.push(Node::Loc(tok.loc()));
-                Ok(Action::Shift(State::Assign, Node::AssignTo(tok.into())))
+                Ok(Action::Shift(
+                    State::Assign,
+                    Node::AssignTo(name.to_string()),
+                ))
             }
             _ => Err(ParseError),
         }
     }
 
     fn state_assign(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::Equals => Ok(Action::Discard(State::ExprRvalue)),
+        match tok.tok() {
+            Tok::Equals => Ok(Action::Discard(State::ExprRvalue)),
             _ => Err(ParseError),
         }
     }
 
     fn state_ref_component(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::DoubleColon => Ok(Action::Discard(State::ReduceModule)),
-            TokType::Dot => Ok(Action::Discard(State::ReduceObject)),
-            TokType::LParen => Ok(Action::Discard(State::ReduceRefCall)),
+        match tok.tok() {
+            Tok::DoubleColon => Ok(Action::Discard(State::ReduceModule)),
+            Tok::Dot => Ok(Action::Discard(State::ReduceObject)),
+            Tok::LParen => Ok(Action::Discard(State::ReduceRefCall)),
             _ => Ok(Action::Goto(State::ReduceRefNaked)),
         }
     }
@@ -557,34 +563,37 @@ impl Parser {
     }
 
     fn state_ref_module(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::Identifier => Ok(Action::Shift(
+        match tok.tok() {
+            Tok::Identifier(name) => Ok(Action::Shift(
                 State::RefComponent,
-                Node::Component(tok.into()),
+                Node::Component(name.to_string()),
             )),
             _ => Err(ParseError),
         }
     }
 
     fn state_ref_object(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::Identifier => Ok(Action::Shift(State::RefObjEnd, Node::Component(tok.into()))),
+        match tok.tok() {
+            Tok::Identifier(name) => Ok(Action::Shift(
+                State::RefObjEnd,
+                Node::Component(name.to_string()),
+            )),
             _ => Err(ParseError),
         }
     }
 
     fn state_ref_obj_end(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok_type() {
-            TokType::Dot => Action::Discard(State::ReduceObject),
-            TokType::LParen => Action::Discard(State::ReduceRefCall),
+        Ok(match tok.tok() {
+            Tok::Dot => Action::Discard(State::ReduceObject),
+            Tok::LParen => Action::Discard(State::ReduceRefCall),
             _ => Action::Goto(State::ReduceRefNaked),
         })
     }
 
     fn state_arg_next(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::Comma => Ok(Action::Discard(State::ExprArg)),
-            TokType::RParen => Ok(Action::Shift(
+        match tok.tok() {
+            Tok::Comma => Ok(Action::Discard(State::ExprArg)),
+            Tok::RParen => Ok(Action::Shift(
                 State::ReduceCall,
                 Node::State(State::ReduceArg),
             )),
@@ -594,22 +603,22 @@ impl Parser {
 
     #[inline(always)]
     fn push_literal(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::StringLiteral
-            | TokType::BooleanLiteral
-            | TokType::HexIntegerLiteral
-            | TokType::IntegerLiteral => {
+        match tok.tok() {
+            Tok::StringLiteral(_)
+            | Tok::BooleanLiteral(_)
+            | Tok::HexLiteral(_)
+            | Tok::DecLiteral(_) => {
                 self.push(Node::Loc(tok.loc()));
                 Ok(Action::Shift(
                     State::ReduceLiteralExpr,
-                    Node::Literal(Val::from_token(tok)?),
+                    Node::Literal(Val::from_tok(tok.tok())?),
                 ))
             }
-            TokType::IPv4Literal => {
+            Tok::IPv4Literal(_) => {
                 self.push(Node::Loc(tok.loc()));
                 Ok(Action::Shift(
                     State::IPv4,
-                    Node::Literal(Val::from_token(tok)?),
+                    Node::Literal(Val::from_tok(tok.tok())?),
                 ))
             }
             _ => unreachable!(),
@@ -617,8 +626,10 @@ impl Parser {
     }
 
     fn state_expr_arg(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok_type() {
-            TokType::Identifier => Action::Shift(State::ArgName, Node::ArgName(Some(tok.into()))),
+        Ok(match tok.tok() {
+            Tok::Identifier(name) => {
+                Action::Shift(State::ArgName, Node::ArgName(Some(name.to_string())))
+            }
             _ => {
                 self.push(Node::ArgName(None));
                 Action::Goto(State::ArgVal)
@@ -627,8 +638,8 @@ impl Parser {
     }
 
     fn state_arg_name(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok_type() {
-            TokType::Colon => Action::Discard(State::ArgVal),
+        Ok(match tok.tok() {
+            Tok::Colon => Action::Discard(State::ArgVal),
             _ => {
                 let component: Option<String> = self.pop().into();
                 self.push(Node::ArgName(None));
@@ -642,20 +653,20 @@ impl Parser {
 
     fn state_arg_val(&mut self, tok: &Token) -> Result<Action, Error> {
         self.push_goto(State::ReduceArg);
-        match tok.tok_type() {
-            TokType::Identifier => {
+        match tok.tok() {
+            Tok::Identifier(name) => {
                 self.push(Node::Path(PathBuilder::new(tok.loc())));
                 Ok(Action::Shift(
                     State::RefComponent,
-                    Node::Component(tok.into()),
+                    Node::Component(name.to_string()),
                 ))
             }
-            TokType::StringLiteral
-            | TokType::BooleanLiteral
-            | TokType::HexIntegerLiteral
-            | TokType::IntegerLiteral
-            | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
-            TokType::RParen => {
+            Tok::StringLiteral(_)
+            | Tok::BooleanLiteral(_)
+            | Tok::HexLiteral(_)
+            | Tok::DecLiteral(_)
+            | Tok::IPv4Literal(_) => Ok(self.push_literal(tok)?),
+            Tok::RParen => {
                 let st = self.pop();
                 let _ = self.pop();
                 self.push(st);
@@ -671,19 +682,19 @@ impl Parser {
     }
 
     fn state_expr(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::Identifier => {
+        match tok.tok() {
+            Tok::Identifier(name) => {
                 self.push(Node::Path(PathBuilder::new(tok.loc())));
                 Ok(Action::Shift(
                     State::RefComponent,
-                    Node::Component(tok.into()),
+                    Node::Component(name.to_string()),
                 ))
             }
-            TokType::StringLiteral
-            | TokType::BooleanLiteral
-            | TokType::HexIntegerLiteral
-            | TokType::IntegerLiteral
-            | TokType::IPv4Literal => Ok(self.push_literal(tok)?),
+            Tok::StringLiteral(_)
+            | Tok::BooleanLiteral(_)
+            | Tok::HexLiteral(_)
+            | Tok::DecLiteral(_)
+            | Tok::IPv4Literal(_) => Ok(self.push_literal(tok)?),
             _ => Err(ParseError),
         }
     }
@@ -694,19 +705,19 @@ impl Parser {
     }
 
     fn state_ipv4(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok_type() {
-            TokType::Colon => Action::Discard(State::IPv4Colon),
+        Ok(match tok.tok() {
+            Tok::Colon => Action::Discard(State::IPv4Colon),
             _ => Action::Goto(State::ReduceLiteralExpr),
         })
     }
 
     fn state_ipv4_colon(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::IntegerLiteral => {
+        match tok.tok() {
+            Tok::DecLiteral(_) => {
                 self.push(Node::Loc(tok.loc()));
                 Ok(Action::Shift(
                     State::ReduceSockAddr,
-                    Node::Literal(Val::from_token(tok)?),
+                    Node::Literal(Val::from_tok(tok.tok())?),
                 ))
             }
             _ => Err(ParseError),
@@ -734,8 +745,8 @@ impl Parser {
     }
 
     fn state_slash(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok_type() {
-            TokType::Slash => {
+        Ok(match tok.tok() {
+            Tok::Slash => {
                 self.push(Node::Slash);
                 self.push_goto(State::ReduceBop);
                 Action::Discard(State::Expr)
@@ -763,15 +774,15 @@ impl Parser {
     }
 
     fn state_expr_stmt_end(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::SemiColon => Ok(Action::Discard(State::ReduceExprStmt)),
+        match tok.tok() {
+            Tok::SemiColon => Ok(Action::Discard(State::ReduceExprStmt)),
             _ => Err(ParseError),
         }
     }
 
     fn state_assign_stmt_end(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok_type() {
-            TokType::SemiColon => Ok(Action::Discard(State::ReduceAssign)),
+        match tok.tok() {
+            Tok::SemiColon => Ok(Action::Discard(State::ReduceAssign)),
             _ => Err(ParseError),
         }
     }
@@ -802,7 +813,7 @@ impl Parser {
     }
 
     fn dispatch(&mut self, tok: &Token) -> Result<Action, Error> {
-        //println!("{:<24} {:?} {:?}", format!("State::{:?}", self.state), tok.tok_type(), tok.optval());
+        //println!("{:<24} {:?}", format!("State::{:?}", self.state), tok.tok());
         match self.state {
             State::Initial => self.state_initial(tok),
             State::Import => self.state_import(tok),

@@ -19,6 +19,9 @@ pub enum Error {
     #[display("Parse Error")]
     ParseError,
 
+    #[display("Integer literal out of range")]
+    IntLiteralError,
+
     #[display("Import Error: Unknown Module {:?}", _0)]
     #[error(ignore)]
     ImportError(Box<str>),
@@ -114,6 +117,7 @@ impl PartialEq for Error {
             (IoError(a), IoError(b)) => a.kind() == b.kind(),
             (LexError, LexError) => true,
             (ParseError, ParseError) => true,
+            (IntLiteralError, IntLiteralError) => true,
             (ImportError(a), ImportError(b)) => a == b,
             (NameError(a), NameError(b)) => a == b,
             (TypeError, TypeError) => true,

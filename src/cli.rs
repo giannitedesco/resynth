@@ -1,7 +1,7 @@
 use pkt::PcapWriter;
 
 use resynth::stdlib::{write_docs, write_stdlib_json};
-use resynth::{EOF, Error, Lexer, Loc, Parser, Program};
+use resynth::{Error, Lexer, Loc, Parser, Program};
 use resynth::{error, ok, warn};
 
 use std::borrow::Cow;
@@ -201,14 +201,20 @@ fn process_file(
 ) -> Result<(), ErrorLoc> {
     let file = fs::File::open(inp)?;
     let rd = io::BufReader::new(file);
+    let mut lex = Lexer::default();
+
+    for line in rd.lines() {
+        if let Err(err) = lex.line(&line?) {
+            return Err(ErrorLoc::new(lex.loc(), err));
+        }
+    }
+
     let wr = {
         let wr = PcapWriter::create(out)?;
         if verbose { wr.debug() } else { wr }
     };
     let mut prog = Program::with_pcap_writer(wr);
     let mut parse = Parser::default();
-    let mut lex = Lexer::default();
-
     prog.update_time(start_time.as_nanos());
 
     let mut warning = |loc: Loc, warn: &str| {
@@ -222,31 +228,14 @@ fn process_file(
     };
     prog.set_warning(&mut warning);
 
-    for (lno, res) in rd.lines().enumerate() {
-        let line = res?;
-
-        let toks = match lex.line(lno + 1, &line) {
-            Ok(toks) => toks,
-            Err(err) => return Err(ErrorLoc::new(lex.loc(), err)),
-        };
-
-        for tok in toks {
-            if let Err(err) = parse.feed(&tok) {
-                return Err(ErrorLoc::new(tok.loc(), err));
-            }
+    for tok in lex.finish() {
+        if let Err(err) = parse.feed(&tok) {
+            return Err(ErrorLoc::new(tok.loc(), err));
         }
 
         if let Err(err) = prog.add_stmts(parse.get_results()) {
             return Err(ErrorLoc::new(prog.loc(), err));
         }
-    }
-
-    if let Err(err) = parse.feed(&EOF) {
-        return Err(ErrorLoc::new(lex.loc(), err));
-    }
-
-    if let Err(err) = prog.add_stmts(parse.get_results()) {
-        return Err(ErrorLoc::new(prog.loc(), err));
     }
 
     Ok(())
@@ -317,8 +306,17 @@ fn resynth() -> Result<(), ()> {
             error!(stdout, "error");
             println!(": {}", err);
 
+            // By default, if the file failed for any reason, regardless of whether we created it
+            // or not, we delete it. This behaviour can be overridden with the `--keep` flag.
+            //
+            // This is basically because we anticipate that we're translating source files to e.g.
+            // test cases, and we want the test cases to fail with "no file", rather than producing
+            // weird or spurious output.
+            //
+            // Maybe we readdress this and only delete things we actually created in future.
             if !argv.keep
                 && let Err(rm_err) = fs::remove_file(out.as_ref())
+                && rm_err.kind() != io::ErrorKind::NotFound
             {
                 print!("{}: ", p.display());
                 error!(stdout, "error");
