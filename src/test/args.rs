@@ -4,6 +4,11 @@ use crate::libapi::FuncDef;
 use crate::str::Buf;
 use crate::val::{Val, ValDef};
 
+use std::net::{Ipv4Addr, SocketAddrV4};
+
+/// A value which doesn't coerce to any other type, for type mismatch tests
+const UNCOERCIBLE: ValDef = ValDef::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 80));
+
 const PLAIN: FuncDef = func! {
     /// PLAIN
     resynth fn PLAIN(
@@ -75,7 +80,7 @@ fn argvec_nullable() {
 /// Supply a type-mismatched positional argument
 #[test]
 fn argvec_type_mismatch_1() {
-    let args = vec![ArgSpec::from(1), ArgSpec::from(true)];
+    let args = vec![ArgSpec::from(1), ArgSpec::from(UNCOERCIBLE)];
 
     assert_eq!(
         Err(Error::ArgTypeMismatch {
@@ -89,7 +94,7 @@ fn argvec_type_mismatch_1() {
 /// Supply a type-mismatched positional argument
 #[test]
 fn argvec_type_mismatch_2() {
-    let args = vec![ArgSpec::from(1), ArgSpec::from(("b", ValDef::Bool(true)))];
+    let args = vec![ArgSpec::from(1), ArgSpec::from(("b", UNCOERCIBLE))];
 
     assert_eq!(
         Err(Error::ArgTypeMismatch {
@@ -107,7 +112,7 @@ fn argvec_type_mismatch_3() {
         ArgSpec::from(1),
         ArgSpec::from(b"hello"),
         ArgSpec::from(("c", ValDef::U64(3))),
-        ArgSpec::from(("d", ValDef::Bool(true))),
+        ArgSpec::from(("d", UNCOERCIBLE)),
     ];
 
     assert_eq!(
@@ -299,7 +304,7 @@ fn collect_bad_type() {
         ArgSpec::from(1),
         ArgSpec::from(("b", ValDef::U64(234))),
         ArgSpec::from(b"hello"),
-        ArgSpec::from(true),
+        ArgSpec::from(UNCOERCIBLE),
     ];
     assert_eq!(
         Err(Error::CollectArgTypeMismatch {
