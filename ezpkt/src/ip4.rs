@@ -21,7 +21,7 @@ impl IpDgram {
         if !raw {
             pkt.push(eth_hdr::new(
                 iph.get_saddr().into(),
-                iph.get_saddr().into(),
+                iph.get_daddr().into(),
                 ethertype::IPV4,
             ));
         }
