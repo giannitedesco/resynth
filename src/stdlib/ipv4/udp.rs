@@ -20,7 +20,7 @@ const BROADCAST: FuncDef = func!(
         =>
         /// Override source IP address (useful for spoofed/crafted packets)
         srcip: Type = ValType::Ip4,
-        /// Enable raw mode; disables automatic IP/UDP header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         =>
         Str
@@ -55,7 +55,7 @@ const UNICAST: FuncDef = func!(
         /// Destination socket address
         dst: Sock4,
         =>
-        /// Enable raw mode; disables automatic IP/UDP header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         =>
         Str
@@ -244,7 +244,7 @@ const FLOW: FuncDef = func!(
         /// Server socket address
         sv: Sock4,
         =>
-        /// Enable raw mode; disables automatic IP/UDP header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         =>
         Void

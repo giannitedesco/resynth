@@ -56,7 +56,7 @@ const SESSION: FuncDef = func!(
         /// EtherType of the encapsulated payload
         ethertype: U16,
         =>
-        /// Enable raw mode; disables automatic IP/GRE header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         =>
         Void

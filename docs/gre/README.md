@@ -36,7 +36,7 @@ Create a GRETAP session
 | `cl` | `Ip4` | Source IP address |
 | `sv` | `Ip4` | Destination IP address |
 | `ethertype` | `u16` | EtherType of the encapsulated payload |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/GRE header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 
 ### Returns
 

@@ -62,7 +62,7 @@ const ICMP_FLOW: FuncDef = func!(
         /// Server (responder) IP address
         sv: Ip4,
         =>
-        /// Enable raw mode; disables automatic IP/ICMP header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         =>
         Void

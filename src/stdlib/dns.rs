@@ -355,7 +355,7 @@ const DNS_HOST: FuncDef = func!(
         ttl: U32 = 229,
         /// IP address of the DNS name server
         ns: Ip4 = Ipv4Addr::new(1, 1, 1, 1),
-        /// Enable raw mode; disables automatic IP/UDP header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         =>
         Ip4

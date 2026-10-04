@@ -42,7 +42,7 @@ Create a VXLAN session
 | `cl` | `Sock4` | Client (sender) socket address |
 | `sv` | `Sock4` | Server (receiver) socket address |
 | `sessionid` | `u32` | VXLAN Network Identifier (VNI) _(default: `0x00000000`)_ |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/UDP header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 
 ### Returns
 

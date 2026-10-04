@@ -38,7 +38,7 @@ Create an erspan3 session
 | ---- | ---- | ----------- |
 | `cl` | `Ip4` | Source (collector) IP address |
 | `sv` | `Ip4` | Destination (monitor) IP address |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/GRE header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 | `hwid` | `u32` | Hardware ID field in the ERSPAN3 header _(default: `0x00000000`)_ |
 | `sgt` | `u32` | Security Group Tag (SGT) field _(default: `0x00000000`)_ |
 | `granularity` | `u32` | Timestamp granularity field _(default: `0x00000000`)_ |

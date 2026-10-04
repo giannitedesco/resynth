@@ -34,7 +34,7 @@ Create an ERSPAN session
 | ---- | ---- | ----------- |
 | `cl` | `Ip4` | Source (collector) IP address |
 | `sv` | `Ip4` | Destination (monitor) IP address |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/GRE header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 
 ### Returns
 

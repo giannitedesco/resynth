@@ -484,7 +484,7 @@ const FLOW: FuncDef = func!(
         cl_seq: U32 = 1,
         /// Initial server TCP sequence number
         sv_seq: U32 = 1,
-        /// Enable raw mode; disables automatic IP/TCP header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         =>
         Void

@@ -55,7 +55,7 @@ const SESSION: FuncDef = func!(
         /// Destination (monitor) IP address
         sv: Ip4,
         =>
-        /// Enable raw mode; disables automatic IP/GRE header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         /// Hardware ID field in the ERSPAN3 header
         hwid: U32 = 0,

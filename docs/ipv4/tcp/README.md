@@ -38,7 +38,7 @@ Create a [TCP flow context](TcpFlow.md), from which packets can be created
 | `sv` | `Sock4` | Server socket address |
 | `cl_seq` | `u32` | Initial client TCP sequence number _(default: `0x00000001`)_ |
 | `sv_seq` | `u32` | Initial server TCP sequence number _(default: `0x00000001`)_ |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/TCP header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 
 ### Returns
 

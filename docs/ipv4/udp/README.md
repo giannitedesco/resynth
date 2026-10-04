@@ -41,7 +41,7 @@ Send a broadcast datagram
 | `src` | `Sock4` | Source socket address |
 | `dst` | `Sock4` | Destination socket address |
 | `srcip` | `type` | Override source IP address (useful for spoofed/crafted packets) _(default: `Ip4`)_ |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/UDP header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 | `…` | `bytes` | Zero or more additional values |
 
 ### Returns
@@ -66,7 +66,7 @@ Create a UDP flow context, from which other packets can be created
 | ---- | ---- | ----------- |
 | `cl` | `Sock4` | Client socket address |
 | `sv` | `Sock4` | Server socket address |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/UDP header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 
 ### Returns
 
@@ -118,7 +118,7 @@ Send a unicast datagram
 | ---- | ---- | ----------- |
 | `src` | `Sock4` | Source socket address |
 | `dst` | `Sock4` | Destination socket address |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/UDP header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 | `…` | `bytes` | Zero or more additional values |
 
 ### Returns

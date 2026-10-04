@@ -34,7 +34,7 @@ Create an ICMP flow
 | ---- | ---- | ----------- |
 | `cl` | `Ip4` | Client (sender) IP address |
 | `sv` | `Ip4` | Server (responder) IP address |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/ICMP header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 
 ### Returns
 

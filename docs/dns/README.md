@@ -149,7 +149,7 @@ Perform a DNS lookup, with response
 | `qname` | `bytes` | DNS name to look up |
 | `ttl` | `u32` | Time-to-live for the answer records in seconds _(default: `0x000000e5`)_ |
 | `ns` | `Ip4` | IP address of the DNS name server _(default: `1.1.1.1`)_ |
-| `raw` | `bool` | Enable raw mode; disables automatic IP/UDP header computation _(default: `false`)_ |
+| `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 | `…` | `Ip4` | Zero or more additional values |
 
 ### Returns

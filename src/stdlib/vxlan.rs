@@ -74,7 +74,7 @@ const SESSION: FuncDef = func!(
         =>
         /// VXLAN Network Identifier (VNI)
         sessionid: U32 = 0, // TODO: Make it optional
-        /// Enable raw mode; disables automatic IP/UDP header computation
+        /// Enable raw mode; omits ethernet framing
         raw: Bool = false,
         =>
         Void
