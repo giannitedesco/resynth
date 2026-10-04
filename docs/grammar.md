@@ -38,14 +38,14 @@ literal        = boolean-lit
                / ipv4-lit
                / hex-int-lit
                / decimal-int-lit
-               / string-lit               ; adjacent string literals are concatenated
+               / string-lit                ; adjacent string literals are concatenated
 
 boolean-lit       = "true" / "false"
-sock4-lit         = ipv4-lit ":" port      ; produces Sock4; port is decimal only
+sock4-lit         = ipv4-lit ":" port         ; produces Sock4; port is decimal only
 ipv4-lit          = d8 "." d8 "." d8 "." d8   ; produces Ip4 (native type)
 hex-int-lit       = "0x" 1*HEXDIG             ; produces u64
-decimal-int-lit   = [ "-" ] 1*DIGIT           ; produces u64
-port              = 1*DIGIT                    ; decimal only, valid range 0–65535
+decimal-int-lit   = 1*DIGIT                   ; produces u64
+port              = 1*DIGIT                   ; decimal only, valid range 0–65535
 
 ; String literals may contain inline hex escapes.
 ; Adjacent string literals are concatenated by the lexer (no operator needed).
@@ -104,9 +104,9 @@ flexible.
 | `Ip4` | IPv4 address | 4 bytes, big-endian (network order) |
 | `Sock4` | IPv4 socket address | not directly coercible to bytes |
 | `bytes` | Byte string | as-is |
-| `Pkt` | A single packet | emitted to pcap |
-| `PktGen` | A sequence of packets | all emitted to pcap |
-| `TimeJump` | A timestamp offset | applied to subsequent packets |
+| `Pkt` | A single packet | raw bytes |
+| `PktGen` | A sequence of packets | concatenation of frame bytes |
+| `TimeJump` | A timestamp offset | N/A |
 
 ### Integer compatibility
 
@@ -167,7 +167,7 @@ Functions have three kinds of parameters:
 
 ```resynth
 # All positional, all anonymous
-ipv4::tcp::flow(10.0.0.1/1234, 10.0.0.2/80);
+let flow = ipv4::tcp::flow(10.0.0.1/1234, 10.0.0.2/80);
 
 # Named positional args (all subsequent must also be named)
 ipv4::udp::broadcast(src: 0.0.0.0/67, dst: 255.255.255.255/68, srcip: 0.0.0.0,
@@ -175,20 +175,22 @@ ipv4::udp::broadcast(src: 0.0.0.0/67, dst: 255.255.255.255/68, srcip: 0.0.0.0,
 
 # Named optional arg before collect args (required when collect args present)
 flow.client_message(
-    send_ack: false,     # named optional
-    "GET / HTTP/1.1\r\n" # collect args follow
-    "Host: example.com\r\n",
+    send_ack: false,     # named optional, collect args follow
+    "GET / HTTP/1.1|0d 0a|"
+    "Host: example.com|0d 0a|",
 );
 
 # Optional arg anonymous (no collect args, so this is allowed)
-ipv4::tcp::flow(10.0.0.1/1234, 10.0.0.2/80);
+ipv4::tcp::flow(10.0.0.1/1234, 10.0.0.2/80, 1234);  # 1234 is the optional cl_seq arg
 ```
 
 ### Collect args and `bytes` concatenation
 
-Any function whose collect-type is `bytes` concatenates all extra arguments
-into a single byte string. This means you can pass payload components as
-comma-separated arguments rather than wrapping them in `text::concat()`:
+A commonly followed idiom in the language is that if a function accepts
+arbitrary payload data, it will have a collect argument of type `bytes`.
+The function will join all the collect args into a single byte string. This
+means you can pass payload components as comma-separated arguments rather than
+wrapping them in `text::concat()`:
 
 ```resynth
 # These are equivalent:
@@ -211,10 +213,10 @@ flow.client_message(text::concat(std::be16(0x0001), std::be16(42), "data"));
 import ipv4;
 
 # Deferred: packets not emitted yet
-let greeting = flow.client_message("GET / HTTP/1.1\r\n\r\n");
-let reply    = flow.server_message("HTTP/1.1 200 OK\r\n\r\n");
+let greeting = flow.client_message("GET / HTTP/1.1|0d 0a 0d 0a|");
+let reply    = flow.server_message("HTTP/1.1 200 OK|0d 0a 0d 0a|");
 
-# Emit in reverse order
+# Emit in reverse order, as if the packets have been reordered in transit
 reply;
 greeting;
 ```
