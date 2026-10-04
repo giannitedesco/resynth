@@ -99,6 +99,7 @@ pub trait Typed {
             self.val_type(),
             ValType::Pkt
                 | ValType::Str
+                | ValType::Bool
                 | ValType::U8
                 | ValType::U16
                 | ValType::U32
@@ -337,6 +338,7 @@ impl From<Val> for bool {
 impl From<Val> for u64 {
     fn from(v: Val) -> Self {
         match v {
+            Val::Bool(b) => b as u64,
             Val::U8(u) => u as u64,
             Val::U16(u) => u as u64,
             Val::U32(u) => u as u64,
@@ -349,6 +351,7 @@ impl From<Val> for u64 {
 impl From<Val> for u32 {
     fn from(v: Val) -> Self {
         match v {
+            Val::Bool(b) => b as u32,
             Val::U8(u) => u as u32,
             Val::U16(u) => u as u32,
             Val::U32(u) => u,
@@ -361,6 +364,7 @@ impl From<Val> for u32 {
 impl From<Val> for u16 {
     fn from(v: Val) -> Self {
         match v {
+            Val::Bool(b) => b as u16,
             Val::U8(u) => u as u16,
             Val::U16(u) => u,
             Val::U32(u) => u as u16,
@@ -373,6 +377,7 @@ impl From<Val> for u16 {
 impl From<Val> for u8 {
     fn from(v: Val) -> Self {
         match v {
+            Val::Bool(b) => b as u8,
             Val::U8(u) => u,
             Val::U16(u) => u as u8,
             Val::U32(u) => u as u8,
@@ -404,6 +409,7 @@ impl From<Val> for Buf {
     fn from(v: Val) -> Self {
         /* Must be implemented for all types which are Typed::is_string_coercible() */
         match v {
+            Val::Bool(b) => Buf::from(if b { &[1] } else { &[0] }),
             Val::Pkt(s) => Buf::from(s.to_vec()),
             Val::Str(s) => s,
             Val::U8(u) => Buf::from(&u.to_be_bytes()),
@@ -483,11 +489,21 @@ impl From<Val> for Option<u8> {
 
 impl From<Val> for Option<Buf> {
     fn from(v: Val) -> Self {
-        match v {
-            Val::Nil => None,
-            Val::Str(s) => Some(s),
+        /* Must be implemented for all types which are Typed::is_string_coercible() */
+        Some(match v {
+            Val::Nil => {
+                return None;
+            }
+            Val::Bool(b) => Buf::from(if b { &[1] } else { &[0] }),
+            Val::Pkt(s) => Buf::from(s.to_vec()),
+            Val::Str(s) => s,
+            Val::U8(u) => Buf::from(&u.to_be_bytes()),
+            Val::U16(u) => Buf::from(&u.to_be_bytes()),
+            Val::U32(u) => Buf::from(&u.to_be_bytes()),
+            Val::U64(u) => Buf::from(&u.to_be_bytes()),
+            Val::Ip4(ip) => Buf::from(&u32::from(ip).to_be_bytes()),
             _ => unreachable!(),
-        }
+        })
     }
 }
 
