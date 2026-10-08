@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::net::Ipv4Addr;
+use std::num::{IntErrorKind, ParseIntError};
 
 use derive_more::{Display, Error};
 use lazy_regex::*;
@@ -43,16 +44,13 @@ static LEX_RE: Lazy<Regex> = lazy_regex!(
     |\
     (?P<identifier>[a-zA-Z_][a-zA-Z0-9_]*)\
     |\
-    (?P<ipv4_literal>\
-        (?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}\
-        (?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\
-    )\
+    (?P<ipv4_literal>[0-9]+(?:\\.[0-9]+){3}[a-zA-Z0-9_]*)\
     |\
     (?P<string_literal>\"[^\"\\n]*\")\
     |\
-    (?P<hex_integer_literal>0x[0-9a-fA-F][0-9a-fA-F]*)\
+    (?P<hex_integer_literal>0x[0-9a-fA-F][a-zA-Z0-9_]*)\
     |\
-    (?P<integer_literal>[0-9][0-9]*)\
+    (?P<integer_literal>[0-9][a-zA-Z0-9_]*)\
     )\
 "
 );
@@ -166,16 +164,18 @@ impl Tok {
             Rule::LetKeyword => Self::LetKeyword,
             Rule::Identifier => Self::Identifier(lexeme.into()),
             Rule::BooleanLiteral => Self::BooleanLiteral(lexeme == "true"),
-            Rule::IPv4Literal => Self::IPv4Literal(
-                lexeme
-                    .parse()
-                    .expect("the regex limits each octet to 0-255"),
-            ),
-            Rule::HexIntegerLiteral => Self::HexLiteral(
-                i128::from_str_radix(&lexeme[2..], 16).map_err(|_| LexErrorKind::IntOutOfRange)?,
-            ),
+            Rule::IPv4Literal => {
+                Self::IPv4Literal(lexeme.parse().map_err(|_| LexErrorKind::IPv4Literal)?)
+            }
+            Rule::HexIntegerLiteral => Self::HexLiteral(i128::from_str_radix(&lexeme[2..], 16)?),
             Rule::IntegerLiteral => {
-                Self::DecLiteral(lexeme.parse().map_err(|_| LexErrorKind::IntOutOfRange)?)
+                if lexeme.starts_with('0')
+                    && lexeme.len() > 1
+                    && lexeme.chars().nth(1).unwrap().is_ascii_digit()
+                {
+                    return Err(LexErrorKind::IntLeadingZero);
+                }
+                Self::DecLiteral(lexeme.parse::<i128>()?)
             }
             Rule::Whitespace | Rule::HashComment | Rule::CppComment | Rule::StringLiteral => {
                 unreachable!("{rule:?} is handled by Lexer::line")
@@ -213,17 +213,6 @@ pub struct LexError {
     pub kind: LexErrorKind,
 }
 
-impl LexError {
-    /// The offending character
-    pub const fn loc(&self) -> Loc {
-        self.loc
-    }
-
-    pub const fn kind(&self) -> &LexErrorKind {
-        &self.kind
-    }
-}
-
 /// What is wrong with the source
 #[derive(Debug, Display, Error, Clone, PartialEq, Eq)]
 pub enum LexErrorKind {
@@ -243,12 +232,34 @@ pub enum LexErrorKind {
     /// An integer literal greater than `i128::MAX`
     #[display("integer literal out of range")]
     IntOutOfRange,
+
+    /// A decimal integer literal with a leading zero, e.g. `0123`
+    #[display("decimal integer literal with leading zero")]
+    IntLeadingZero,
+
+    /// An integer literal with an unrecognized suffix, e.g. `123abc`
+    #[display("integer literal with invalid suffix")]
+    IntInvalidSuffix,
+
+    /// Bad IPv4 literal, e.g. `256.0.0.1`, `01.2.3.4`
+    #[display("invalid IPv4 literal")]
+    IPv4Literal,
 }
 
 impl LexErrorKind {
     /// This error, at `loc`
     pub(crate) fn at(self, loc: Loc) -> LexError {
         LexError { loc, kind: self }
+    }
+}
+
+impl From<ParseIntError> for LexErrorKind {
+    fn from(err: ParseIntError) -> Self {
+        match err.kind() {
+            IntErrorKind::PosOverflow | IntErrorKind::NegOverflow => Self::IntOutOfRange,
+            IntErrorKind::InvalidDigit => Self::IntInvalidSuffix,
+            _ => unreachable!("unexpected error parsing integer literal: {err:?}"),
+        }
     }
 }
 

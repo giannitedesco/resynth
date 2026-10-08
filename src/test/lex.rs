@@ -1,5 +1,8 @@
-use crate::lex::LexErrorKind::{self, IntOutOfRange, UnexpectedChar, UnterminatedString};
-use crate::lex::{LexError, Lexer, Tok, Token};
+use crate::lex::{
+    LexError,
+    LexErrorKind::{self, *},
+    Lexer, Tok, Token,
+};
 use crate::loc::Loc;
 use crate::str::Buf;
 use crate::str::StringLiteralErrorKind::{self, *};
@@ -30,7 +33,7 @@ fn err(line: usize, col: usize, kind: LexErrorKind) -> LexError {
 }
 
 fn str_err(line: usize, col: usize, kind: StringLiteralErrorKind) -> LexError {
-    err(line, col, LexErrorKind::StringLiteral(kind))
+    err(line, col, StringLiteral(kind))
 }
 
 fn ident(line: usize, col: usize, name: &str) -> Token {
@@ -173,12 +176,13 @@ fn lex_error_display() {
 #[test]
 fn lex_integers() {
     assert_eq!(
-        lex("123 0x1f 0123"),
+        lex("123 0x1f 0x001f 0"),
         vec![
             tok(1, 1, Tok::DecLiteral(123)),
             tok(1, 5, Tok::HexLiteral(0x1f)),
-            tok(1, 10, Tok::DecLiteral(123)),
-            tok(1, 14, Tok::Eof),
+            tok(1, 10, Tok::HexLiteral(0x1f)),
+            tok(1, 17, Tok::DecLiteral(0)),
+            tok(1, 18, Tok::Eof),
         ]
     );
 }
@@ -207,6 +211,22 @@ fn lex_integer_limits() {
 }
 
 #[test]
+fn lex_decimal_leading_zero_is_error() {
+    assert_eq!(lex_err("00"), err(1, 1, IntLeadingZero));
+    assert_eq!(lex_err("0123"), err(1, 1, IntLeadingZero));
+    assert_eq!(lex_err("x = 012"), err(1, 5, IntLeadingZero));
+}
+
+#[test]
+fn lex_integer_suffix_is_error() {
+    assert_eq!(lex_err("123abc"), err(1, 1, IntInvalidSuffix));
+    assert_eq!(lex_err("0x1fg"), err(1, 1, IntInvalidSuffix));
+    assert_eq!(lex_err("1_000"), err(1, 1, IntInvalidSuffix));
+    assert_eq!(lex_err("0x"), err(1, 1, IntInvalidSuffix));
+    assert_eq!(lex_err("x = 0x1f_"), err(1, 5, IntInvalidSuffix));
+}
+
+#[test]
 fn lex_identifiers_keywords_and_literals() {
     assert_eq!(
         lex("foo true 1.2.3.4 import let"),
@@ -217,6 +237,89 @@ fn lex_identifiers_keywords_and_literals() {
             tok(1, 18, Tok::ImportKeyword),
             tok(1, 25, Tok::LetKeyword),
             tok(1, 28, Tok::Eof),
+        ]
+    );
+}
+
+#[test]
+fn lex_ipv4_octet_limits() {
+    assert_eq!(
+        lex("0.0.0.0 255.255.255.255"),
+        vec![
+            tok(1, 1, Tok::IPv4Literal(Ipv4Addr::UNSPECIFIED)),
+            tok(1, 9, Tok::IPv4Literal(Ipv4Addr::BROADCAST)),
+            tok(1, 24, Tok::Eof),
+        ]
+    );
+}
+
+#[test]
+fn lex_ipv4_octet_out_of_range_is_error() {
+    assert_eq!(lex_err("256.1.1.1"), err(1, 1, IPv4Literal));
+    // Not 1.2.3.25 followed by 6
+    assert_eq!(lex_err("1.2.3.256"), err(1, 1, IPv4Literal));
+    assert_eq!(
+        lex_err("1.2.3.99999999999999999999"),
+        err(1, 1, IPv4Literal)
+    );
+    assert_eq!(lex_err("x = 1.2.3.256"), err(1, 5, IPv4Literal));
+}
+
+#[test]
+fn lex_ipv4_leading_zero_is_error() {
+    // The whole dotted quad is one literal, so this is not a IntLeadingZero
+    assert_eq!(lex_err("01.2.3.4"), err(1, 1, IPv4Literal));
+    // Not 1.2.3.0 followed by 4
+    assert_eq!(lex_err("1.2.3.04"), err(1, 1, IPv4Literal));
+    assert_eq!(lex_err("1.2.3.00"), err(1, 1, IPv4Literal));
+    assert_eq!(lex_err("x = 1.02.3.4"), err(1, 5, IPv4Literal));
+}
+
+#[test]
+fn lex_ipv4_suffix_is_error() {
+    assert_eq!(lex_err("1.2.3.4a"), err(1, 1, IPv4Literal));
+    assert_eq!(lex_err("1.2.3.4_"), err(1, 1, IPv4Literal));
+    assert_eq!(lex_err("x = 1.2.3.4a"), err(1, 5, IPv4Literal));
+}
+
+#[test]
+fn lex_ipv4_then_dot() {
+    // (1.2.3.4) (dot) (5)
+    assert_eq!(
+        lex("1.2.3.4.5"),
+        vec![
+            tok(1, 1, Tok::IPv4Literal(Ipv4Addr::new(1, 2, 3, 4))),
+            tok(1, 8, Tok::Dot),
+            tok(1, 9, Tok::DecLiteral(5)),
+            tok(1, 10, Tok::Eof),
+        ]
+    );
+}
+
+#[test]
+fn lex_ipv4_then_slash() {
+    assert_eq!(
+        lex("1.2.3.4/24"),
+        vec![
+            tok(1, 1, Tok::IPv4Literal(Ipv4Addr::new(1, 2, 3, 4))),
+            tok(1, 8, Tok::Slash),
+            tok(1, 9, Tok::DecLiteral(24)),
+            tok(1, 11, Tok::Eof),
+        ]
+    );
+}
+
+#[test]
+fn lex_three_dotted_numbers_are_not_ipv4() {
+    assert_eq!(
+        lex("1.2.3"),
+        vec![
+            tok(1, 1, Tok::DecLiteral(1)),
+            tok(1, 2, Tok::Dot),
+            tok(1, 3, Tok::DecLiteral(2)),
+            tok(1, 4, Tok::Dot),
+            tok(1, 5, Tok::DecLiteral(3)),
+            tok(1, 6, Tok::Eof),
         ]
     );
 }

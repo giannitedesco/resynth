@@ -183,16 +183,16 @@ enum CompileError {
 
     #[from]
     #[error(ignore)]
-    LexError(LexError),
+    Lex(LexError),
 
     #[from]
     #[error(ignore)]
-    Error(LocatedError),
+    Other(LocatedError),
 }
 
 impl From<(Loc, Error)> for CompileError {
     fn from((loc, err): (Loc, Error)) -> Self {
-        Self::Error(LocatedError { loc, err })
+        Self::Other(LocatedError { loc, err })
     }
 }
 
@@ -200,16 +200,16 @@ impl CompileError {
     const fn loc(&self) -> Option<Loc> {
         match self {
             Self::Io(_) => None,
-            Self::LexError(err) => Some(err.loc()),
-            Self::Error(err) => Some(err.loc),
+            Self::Lex(err) => Some(err.loc),
+            Self::Other(err) => Some(err.loc),
         }
     }
 
     const fn phase(&self) -> &'static str {
         match self {
             Self::Io(_) => "io",
-            Self::LexError(_) => "lex",
-            Self::Error(_) => "parse",
+            Self::Lex(_) => "lex",
+            Self::Other(_) => "parse",
         }
     }
 
@@ -217,16 +217,17 @@ impl CompileError {
         let loc = self.loc();
         let phase = self.phase();
 
-        print!("{}: ", p.display());
+        print!("{}", p.display());
         if let Some(loc) = loc {
-            print!("{}:{}: ", loc.line(), loc.col());
+            print!(":{}:{}", loc.line(), loc.col());
         }
+        print!(": ");
         error!(stdout, "{} error", phase);
         print!(": ");
         match self {
             Self::Io(err) => println!("{}", err),
-            Self::LexError(err) => println!("{}", err.kind()),
-            Self::Error(err) => println!("{}", err.err),
+            Self::Lex(err) => println!("{}", err.kind),
+            Self::Other(err) => println!("{}", err.err),
         }
     }
 }
