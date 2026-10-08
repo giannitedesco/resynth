@@ -3,123 +3,14 @@ use std::net::Ipv4Addr;
 use std::num::{IntErrorKind, ParseIntError};
 
 use derive_more::{Display, Error};
-use lazy_regex::*;
-use regex::CaptureLocations;
 
 use crate::loc::Loc;
 use crate::str::{Buf, StringLiteralErrorKind};
 
-static LEX_RE: Lazy<Regex> = lazy_regex!(
-    "^\
-    (?:\
-    (?P<whitespace>[^\\S\n][^\\S\n]*)\
-    |\
-    (?P<hashcomment>#[^\\n]*)\
-    |\
-    (?P<cppcomment>//[^\\n]*)\
-    |\
-    (?P<lparen>\\()\
-    |\
-    (?P<rparen>\\))\
-    |\
-    (?P<dot>\\.)\
-    |\
-    (?P<doublecolon>::)\
-    |\
-    (?P<colon>:)\
-    |\
-    (?P<semicolon>;)\
-    |\
-    (?P<equals>=)\
-    |\
-    (?P<comma>,)\
-    |\
-    (?P<slash>/)\
-    |\
-    (?P<import_keyword>\\bimport\\b)\
-    |\
-    (?P<let_keyword>\\blet\\b)\
-    |\
-    (?P<boolean_literal>\\b(?:true|false)\\b)\
-    |\
-    (?P<identifier>[a-zA-Z_][a-zA-Z0-9_]*)\
-    |\
-    (?P<ipv4_literal>[0-9]+(?:\\.[0-9]+){3}[a-zA-Z0-9_]*)\
-    |\
-    (?P<string_literal>\"[^\"\\n]*\")\
-    |\
-    (?P<hex_integer_literal>0x[0-9a-fA-F][a-zA-Z0-9_]*)\
-    |\
-    (?P<integer_literal>[0-9][a-zA-Z0-9_]*)\
-    )\
-"
-);
-
-/// A named capture group of `LEX_RE`: the lexical rule which matched.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum Rule {
-    Whitespace,
-    HashComment,
-    CppComment,
-
-    LParen,
-    RParen,
-    Dot,
-    DoubleColon,
-    Colon,
-    SemiColon,
-    Equals,
-    Comma,
-    Slash,
-
-    ImportKeyword,
-    LetKeyword,
-    BooleanLiteral,
-    Identifier,
-    IPv4Literal,
-    StringLiteral,
-    HexIntegerLiteral,
-    IntegerLiteral,
-}
-
-impl Rule {
-    /// Invariant: in the same order as the named capture groups in `LEX_RE`, so that capture
-    /// group `i + 1` is `ALL[i]`. [Rule::from_caps] relies on this.
-    const ALL: [Rule; 20] = [
-        Rule::Whitespace,
-        Rule::HashComment,
-        Rule::CppComment,
-        Rule::LParen,
-        Rule::RParen,
-        Rule::Dot,
-        Rule::DoubleColon,
-        Rule::Colon,
-        Rule::SemiColon,
-        Rule::Equals,
-        Rule::Comma,
-        Rule::Slash,
-        Rule::ImportKeyword,
-        Rule::LetKeyword,
-        Rule::BooleanLiteral,
-        Rule::Identifier,
-        Rule::IPv4Literal,
-        Rule::StringLiteral,
-        Rule::HexIntegerLiteral,
-        Rule::IntegerLiteral,
-    ];
-
-    /// The rule which matched, and the length of the match
-    fn from_caps(caps: &CaptureLocations) -> Option<(Self, usize)> {
-        Self::ALL
-            .iter()
-            .enumerate()
-            .find_map(|(i, rule)| caps.get(i + 1).map(|(_, end)| (*rule, end)))
-    }
-}
-
 /// A token of the resynth language. Literals carry their decoded values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Tok {
+    /// At the start of the line after the last, so its line is one more than the number of lines
     Eof,
 
     LParen,
@@ -147,40 +38,39 @@ pub enum Tok {
 }
 
 impl Tok {
-    /// Decode the text matched by a rule. Rules which don't produce a token on their own
-    /// (whitespace, comments and string literals) are handled by [Lexer::line].
-    fn decode(rule: Rule, lexeme: &str) -> Result<Self, LexErrorKind> {
-        Ok(match rule {
-            Rule::LParen => Self::LParen,
-            Rule::RParen => Self::RParen,
-            Rule::Dot => Self::Dot,
-            Rule::DoubleColon => Self::DoubleColon,
-            Rule::Colon => Self::Colon,
-            Rule::SemiColon => Self::SemiColon,
-            Rule::Equals => Self::Equals,
-            Rule::Comma => Self::Comma,
-            Rule::Slash => Self::Slash,
-            Rule::ImportKeyword => Self::ImportKeyword,
-            Rule::LetKeyword => Self::LetKeyword,
-            Rule::Identifier => Self::Identifier(lexeme.into()),
-            Rule::BooleanLiteral => Self::BooleanLiteral(lexeme == "true"),
-            Rule::IPv4Literal => {
-                Self::IPv4Literal(lexeme.parse().map_err(|_| LexErrorKind::IPv4Literal)?)
-            }
-            Rule::HexIntegerLiteral => Self::HexLiteral(i128::from_str_radix(&lexeme[2..], 16)?),
-            Rule::IntegerLiteral => {
-                if lexeme.starts_with('0')
-                    && lexeme.len() > 1
-                    && lexeme.chars().nth(1).unwrap().is_ascii_digit()
-                {
-                    return Err(LexErrorKind::IntLeadingZero);
-                }
-                Self::DecLiteral(lexeme.parse::<i128>()?)
-            }
-            Rule::Whitespace | Rule::HashComment | Rule::CppComment | Rule::StringLiteral => {
-                unreachable!("{rule:?} is handled by Lexer::line")
-            }
-        })
+    /// Classify a word: a keyword, a boolean literal, or else an identifier
+    fn word(word: &str) -> Self {
+        match word {
+            "import" => Self::ImportKeyword,
+            "let" => Self::LetKeyword,
+            "true" => Self::BooleanLiteral(true),
+            "false" => Self::BooleanLiteral(false),
+            _ => Self::Identifier(word.into()),
+        }
+    }
+
+    /// Decode a dotted quad, along with any word characters which follow it
+    fn ipv4_literal(lexeme: &str) -> Result<Self, LexErrorKind> {
+        lexeme
+            .parse()
+            .map(Self::IPv4Literal)
+            .map_err(|_| LexErrorKind::IPv4Literal)
+    }
+
+    /// Decode the hex digits following `0x`, along with any word characters which follow them
+    fn hex_literal(digits: &str) -> Result<Self, LexErrorKind> {
+        Ok(Self::HexLiteral(i128::from_str_radix(digits, 16)?))
+    }
+
+    /// Decode a decimal literal, along with any word characters which follow it
+    fn dec_literal(lexeme: &str) -> Result<Self, LexErrorKind> {
+        if lexeme.starts_with('0')
+            && lexeme.len() > 1
+            && lexeme.chars().nth(1).unwrap().is_ascii_digit()
+        {
+            return Err(LexErrorKind::IntLeadingZero);
+        }
+        Ok(Self::DecLiteral(lexeme.parse::<i128>()?))
     }
 }
 
@@ -279,6 +169,142 @@ impl PendingStr {
     }
 }
 
+/// What the [Cursor] found at one position in a line
+#[derive(Debug)]
+enum Lexeme<'a> {
+    /// Whitespace or a comment
+    Trivia,
+    /// The body of a string literal, between its quotes. It may be joined with those which
+    /// follow it.
+    Str(&'a str),
+    Tok(Tok),
+}
+
+/// A position within one line
+#[derive(Debug)]
+struct Cursor<'a> {
+    line: &'a str,
+    /// Always on a char boundary
+    pos: usize,
+}
+
+impl<'a> Cursor<'a> {
+    fn new(line: &'a str) -> Self {
+        Self { line, pos: 0 }
+    }
+
+    /// `\n` is not whitespace, because it's not allowed in a line
+    fn is_space(c: char) -> bool {
+        c.is_whitespace() && c != '\n'
+    }
+
+    fn is_word(c: char) -> bool {
+        c.is_ascii_alphanumeric() || c == '_'
+    }
+
+    fn peek(&self) -> Option<char> {
+        self.line[self.pos..].chars().next()
+    }
+
+    /// Advance past `c`, if it's next
+    fn eat(&mut self, c: char) -> bool {
+        let found = self.peek() == Some(c);
+        if found {
+            self.pos += c.len_utf8();
+        }
+        found
+    }
+
+    /// Advance past the longest run of chars matching `pred`, and return them
+    fn eat_while(&mut self, pred: impl Fn(char) -> bool) -> &'a str {
+        let start = self.pos;
+        for c in self.line[start..].chars().take_while(|&c| pred(c)) {
+            self.pos += c.len_utf8();
+        }
+        &self.line[start..self.pos]
+    }
+
+    /// Lex whatever starts with `c`, which must be the [next](Cursor::peek) char. On error, the
+    /// location of the error is where the cursor was.
+    fn lexeme(&mut self, c: char) -> Result<Lexeme<'a>, LexErrorKind> {
+        let start = self.pos;
+        self.pos += c.len_utf8();
+
+        Ok(match c {
+            c if Self::is_space(c) => {
+                self.eat_while(Self::is_space);
+                Lexeme::Trivia
+            }
+            '#' => {
+                self.eat_while(|c| c != '\n');
+                Lexeme::Trivia
+            }
+            '/' if self.eat('/') => {
+                self.eat_while(|c| c != '\n');
+                Lexeme::Trivia
+            }
+
+            '(' => Lexeme::Tok(Tok::LParen),
+            ')' => Lexeme::Tok(Tok::RParen),
+            '.' => Lexeme::Tok(Tok::Dot),
+            ':' if self.eat(':') => Lexeme::Tok(Tok::DoubleColon),
+            ':' => Lexeme::Tok(Tok::Colon),
+            ';' => Lexeme::Tok(Tok::SemiColon),
+            '=' => Lexeme::Tok(Tok::Equals),
+            ',' => Lexeme::Tok(Tok::Comma),
+            '/' => Lexeme::Tok(Tok::Slash),
+
+            '"' => {
+                let body = self.eat_while(|c| c != '"' && c != '\n');
+                if !self.eat('"') {
+                    return Err(LexErrorKind::UnterminatedString);
+                }
+                Lexeme::Str(body)
+            }
+
+            'a'..='z' | 'A'..='Z' | '_' => {
+                self.eat_while(Self::is_word);
+                Lexeme::Tok(Tok::word(&self.line[start..self.pos]))
+            }
+
+            '0'..='9' => Lexeme::Tok(self.number(start)?),
+
+            c => return Err(LexErrorKind::UnexpectedChar(c)),
+        })
+    }
+
+    /// Lex a numeric literal starting at `start`, the cursor being just past its first digit.
+    ///
+    /// Four runs of digits separated by `.` are an IPv4 literal. Otherwise, a run of word
+    /// characters starting with `0x` and a hex digit is a hex literal, and any other is a decimal
+    /// literal. Any word characters which follow the literal are part of it, so that `123abc` is
+    /// one malformed literal, and not a literal followed by an identifier.
+    fn number(&mut self, start: usize) -> Result<Tok, LexErrorKind> {
+        self.eat_while(|c| c.is_ascii_digit());
+        let mut dotted_quad = true;
+        for _ in 0..3 {
+            if !self.eat('.') || self.eat_while(|c| c.is_ascii_digit()).is_empty() {
+                dotted_quad = false;
+                self.pos = start;
+                break;
+            }
+        }
+
+        self.eat_while(Self::is_word);
+        let lexeme = &self.line[start..self.pos];
+
+        if dotted_quad {
+            return Tok::ipv4_literal(lexeme);
+        }
+        match lexeme.strip_prefix("0x") {
+            Some(digits) if digits.starts_with(|c: char| c.is_ascii_hexdigit()) => {
+                Tok::hex_literal(digits)
+            }
+            _ => Tok::dec_literal(lexeme),
+        }
+    }
+}
+
 /// The lexer is fed a [line at a time](Lexer::line), and appends the [tokens](Token) to a
 /// [queue](VecDeque) which is returned by [Lexer::finish]. Each [LexError] carries the location
 /// of the offending character.
@@ -289,8 +315,6 @@ impl PendingStr {
 pub struct Lexer {
     /// Number of lines fed so far
     lno: usize,
-    /// The end of the last line, where [Tok::Eof] is located
-    loc: Loc,
     /// String literals which may yet be joined with ones on following lines
     pending: Option<PendingStr>,
     toks: VecDeque<Token>,
@@ -306,77 +330,63 @@ impl Lexer {
     ///
     /// After an error the lexer must not be fed any more lines.
     pub fn line(&mut self, line: &str) -> Result<(), LexError> {
-        let mut caps = LEX_RE.capture_locations();
-        let mut pos = 0;
+        let mut cur = Cursor::new(line);
 
         self.lno += 1;
 
-        while pos < line.len() {
-            let loc = Loc::new(self.lno, pos + 1);
+        while let Some(c) = cur.peek() {
+            let loc = Loc::new(self.lno, cur.pos + 1);
 
-            if LEX_RE.captures_read(&mut caps, &line[pos..]).is_none() {
-                let c = line[pos..]
-                    .chars()
-                    .next()
-                    .expect("pos < line.len() and is on a char boundary");
-                // The string rule only excludes `"` and `\n` from the body, so a `"` it doesn't
-                // match can only be one with no closing `"` before the end of the line
-                let kind = match c {
-                    '"' => LexErrorKind::UnterminatedString,
-                    c => LexErrorKind::UnexpectedChar(c),
-                };
-                return Err(kind.at(loc));
-            }
-            let (rule, len) =
-                Rule::from_caps(&caps).expect("a match always captures exactly one rule");
-            let lexeme = &line[pos..pos + len];
-            pos += len;
-
-            match rule {
-                Rule::Whitespace | Rule::HashComment | Rule::CppComment => {}
-                Rule::StringLiteral => {
+            match cur.lexeme(c).map_err(|kind| kind.at(loc))? {
+                Lexeme::Trivia => {}
+                Lexeme::Str(body) => {
                     let pend = self.pending.get_or_insert_with(|| PendingStr {
                         loc,
                         bytes: Vec::new(),
                     });
                     // Each literal is decoded on its own, so a hex sequence can't span two
-                    let body = &lexeme[1..len - 1];
                     if let Err(err) = Buf::decode_literal_into(body, &mut pend.bytes) {
                         // Located at the offending character, just past the opening `"`
                         let loc = Loc::new(self.lno, loc.col() + 1 + err.offset);
                         return Err(LexErrorKind::StringLiteral(err.kind).at(loc));
                     }
                 }
-                rule => {
+                Lexeme::Tok(tok) => {
                     self.toks
                         .extend(self.pending.take().map(PendingStr::into_token));
-                    self.toks.push_back(Token {
-                        loc,
-                        tok: Tok::decode(rule, lexeme).map_err(|kind| kind.at(loc))?,
-                    });
+                    self.toks.push_back(Token { loc, tok });
                 }
             }
         }
 
-        self.loc = Loc::new(self.lno, pos + 1);
-
         Ok(())
     }
 
-    /// All of the tokens, ending with a single [Tok::Eof] located at the end of the last line.
+    /// Append [Tok::Eof]. Every line is taken to end with a `\n`, even the last, so the file
+    /// ends at the start of the line after it, and the line of `Eof` is one more than the number
+    /// of lines.
+    fn push_eof(&mut self) {
+        self.toks.push_back(Token {
+            loc: Loc::new(self.lno + 1, 1),
+            tok: Tok::Eof,
+        });
+    }
+
+    /// All of the tokens, ending with a single [Tok::Eof] at the start of the line after the
+    /// last.
     pub fn finish(mut self) -> VecDeque<Token> {
         self.toks
             .extend(self.pending.take().map(PendingStr::into_token));
-        self.toks.push_back(Token {
-            loc: if self.lno == 0 {
-                Loc::new(1, 1)
-            } else {
-                self.loc
-            },
-            tok: Tok::Eof,
-        });
+        self.push_eof();
 
         self.toks
+    }
+
+    /// The tokens queued so far, without [finishing](Lexer::finish), so that tests can see what
+    /// was lexed before an error. String literals not yet joined are not included.
+    #[cfg(test)]
+    pub(crate) fn toks(&self) -> &VecDeque<Token> {
+        &self.toks
     }
 
     /// Lex every line, as if by [Lexer::line], and then [finish](Lexer::finish), stopping at the

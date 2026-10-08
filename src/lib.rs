@@ -17,8 +17,8 @@
 //!   resynth programs to use the functionality in [pkt] and [ezpkt]
 //!
 //! ## Compiler Phases
-//! 1. [Lexer] uses a static regex to split a source file, a line at a time, in to a queue of
-//!    [tokens](Token), decoding identifiers, integers and IP addresses as it goes
+//! 1. [Lexer] is a hand-written lexer which splits a source file, a line at a time, in to a
+//!    queue of [tokens](Token), decoding identifiers, integers and IP addresses as it goes
 //! 2. [Parser] is a hand-written pushdown parser which takes a token at a time and whenever a
 //!    complete [statement](Stmt) is encountered, the [statement](Stmt) is pushed in to a
 //!    [results vector](Parser::get_results) which can later be [retreived](Parser::get_results)

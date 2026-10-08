@@ -45,8 +45,6 @@ lto = true
 pkt = { path = "pkt", version = "0.6.0" }
 ezpkt = { path = "ezpkt", version = "0.6.0" }
 
-lazy-regex = "3.6"
-regex = "1.12.3"
 concat-with = "0.2.9"
 
 # For cli

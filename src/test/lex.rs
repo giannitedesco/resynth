@@ -43,12 +43,12 @@ fn ident(line: usize, col: usize, name: &str) -> Token {
 #[test]
 fn lex_empty() {
     assert_eq!(lex(""), vec![tok(1, 1, Tok::Eof)]);
-    assert_eq!(lex("\n"), vec![tok(1, 1, Tok::Eof)]);
+    assert_eq!(lex("\n"), vec![tok(2, 1, Tok::Eof)]);
 }
 
 #[test]
 fn lex_comments_only() {
-    assert_eq!(lex("# hash\n// cpp"), vec![tok(2, 7, Tok::Eof)]);
+    assert_eq!(lex("# hash\n// cpp"), vec![tok(3, 1, Tok::Eof)]);
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn lex_punctuation() {
             tok(1, 8, Tok::Equals),
             tok(1, 9, Tok::Comma),
             tok(1, 10, Tok::Slash),
-            tok(1, 11, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -77,7 +77,7 @@ fn lex_backslash() {
         vec![
             str_tok(1, 1, b"\\"),
             tok(1, 4, Tok::SemiColon),
-            tok(1, 5, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -99,7 +99,7 @@ fn lex_string_chars() {
         vec![
             str_tok(1, 1, body.as_bytes()),
             tok(1, 95, Tok::SemiColon),
-            tok(1, 96, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -111,7 +111,7 @@ fn lex_hex() {
         vec![
             str_tok(1, 1, &[0x78, 0x24, 0xaf, 0x23, 0xf0, 0xa9]),
             tok(1, 22, Tok::SemiColon),
-            tok(1, 23, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -123,7 +123,7 @@ fn lex_adjacent_strings_join_across_lines() {
         vec![
             str_tok(1, 1, b"abcdef"),
             tok(2, 8, Tok::SemiColon),
-            tok(2, 9, Tok::Eof),
+            tok(3, 1, Tok::Eof),
         ]
     );
 }
@@ -136,7 +136,7 @@ fn lex_adjacent_strings_located_at_first() {
             ident(1, 1, "x"),
             str_tok(1, 3, b"ab"),
             tok(1, 10, Tok::SemiColon),
-            tok(1, 11, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -145,7 +145,7 @@ fn lex_adjacent_strings_located_at_first() {
 fn lex_string_at_eof() {
     assert_eq!(
         lex("\"abc\""),
-        vec![str_tok(1, 1, b"abc"), tok(1, 6, Tok::Eof)]
+        vec![str_tok(1, 1, b"abc"), tok(2, 1, Tok::Eof)]
     );
 }
 
@@ -182,7 +182,7 @@ fn lex_integers() {
             tok(1, 5, Tok::HexLiteral(0x1f)),
             tok(1, 10, Tok::HexLiteral(0x1f)),
             tok(1, 17, Tok::DecLiteral(0)),
-            tok(1, 18, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -197,10 +197,7 @@ fn lex_integer_limits() {
     let max = format!("{:#x}", i128::MAX);
     assert_eq!(
         lex(&max),
-        vec![
-            tok(1, 1, Tok::HexLiteral(i128::MAX)),
-            tok(1, max.len() + 1, Tok::Eof),
-        ]
+        vec![tok(1, 1, Tok::HexLiteral(i128::MAX)), tok(2, 1, Tok::Eof)]
     );
 
     let too_big = format!("x = {:#x}", i128::MAX as u128 + 1);
@@ -236,7 +233,7 @@ fn lex_identifiers_keywords_and_literals() {
             tok(1, 10, Tok::IPv4Literal(Ipv4Addr::new(1, 2, 3, 4))),
             tok(1, 18, Tok::ImportKeyword),
             tok(1, 25, Tok::LetKeyword),
-            tok(1, 28, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -248,7 +245,7 @@ fn lex_ipv4_octet_limits() {
         vec![
             tok(1, 1, Tok::IPv4Literal(Ipv4Addr::UNSPECIFIED)),
             tok(1, 9, Tok::IPv4Literal(Ipv4Addr::BROADCAST)),
-            tok(1, 24, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -291,7 +288,7 @@ fn lex_ipv4_then_dot() {
             tok(1, 1, Tok::IPv4Literal(Ipv4Addr::new(1, 2, 3, 4))),
             tok(1, 8, Tok::Dot),
             tok(1, 9, Tok::DecLiteral(5)),
-            tok(1, 10, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -304,7 +301,7 @@ fn lex_ipv4_then_slash() {
             tok(1, 1, Tok::IPv4Literal(Ipv4Addr::new(1, 2, 3, 4))),
             tok(1, 8, Tok::Slash),
             tok(1, 9, Tok::DecLiteral(24)),
-            tok(1, 11, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -319,7 +316,7 @@ fn lex_three_dotted_numbers_are_not_ipv4() {
             tok(1, 3, Tok::DecLiteral(2)),
             tok(1, 4, Tok::Dot),
             tok(1, 5, Tok::DecLiteral(3)),
-            tok(1, 6, Tok::Eof),
+            tok(2, 1, Tok::Eof),
         ]
     );
 }
@@ -331,7 +328,7 @@ fn lex_trailing_cr_is_whitespace() {
         vec![
             tok(1, 1, Tok::LetKeyword),
             ident(2, 1, "x"),
-            tok(2, 3, Tok::Eof),
+            tok(3, 1, Tok::Eof),
         ]
     );
 }
@@ -349,14 +346,20 @@ fn lex_newline_in_line_is_error() {
 }
 
 #[test]
-fn lex_columns_count_bytes() {
-    // Non-ASCII can only appear in comments, which run to the end of the line
-    assert_eq!(lex("x # é"), vec![ident(1, 1, "x"), tok(1, 7, Tok::Eof)]);
+fn lex_non_ascii_in_comment() {
+    assert_eq!(lex("x # é"), vec![ident(1, 1, "x"), tok(2, 1, Tok::Eof)]);
 }
 
 #[test]
 fn lex_non_ascii_outside_string_is_error() {
     assert_eq!(lex_err("x é"), err(1, 3, UnexpectedChar('é')));
+}
+
+#[test]
+fn lex_non_ascii_ends_keyword() {
+    let mut lexer = Lexer::default();
+    assert_eq!(lexer.line("letä"), Err(err(1, 4, UnexpectedChar('ä'))));
+    assert_eq!(*lexer.toks(), vec![tok(1, 1, Tok::LetKeyword)]);
 }
 
 #[test]
