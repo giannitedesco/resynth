@@ -114,4 +114,10 @@ impl PcapWriter {
 
         Ok(())
     }
+
+    /// Flush any buffered packets to the file. Dropping the writer flushes too, but ignores any
+    /// error, so call this to find out whether the pcap was written in full.
+    pub fn flush(mut self) -> Result<(), io::Error> {
+        self.wr.flush()
+    }
 }

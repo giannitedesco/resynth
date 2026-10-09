@@ -237,6 +237,7 @@ fn process_file(
             return Err(ErrorLoc::new(prog.loc(), err));
         }
     }
+    prog.flush()?;
 
     Ok(())
 }

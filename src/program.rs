@@ -72,6 +72,15 @@ impl<'a> Program<'a> {
         Ok(())
     }
 
+    /// Flush the pcap writer, if there is one, and report any error. Dropping the program
+    /// flushes too, but ignores any error.
+    pub fn flush(self) -> std::io::Result<()> {
+        match self.wr {
+            Some(wr) => wr.flush(),
+            None => Ok(()),
+        }
+    }
+
     fn store(&mut self, name: &str, val: Val) -> Result<(), Error> {
         self.regs.insert(name.to_owned(), val);
         Ok(())
