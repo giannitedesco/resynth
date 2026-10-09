@@ -3,7 +3,6 @@ use std::io;
 
 use derive_more::{Display, Error, From};
 
-use crate::str::StringLiteralErrorKind;
 use crate::val::ValType;
 
 /// Error code for resynth program. Think of it as base exception type for the resynth language.
@@ -14,19 +13,11 @@ pub enum Error {
     #[from]
     IoError(io::Error),
 
-    #[display("Lex Error")]
-    LexError,
-
     #[display("Parse Error")]
     ParseError,
 
     #[display("Integer literal out of range")]
     IntLiteralError,
-
-    #[display("{}", _0)]
-    #[error(ignore)]
-    #[from]
-    StringLiteralError(StringLiteralErrorKind),
 
     #[display("Import Error: Unknown Module {:?}", _0)]
     #[error(ignore)]
@@ -121,10 +112,8 @@ impl PartialEq for Error {
         use Error::*;
         match (self, other) {
             (IoError(a), IoError(b)) => a.kind() == b.kind(),
-            (LexError, LexError) => true,
             (ParseError, ParseError) => true,
             (IntLiteralError, IntLiteralError) => true,
-            (StringLiteralError(a), StringLiteralError(b)) => a == b,
             (ImportError(a), ImportError(b)) => a == b,
             (NameError(a), NameError(b)) => a == b,
             (TypeError, TypeError) => true,

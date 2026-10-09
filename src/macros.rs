@@ -227,13 +227,13 @@ macro_rules! class {
 
 #[macro_export]
 macro_rules! ok {
-    ($st:expr, $fmt:expr $(, $($arg:expr),*)*) => {{
+    ($st:expr, $($args:tt)*) => {{
         $st.set_color(ColorSpec::new()
             .set_fg(Some(Color::Green))
             .set_bold(true)
             .set_intense(true)
         ).unwrap();
-        let ret = print!($fmt, $($arg),*);
+        let ret = print!($($args)*);
         $st.set_color(&ColorSpec::default()).unwrap();
         ret
     }
@@ -241,13 +241,13 @@ macro_rules! ok {
 
 #[macro_export]
 macro_rules! warn {
-    ($st:expr, $fmt:expr $(, $($arg:expr),*)*) => {{
+    ($st:expr, $($args:tt)*) => {{
         $st.set_color(ColorSpec::new()
             .set_fg(Some(Color::Yellow))
             .set_bold(true)
             .set_intense(true)
         ).unwrap();
-        let ret = print!($fmt, $($arg),*);
+        let ret = print!($($args)*);
         $st.set_color(&ColorSpec::default()).unwrap();
         ret
     }
@@ -255,13 +255,13 @@ macro_rules! warn {
 
 #[macro_export]
 macro_rules! error {
-    ($st:expr, $fmt:expr $(, $($arg:expr),*)*) => {{
+    ($st:expr, $($args:tt)*) => {{
         $st.set_color(ColorSpec::new()
             .set_fg(Some(Color::Red))
             .set_bold(true)
             .set_intense(true)
         ).unwrap();
-        let ret = print!($fmt, $($arg),*);
+        let ret = print!($($args)*);
         $st.set_color(&ColorSpec::default()).unwrap();
         ret
     }
@@ -269,12 +269,12 @@ macro_rules! error {
 
 #[macro_export]
 macro_rules! notice {
-    ($st:expr, $fmt:expr $(, $($arg:expr),*)*) => {{
+    ($st:expr, $($args:tt)*) => {{
         $st.set_color(ColorSpec::new()
             .set_bold(true)
             .set_intense(true)
         ).unwrap();
-        let ret = print!($fmt, $($arg),*);
+        let ret = print!($($args)*);
         $st.set_color(&ColorSpec::default()).unwrap();
         ret
     }}

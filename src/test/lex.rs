@@ -1,5 +1,5 @@
-use crate::err::Error;
-use crate::lex::{Lexer, Tok, Token};
+use crate::lex::LexErrorKind::{self, IntOutOfRange, UnexpectedChar, UnterminatedString};
+use crate::lex::{LexError, Lexer, Tok, Token};
 use crate::loc::Loc;
 use crate::str::Buf;
 use crate::str::StringLiteralErrorKind::{self, *};
@@ -10,7 +10,7 @@ fn lex(src: &str) -> Vec<Token> {
     Lexer::lex(src.lines()).expect("failed to lex").into()
 }
 
-fn lex_err(src: &str) -> (Loc, Error) {
+fn lex_err(src: &str) -> LexError {
     Lexer::lex(src.lines()).expect_err("lexed successfully")
 }
 
@@ -25,8 +25,12 @@ fn str_tok(line: usize, col: usize, bytes: &[u8]) -> Token {
     tok(line, col, Tok::StringLiteral(Buf::from(bytes)))
 }
 
-fn str_err(line: usize, col: usize, kind: StringLiteralErrorKind) -> (Loc, Error) {
-    (Loc::new(line, col), Error::StringLiteralError(kind))
+fn err(line: usize, col: usize, kind: LexErrorKind) -> LexError {
+    kind.at(Loc::new(line, col))
+}
+
+fn str_err(line: usize, col: usize, kind: StringLiteralErrorKind) -> LexError {
+    err(line, col, LexErrorKind::StringLiteral(kind))
 }
 
 fn ident(line: usize, col: usize, name: &str) -> Token {
@@ -144,8 +148,26 @@ fn lex_string_at_eof() {
 
 #[test]
 fn lex_unterminated_string() {
-    assert_eq!(lex_err("\"abc\n\";"), (Loc::new(1, 1), Error::LexError));
-    assert_eq!(lex_err("x \"abc"), (Loc::new(1, 3), Error::LexError));
+    assert_eq!(lex_err("\"abc\n\";"), err(1, 1, UnterminatedString));
+    assert_eq!(lex_err("x \"abc"), err(1, 3, UnterminatedString));
+}
+
+#[test]
+fn lex_unexpected_char() {
+    assert_eq!(lex_err("x @ y"), err(1, 3, UnexpectedChar('@')));
+}
+
+#[test]
+fn lex_error_display() {
+    assert_eq!(
+        UnexpectedChar('\n').to_string(),
+        "unexpected character '\\n'"
+    );
+    assert_eq!(UnexpectedChar('é').to_string(), "unexpected character 'é'");
+    assert_eq!(
+        UnterminatedString.to_string(),
+        "unterminated string literal"
+    );
 }
 
 #[test]
@@ -163,7 +185,7 @@ fn lex_integers() {
 
 #[test]
 fn lex_negative_is_error() {
-    assert_eq!(lex_err("-1"), (Loc::new(1, 1), Error::LexError));
+    assert_eq!(lex_err("-1"), err(1, 1, UnexpectedChar('-')));
 }
 
 #[test]
@@ -178,10 +200,10 @@ fn lex_integer_limits() {
     );
 
     let too_big = format!("x = {:#x}", i128::MAX as u128 + 1);
-    assert_eq!(lex_err(&too_big), (Loc::new(1, 5), Error::IntLiteralError));
+    assert_eq!(lex_err(&too_big), err(1, 5, IntOutOfRange));
 
     let too_big = format!("{}", i128::MAX as u128 + 1);
-    assert_eq!(lex_err(&too_big), (Loc::new(1, 1), Error::IntLiteralError));
+    assert_eq!(lex_err(&too_big), err(1, 1, IntOutOfRange));
 }
 
 #[test]
@@ -215,11 +237,11 @@ fn lex_trailing_cr_is_whitespace() {
 fn lex_newline_in_line_is_error() {
     assert_eq!(
         Lexer::lex(["x\ny"]).expect_err("lexed successfully"),
-        (Loc::new(1, 2), Error::LexError)
+        err(1, 2, UnexpectedChar('\n'))
     );
     assert_eq!(
         Lexer::lex(["\"a\nb\""]).expect_err("lexed successfully"),
-        (Loc::new(1, 1), Error::LexError)
+        err(1, 1, UnterminatedString)
     );
 }
 
@@ -231,7 +253,7 @@ fn lex_columns_count_bytes() {
 
 #[test]
 fn lex_non_ascii_outside_string_is_error() {
-    assert_eq!(lex_err("x é"), (Loc::new(1, 3), Error::LexError));
+    assert_eq!(lex_err("x é"), err(1, 3, UnexpectedChar('é')));
 }
 
 #[test]

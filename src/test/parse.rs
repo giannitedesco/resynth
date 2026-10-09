@@ -7,7 +7,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 fn parse(src: &str) -> Result<Vec<Stmt>, Error> {
     let mut parser = Parser::default();
-    for tok in Lexer::lex(src.lines()).map_err(|(_, err)| err)? {
+    for tok in Lexer::lex(src.lines()).expect("lex failed") {
         parser.feed(&tok)?;
     }
     Ok(parser.get_results())

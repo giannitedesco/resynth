@@ -1,13 +1,12 @@
 use std::collections::VecDeque;
 use std::net::Ipv4Addr;
 
+use derive_more::{Display, Error};
 use lazy_regex::*;
 use regex::CaptureLocations;
 
-use crate::err::Error;
-use crate::err::Error::{IntLiteralError, LexError};
 use crate::loc::Loc;
-use crate::str::Buf;
+use crate::str::{Buf, StringLiteralErrorKind};
 
 static LEX_RE: Lazy<Regex> = lazy_regex!(
     "^\
@@ -152,7 +151,7 @@ pub enum Tok {
 impl Tok {
     /// Decode the text matched by a rule. Rules which don't produce a token on their own
     /// (whitespace, comments and string literals) are handled by [Lexer::line].
-    fn decode(rule: Rule, lexeme: &str) -> Result<Self, Error> {
+    fn decode(rule: Rule, lexeme: &str) -> Result<Self, LexErrorKind> {
         Ok(match rule {
             Rule::LParen => Self::LParen,
             Rule::RParen => Self::RParen,
@@ -173,9 +172,11 @@ impl Tok {
                     .expect("the regex limits each octet to 0-255"),
             ),
             Rule::HexIntegerLiteral => Self::HexLiteral(
-                i128::from_str_radix(&lexeme[2..], 16).map_err(|_| IntLiteralError)?,
+                i128::from_str_radix(&lexeme[2..], 16).map_err(|_| LexErrorKind::IntOutOfRange)?,
             ),
-            Rule::IntegerLiteral => Self::DecLiteral(lexeme.parse().map_err(|_| IntLiteralError)?),
+            Rule::IntegerLiteral => {
+                Self::DecLiteral(lexeme.parse().map_err(|_| LexErrorKind::IntOutOfRange)?)
+            }
             Rule::Whitespace | Rule::HashComment | Rule::CppComment | Rule::StringLiteral => {
                 unreachable!("{rule:?} is handled by Lexer::line")
             }
@@ -204,6 +205,53 @@ impl Token {
     }
 }
 
+/// Why the source could not be lexed, and where
+#[derive(Debug, Display, Error, Clone, PartialEq, Eq)]
+#[display("{loc}: {kind}")]
+pub struct LexError {
+    pub loc: Loc,
+    pub kind: LexErrorKind,
+}
+
+impl LexError {
+    /// The offending character
+    pub const fn loc(&self) -> Loc {
+        self.loc
+    }
+
+    pub const fn kind(&self) -> &LexErrorKind {
+        &self.kind
+    }
+}
+
+/// What is wrong with the source
+#[derive(Debug, Display, Error, Clone, PartialEq, Eq)]
+pub enum LexErrorKind {
+    /// No token starts with this character
+    #[display("unexpected character {_0:?}")]
+    #[error(ignore)]
+    UnexpectedChar(char),
+
+    /// A `"` with no closing `"` on the same line
+    #[display("unterminated string literal")]
+    UnterminatedString,
+
+    #[display("{_0}")]
+    #[error(ignore)]
+    StringLiteral(StringLiteralErrorKind),
+
+    /// An integer literal greater than `i128::MAX`
+    #[display("integer literal out of range")]
+    IntOutOfRange,
+}
+
+impl LexErrorKind {
+    /// This error, at `loc`
+    pub(crate) fn at(self, loc: Loc) -> LexError {
+        LexError { loc, kind: self }
+    }
+}
+
 /// Adjacent string literals which are being joined in to a single token
 #[derive(Debug)]
 struct PendingStr {
@@ -221,8 +269,8 @@ impl PendingStr {
 }
 
 /// The lexer is fed a [line at a time](Lexer::line), and appends the [tokens](Token) to a
-/// [queue](VecDeque) which is returned by [Lexer::finish]. If an error occurs then the location
-/// of that error may be retreived from [Lexer::loc].
+/// [queue](VecDeque) which is returned by [Lexer::finish]. Each [LexError] carries the location
+/// of the offending character.
 ///
 /// The lexer never needs the whole source in memory, only the line being lexed. Memory use is
 /// bounded by the longest line and the number of tokens, not by the size of the file.
@@ -230,7 +278,7 @@ impl PendingStr {
 pub struct Lexer {
     /// Number of lines fed so far
     lno: usize,
-    /// Location of the last token, or the error, or the end of the last line
+    /// The end of the last line, where [Tok::Eof] is located
     loc: Loc,
     /// String literals which may yet be joined with ones on following lines
     pending: Option<PendingStr>,
@@ -238,10 +286,6 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn loc(&self) -> Loc {
-        self.loc
-    }
-
     /// Lex one line. The line must not include its terminator: a `\n` anywhere in it is a lex
     /// error. A `\r` is whitespace, so lines with CRLF endings are accepted as they are.
     ///
@@ -250,7 +294,7 @@ impl Lexer {
     /// in bytes.
     ///
     /// After an error the lexer must not be fed any more lines.
-    pub fn line(&mut self, line: &str) -> Result<(), Error> {
+    pub fn line(&mut self, line: &str) -> Result<(), LexError> {
         let mut caps = LEX_RE.capture_locations();
         let mut pos = 0;
 
@@ -258,10 +302,19 @@ impl Lexer {
 
         while pos < line.len() {
             let loc = Loc::new(self.lno, pos + 1);
-            self.loc = loc;
 
             if LEX_RE.captures_read(&mut caps, &line[pos..]).is_none() {
-                return Err(LexError);
+                let c = line[pos..]
+                    .chars()
+                    .next()
+                    .expect("pos < line.len() and is on a char boundary");
+                // The string rule only excludes `"` and `\n` from the body, so a `"` it doesn't
+                // match can only be one with no closing `"` before the end of the line
+                let kind = match c {
+                    '"' => LexErrorKind::UnterminatedString,
+                    c => LexErrorKind::UnexpectedChar(c),
+                };
+                return Err(kind.at(loc));
             }
             let (rule, len) =
                 Rule::from_caps(&caps).expect("a match always captures exactly one rule");
@@ -278,9 +331,9 @@ impl Lexer {
                     // Each literal is decoded on its own, so a hex sequence can't span two
                     let body = &lexeme[1..len - 1];
                     if let Err(err) = Buf::decode_literal_into(body, &mut pend.bytes) {
-                        // The error's location goes in `self.loc`, so only its kind is returned
-                        self.loc = Loc::new(self.lno, loc.col() + 1 + err.offset);
-                        return Err(err.kind.into());
+                        // Located at the offending character, just past the opening `"`
+                        let loc = Loc::new(self.lno, loc.col() + 1 + err.offset);
+                        return Err(LexErrorKind::StringLiteral(err.kind).at(loc));
                     }
                 }
                 rule => {
@@ -288,7 +341,7 @@ impl Lexer {
                         .extend(self.pending.take().map(PendingStr::into_token));
                     self.toks.push_back(Token {
                         loc,
-                        tok: Tok::decode(rule, lexeme)?,
+                        tok: Tok::decode(rule, lexeme).map_err(|kind| kind.at(loc))?,
                     });
                 }
             }
@@ -315,9 +368,9 @@ impl Lexer {
         self.toks
     }
 
-    /// Lex every line, as if by [Lexer::line], and then [finish](Lexer::finish). On error,
-    /// returns the location of the offending character along with the error.
-    pub fn lex<I>(lines: I) -> Result<VecDeque<Token>, (Loc, Error)>
+    /// Lex every line, as if by [Lexer::line], and then [finish](Lexer::finish), stopping at the
+    /// first error.
+    pub fn lex<I>(lines: I) -> Result<VecDeque<Token>, LexError>
     where
         I: IntoIterator,
         I::Item: AsRef<str>,
@@ -325,7 +378,7 @@ impl Lexer {
         let mut lexer = Self::default();
 
         for line in lines {
-            lexer.line(line.as_ref()).map_err(|err| (lexer.loc, err))?;
+            lexer.line(line.as_ref())?;
         }
 
         Ok(lexer.finish())

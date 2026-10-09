@@ -1,5 +1,8 @@
+use derive_more::Display;
+
 /// Identifies a line number and column number within a source file.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Display)]
+#[display("{line}:{col}")]
 pub struct Loc {
     line: u32,
     col: u32,

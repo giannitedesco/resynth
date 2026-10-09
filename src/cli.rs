@@ -1,7 +1,7 @@
 use pkt::PcapWriter;
 
 use resynth::stdlib::{write_docs, write_stdlib_json};
-use resynth::{Error, Lexer, Loc, Parser, Program};
+use resynth::{Error, LexError, Lexer, Loc, Parser, Program};
 use resynth::{error, ok, warn};
 
 use std::borrow::Cow;
@@ -13,7 +13,7 @@ use std::{fs, io};
 
 use chrono::DateTime;
 use clap::{Args, CommandFactory, Parser as ClapParser, Subcommand, error::ErrorKind};
-use derive_more::{Display, Error};
+use derive_more::{Display, Error, From};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug, Display, Error)]
@@ -167,28 +167,67 @@ enum Introspection {
     StdlibJson { file: Option<PathBuf> },
 }
 
-/// A [source code location](Loc) and an [error code](Error)
-#[derive(Debug)]
-struct ErrorLoc {
-    pub loc: Loc,
-    pub err: Error,
+#[derive(Debug, Display, Error, From)]
+#[display("{loc}: Parse error: {err}")]
+struct LocatedError {
+    loc: Loc,
+    err: Error,
 }
 
-impl ErrorLoc {
-    pub fn new(loc: Loc, err: Error) -> Self {
-        Self { loc, err }
+/// A [source code location](Loc) and an error
+#[derive(Debug, Display, Error, From)]
+enum CompileError {
+    #[from]
+    #[error(ignore)]
+    Io(io::Error),
+
+    #[from]
+    #[error(ignore)]
+    LexError(LexError),
+
+    #[from]
+    #[error(ignore)]
+    Error(LocatedError),
+}
+
+impl From<(Loc, Error)> for CompileError {
+    fn from((loc, err): (Loc, Error)) -> Self {
+        Self::Error(LocatedError { loc, err })
     }
 }
 
-impl From<Error> for ErrorLoc {
-    fn from(e: Error) -> Self {
-        Self::new(Loc::nil(), e)
+impl CompileError {
+    const fn loc(&self) -> Option<Loc> {
+        match self {
+            Self::Io(_) => None,
+            Self::LexError(err) => Some(err.loc()),
+            Self::Error(err) => Some(err.loc),
+        }
     }
-}
 
-impl From<io::Error> for ErrorLoc {
-    fn from(e: io::Error) -> Self {
-        Self::new(Loc::nil(), e.into())
+    const fn phase(&self) -> &'static str {
+        match self {
+            Self::Io(_) => "io",
+            Self::LexError(_) => "lex",
+            Self::Error(_) => "parse",
+        }
+    }
+
+    fn print(&self, stdout: &mut StandardStream, p: &Path) {
+        let loc = self.loc();
+        let phase = self.phase();
+
+        print!("{}: ", p.display());
+        if let Some(loc) = loc {
+            print!("{}:{}: ", loc.line(), loc.col());
+        }
+        error!(stdout, "{} error", phase);
+        print!(": ");
+        match self {
+            Self::Io(err) => println!("{}", err),
+            Self::LexError(err) => println!("{}", err.kind()),
+            Self::Error(err) => println!("{}", err.err),
+        }
     }
 }
 
@@ -198,15 +237,13 @@ fn process_file(
     out: &Path,
     start_time: StartTime,
     verbose: bool,
-) -> Result<(), ErrorLoc> {
+) -> Result<(), CompileError> {
     let file = fs::File::open(inp)?;
     let rd = io::BufReader::new(file);
     let mut lex = Lexer::default();
 
     for line in rd.lines() {
-        if let Err(err) = lex.line(&line?) {
-            return Err(ErrorLoc::new(lex.loc(), err));
-        }
+        lex.line(&line?)?;
     }
 
     let wr = {
@@ -230,11 +267,11 @@ fn process_file(
 
     for tok in lex.finish() {
         if let Err(err) = parse.feed(&tok) {
-            return Err(ErrorLoc::new(tok.loc(), err));
+            return Err((tok.loc(), err).into());
         }
 
         if let Err(err) = prog.add_stmts(parse.get_results()) {
-            return Err(ErrorLoc::new(prog.loc(), err));
+            return Err((prog.loc(), err).into());
         }
     }
     prog.flush()?;
@@ -297,15 +334,7 @@ fn resynth() -> Result<(), ()> {
         let result = process_file(&mut stdout, p, &out, argv.start_time, argv.verbose);
 
         if let Err(error) = result {
-            let ErrorLoc { loc, err } = error;
-
-            if loc.is_nil() {
-                print!("{}: ", p.display());
-            } else {
-                print!("{}:{}:{}: ", p.display(), loc.line(), loc.col());
-            }
-            error!(stdout, "error");
-            println!(": {}", err);
+            error.print(&mut stdout, p);
 
             // By default, if the file failed for any reason, regardless of whether we created it
             // or not, we delete it. This behaviour can be overridden with the `--keep` flag.
