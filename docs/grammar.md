@@ -6,46 +6,48 @@ notation, followed by the type system and semantic rules.
 ## ABNF Grammar
 
 ```abnf
-program        = *( statement )
+program        = *statement
 
 statement      = import-stmt
-               / assign-stmt
+               / let-stmt
                / expr-stmt
 
 import-stmt    = "import" identifier ";"
-assign-stmt    = "let" identifier "=" expr ";"
-expr-stmt      = expr ";"
+let-stmt       = "let" identifier "=" expr ";"
+expr-stmt      = expr ";"                  ; any expression
 
 ; "/" is the only binary operator; left-associative: a/b/c = (a/b)/c
 ; At runtime, Ip4 / integer → Sock4
-expr           = expr "/" expr
-               / call
-               / object-ref
-               / literal
+expr           = postfix *( "/" postfix )
 
-call           = object-ref "(" arg-list ")"
+; "." and calls are postfix, bind tighter than "/", and chain freely:
+;   a.b().c(1, x: 2)    ipv4::tcp::flow(a, b).open()    f()()
+postfix        = primary *( "." identifier / "(" [ arg-list ] ")" )
 
-; "::" components form the module path (determines which `import` is needed)
-; "."  components form the object/method path (called on a runtime value)
-; Once "." is used, "::" may not appear again in the same reference
-object-ref     = identifier *( "::" identifier ) *( "." identifier )
+primary        = literal
+               / module-path
+               / identifier                ; a variable bound by `let`
 
-arg-list       = [ arg *( "," arg ) ]
+; The first segment names an imported module. A module path can only
+; start an expression, so `a::b.c` is valid but `a.b::c` is not.
+module-path    = identifier 1*( "::" identifier )
+
+arg-list       = arg *( "," arg ) [ "," ]  ; a trailing comma is allowed
 arg            = [ identifier ":" ] expr   ; named or anonymous
 
 literal        = boolean-lit
-               / sock4-lit                 ; ipv4 ":" port — resolved before ipv4-lit
+               / sock4-lit                 ; an ipv4-lit followed by ":" is a sock4-lit
                / ipv4-lit
                / hex-int-lit
                / decimal-int-lit
                / string-lit                ; adjacent string literals are concatenated
 
 boolean-lit       = "true" / "false"
-sock4-lit         = ipv4-lit ":" port         ; produces Sock4; port is decimal only
-ipv4-lit          = d8 "." d8 "." d8 "." d8   ; produces Ip4 (native type)
+sock4-lit         = ipv4-lit ":" port         ; produces Sock4
+ipv4-lit          = d8 "." d8 "." d8 "." d8   ; produces Ip4; no leading zeroes
 hex-int-lit       = "0x" 1*HEXDIG             ; produces u64
-decimal-int-lit   = 1*DIGIT                   ; produces u64
-port              = 1*DIGIT                   ; decimal only, valid range 0–65535
+decimal-int-lit   = "0" / %x31-39 *DIGIT      ; produces u64; no leading zeroes
+port              = decimal-int-lit           ; 0–65535
 
 ; String literals may contain inline hex escapes.
 ; Adjacent string literals are concatenated by the lexer (no operator needed).
@@ -56,12 +58,20 @@ hex-escape        = "|" *( 2HEXDIG [ SP ] ) "|"   ; e.g. |de ad be ef|
 comment           = ( "#!" / "#" / "//" ) *VCHAR
 ```
 
+There are no grouping parentheses: `(1)` is a parse error.
+
+An integer literal must fit in a `u64`, and a port must fit in 0–65535. A
+larger value is a parse error, `integer literal out of range`, and the program
+does not run. An integer literal followed directly by letters, as in `123abc`,
+is a lex error. `sock4-lit` is a parser rule, so whitespace around the `:` is
+allowed: `1.2.3.4 : 80`.
+
 ## Literals
 
 | Form | Example | Type | Notes |
 |------|---------|------|-------|
 | Boolean | `true`, `false` | `bool` | |
-| Decimal integer | `42`, `-1` | `u64` | |
+| Decimal integer | `42` | `u64` | No negative literals |
 | Hex integer | `0xdeadbeef` | `u64` | |
 | IPv4 address | `1.2.3.4` | `Ip4` | Native type |
 | Socket address (colon) | `1.2.3.4:80` | `Sock4` | Literal form; port decimal only |
@@ -81,16 +91,19 @@ Adjacent string literals are concatenated by the lexer:
 `Ip4` value with a port integer to produce a `Sock4`:
 
 ```resynth
-1.2.3.4 / 80        # Sock4 literal form
+1.2.3.4 / 80        # operator form
 
 let ip = 1.2.3.4;
 ip / 8080           # variable on the left
 ip / port           # both sides can be variables
 ```
 
-The colon form (`1.2.3.4:80`) is a lexer-level literal that only accepts a
-plain decimal port; it cannot be used with variables. The slash form is more
-flexible.
+The colon form (`1.2.3.4:80`) is a literal. It is parsed only directly after
+an IPv4 literal, and its port must be a decimal literal from 0 to 65535. It
+cannot be used with variables. The slash form is more flexible: its port can
+be any integer value, but it is still checked when the program runs. A port
+over 65535, as in `1.2.3.4 / 65536`, is a runtime error, `port 65536 out of
+range`.
 
 ## Type System
 
@@ -130,16 +143,17 @@ parameter type. `bytes` accepts any string-coercible value. `PktGen` accepts
 
 An object reference navigates the module/symbol tree using two separators:
 
-- `::` — navigates the **module** hierarchy (compile-time; determines the `import`)
-- `.` — navigates the **object** hierarchy (runtime; calls a method on a value)
-
-Once `.` is used, `::` may not appear again in the same reference.
+- `::` — separates the segments of a **module path**, which must start an
+  expression. Its first segment determines the `import` needed.
+- `.` — looks up a **method** on whatever value is to its left, which can be a
+  variable, a module path or the result of a call.
 
 ```resynth
 import ipv4;
 
-ipv4::tcp::flow(...)       # module path only; calls a module-level function
-flow.client_message(...)   # object path only; calls a method on a runtime value
+ipv4::tcp::flow(...)          # module path; calls a module-level function
+flow.client_message(...)      # calls a method on a variable
+ipv4::tcp::flow(...).open()   # calls a method on a call's result
 ```
 
 ## Function Calling Conventions
@@ -207,7 +221,10 @@ flow.client_message(text::concat(std::be16(0x0001), std::be16(42), "data"));
   emission if the expression produces `Pkt` or `PktGen`.
 - **Expression statement** — evaluates the expression. If the result is `Pkt`
   or `PktGen`, the packets are emitted to the pcap output immediately.
-  If the result is `TimeJump`, it advances the timestamp clock.
+  If the result is `TimeJump`, it advances the timestamp clock. Any
+  expression may be a statement. If the result is not a packet, packet
+  sequence, time jump or nil, it is discarded with a warning at the start of
+  the statement.
 
 ```resynth
 import ipv4;
