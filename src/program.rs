@@ -289,8 +289,7 @@ impl<'a> Program<'a> {
                 if let Some(ref mut wr) = self.wr {
                     let pkt = Rc::make_mut(&mut ptr);
 
-                    wr.write_packet(self.now, pkt)
-                        .expect("failed to write packet");
+                    wr.write_packet(self.now, pkt)?;
                 };
             }
             Val::PktGen(mut it) => {
@@ -303,8 +302,7 @@ impl<'a> Program<'a> {
                     let inner = Rc::make_mut(&mut it);
 
                     for pkt in inner {
-                        wr.write_packet(self.now, pkt)
-                            .expect("failed to write packet");
+                        wr.write_packet(self.now, pkt)?;
                     }
                 };
             }
