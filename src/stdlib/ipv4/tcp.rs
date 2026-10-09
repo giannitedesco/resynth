@@ -18,7 +18,7 @@ const TCP_OPEN: FuncDef = func!(
         let mut r = obj.borrow_mut();
         let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
         Ok(this.open().into())
-        }
+    }
 );
 
 const TCP_CL_MSG: FuncDef = func!(
