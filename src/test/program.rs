@@ -5,7 +5,7 @@ use crate::program::Program;
 use crate::program::RuntimeError;
 use crate::program::RuntimeErrorKind::{
     ImportError, MultipleAssignError, NameError, NoSuchArg, NotAValue, NotCallable, NotImported,
-    TypeError,
+    PortOutOfRange, TypeError,
 };
 use crate::val::ValType;
 
@@ -135,6 +135,22 @@ fn run_slash_operand_errors() {
     let err = run_err("let x = 1.2.3.4 / 1.2.3.4;");
     assert!(
         matches!(&err.kind, TypeError) && err.loc == Loc::new(1, 19),
+        "{err:?}"
+    );
+}
+
+#[test]
+fn run_slash_port_range() {
+    run("let x = 1.2.3.4 / 65535;").0.expect("run failed");
+
+    let err = run_err("let x = 1.2.3.4 / 65536;");
+    assert!(
+        matches!(&err.kind, PortOutOfRange(65536)) && err.loc == Loc::new(1, 19),
+        "{err:?}"
+    );
+    let err = run_err("let p = 18446744073709551615;\nlet x = 1.2.3.4 / p;");
+    assert!(
+        matches!(&err.kind, PortOutOfRange(u64::MAX)) && err.loc == Loc::new(2, 19),
         "{err:?}"
     );
 }

@@ -19,7 +19,7 @@ use std::rc::Rc;
 
 use RuntimeErrorKind::{
     ImportError, MultipleAssignError, NameError, NotAModule, NotAValue, NotCallable, NotImported,
-    PcapWrite, TypeError,
+    PcapWrite, PortOutOfRange, TypeError,
 };
 
 /// Why the program could not be run, and where
@@ -54,6 +54,11 @@ pub enum RuntimeErrorKind {
 
     #[display("type error")]
     TypeError,
+
+    /// The right of `ip / port` is more than `u16::MAX`
+    #[display("port {} out of range", _0)]
+    #[error(ignore)]
+    PortOutOfRange(u64),
 
     #[display("unimplemented stdlib call")]
     LibTodo,
@@ -305,8 +310,10 @@ impl<'a> Program<'a> {
                 if !b.is_integral() {
                     return Err(TypeError.at(b_loc));
                 }
+                let port = u64::from(b);
+                let port = u16::try_from(port).map_err(|_| PortOutOfRange(port).at(b_loc))?;
 
-                Val::Sock4(SocketAddrV4::new(a.into(), b.into()))
+                Val::Sock4(SocketAddrV4::new(a.into(), port))
             }
         })
     }
