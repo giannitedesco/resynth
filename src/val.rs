@@ -7,10 +7,9 @@ use derive_more::Display;
 use pkt::Packet;
 
 use crate::ast::Lit;
-use crate::err::Error;
-use crate::err::Error::{NameError, TypeError};
 use crate::libapi::{ClassDef, FuncDef};
 use crate::object::{Obj, ObjRef};
+use crate::program::RuntimeErrorKind::{self, NameError, TypeError};
 use crate::str::{Buf, Literal};
 use crate::sym::Symbol;
 use crate::traits::Dispatchable;
@@ -567,7 +566,7 @@ impl Val {
 
     /// Convert a literal token in to a value. Integer literals are lexed as `i128` and become
     /// [Val::U64] here.
-    pub fn method_lookup(&self, name: &str) -> Result<Self, Error> {
+    pub fn method_lookup(&self, name: &str) -> Result<Self, RuntimeErrorKind> {
         let obj = match self {
             Val::Obj(obj) => obj,
             _ => {
@@ -589,7 +588,7 @@ impl Val {
         }
     }
 
-    pub fn lookup_symbol(&self, name: &str) -> Result<Symbol, Error> {
+    pub fn lookup_symbol(&self, name: &str) -> Result<Symbol, RuntimeErrorKind> {
         match self {
             Val::Obj(obj) => obj
                 .lookup_symbol(name)

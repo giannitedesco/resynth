@@ -1,6 +1,8 @@
 use crate::args::{ArgSpec, ArgVec};
-use crate::err::Error;
 use crate::libapi::FuncDef;
+use crate::program::RuntimeErrorKind::{
+    ArgMultiplySpecified, ArgTypeMismatch, CollectArgTypeMismatch, TooFewArgs,
+};
 use crate::str::Buf;
 use crate::val::{Val, ValDef};
 
@@ -37,7 +39,7 @@ fn argvec_simple() {
     let args = vec![ArgSpec::from(1), ArgSpec::from(b"pos")];
 
     assert_eq!(
-        Ok(ArgVec::new(
+        ArgVec::new(
             None,
             vec!(
                 Val::U64(1),
@@ -47,8 +49,8 @@ fn argvec_simple() {
                 Val::Nil,
             ),
             vec!(),
-        )),
-        PLAIN.argvec(None, args)
+        ),
+        PLAIN.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -62,7 +64,7 @@ fn argvec_nullable() {
     ];
 
     assert_eq!(
-        Ok(ArgVec::new(
+        ArgVec::new(
             None,
             vec!(
                 Val::U64(1),
@@ -72,8 +74,8 @@ fn argvec_nullable() {
                 Val::Bool(true),
             ),
             vec!(),
-        )),
-        PLAIN.argvec(None, args)
+        ),
+        PLAIN.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -82,12 +84,10 @@ fn argvec_nullable() {
 fn argvec_type_mismatch_1() {
     let args = vec![ArgSpec::from(1), ArgSpec::from(UNCOERCIBLE)];
 
-    assert_eq!(
-        Err(Error::ArgTypeMismatch {
-            func: "PLAIN".into(),
-            arg: "b".into()
-        }),
-        PLAIN.argvec(None, args)
+    let err = PLAIN.argvec(None, args).expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, ArgTypeMismatch { func, arg } if &**func == "PLAIN" && &**arg == "b"),
+        "{err:?}"
     )
 }
 
@@ -96,12 +96,10 @@ fn argvec_type_mismatch_1() {
 fn argvec_type_mismatch_2() {
     let args = vec![ArgSpec::from(1), ArgSpec::from(("b", UNCOERCIBLE))];
 
-    assert_eq!(
-        Err(Error::ArgTypeMismatch {
-            func: "PLAIN".into(),
-            arg: "b".into()
-        }),
-        PLAIN.argvec(None, args)
+    let err = PLAIN.argvec(None, args).expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, ArgTypeMismatch { func, arg } if &**func == "PLAIN" && &**arg == "b"),
+        "{err:?}"
     )
 }
 
@@ -115,12 +113,10 @@ fn argvec_type_mismatch_3() {
         ArgSpec::from(("d", UNCOERCIBLE)),
     ];
 
-    assert_eq!(
-        Err(Error::ArgTypeMismatch {
-            func: "PLAIN".into(),
-            arg: "d".into()
-        }),
-        PLAIN.argvec(None, args)
+    let err = PLAIN.argvec(None, args).expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, ArgTypeMismatch { func, arg } if &**func == "PLAIN" && &**arg == "d"),
+        "{err:?}"
     )
 }
 
@@ -132,7 +128,7 @@ fn argvec_named_positionals() {
         ArgSpec::from(("b", ValDef::Str(b"goodbye"))),
     ];
     assert_eq!(
-        Ok(ArgVec::new(
+        ArgVec::new(
             None,
             vec!(
                 Val::U64(0),
@@ -142,8 +138,8 @@ fn argvec_named_positionals() {
                 Val::Nil,
             ),
             vec!()
-        )),
-        PLAIN.argvec(None, args),
+        ),
+        PLAIN.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -152,7 +148,7 @@ fn argvec_named_positionals() {
 fn argvec_too_many_positionals() {
     let args = vec![ArgSpec::from(1), ArgSpec::from(b"pos"), ArgSpec::from(2)];
     assert_eq!(
-        Ok(ArgVec::new(
+        ArgVec::new(
             None,
             vec!(
                 Val::U64(1),
@@ -162,8 +158,8 @@ fn argvec_too_many_positionals() {
                 Val::Nil,
             ),
             vec!()
-        )),
-        PLAIN.argvec(None, args),
+        ),
+        PLAIN.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -171,13 +167,10 @@ fn argvec_too_many_positionals() {
 #[test]
 fn argvec_not_enough_args() {
     let args = vec![ArgSpec::from(1)];
-    assert_eq!(
-        Err(Error::TooFewArgs {
-            func: "PLAIN".into(),
-            got: 1,
-            want: 2
-        }),
-        PLAIN.argvec(None, args),
+    let err = PLAIN.argvec(None, args).expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, TooFewArgs { func, got: 1, want: 2 } if &**func == "PLAIN"),
+        "{err:?}"
     )
 }
 
@@ -189,12 +182,10 @@ fn argvec_multiple_positional() {
         ArgSpec::from(b"hello"),
         ArgSpec::from(("a", ValDef::U64(2))),
     ];
-    assert_eq!(
-        Err(Error::ArgMultiplySpecified {
-            func: "PLAIN".into(),
-            arg: "a".into()
-        }),
-        PLAIN.argvec(None, args),
+    let err = PLAIN.argvec(None, args).expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, ArgMultiplySpecified { func, arg } if &**func == "PLAIN" && &**arg == "a"),
+        "{err:?}"
     )
 }
 
@@ -207,12 +198,10 @@ fn argvec_multiple_optional() {
         ArgSpec::from(111),
         ArgSpec::from(("c", ValDef::U64(222))),
     ];
-    assert_eq!(
-        Err(Error::ArgMultiplySpecified {
-            func: "PLAIN".into(),
-            arg: "c".into()
-        }),
-        PLAIN.argvec(None, args),
+    let err = PLAIN.argvec(None, args).expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, ArgMultiplySpecified { func, arg } if &**func == "PLAIN" && &**arg == "c"),
+        "{err:?}"
     )
 }
 
@@ -225,12 +214,10 @@ fn argvec_multiple_named_optional() {
         ArgSpec::from(("c", ValDef::U64(111))),
         ArgSpec::from(("c", ValDef::U64(222))),
     ];
-    assert_eq!(
-        Err(Error::ArgMultiplySpecified {
-            func: "PLAIN".into(),
-            arg: "c".into()
-        }),
-        PLAIN.argvec(None, args),
+    let err = PLAIN.argvec(None, args).expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, ArgMultiplySpecified { func, arg } if &**func == "PLAIN" && &**arg == "c"),
+        "{err:?}"
     )
 }
 
@@ -255,8 +242,8 @@ const COLLECT: FuncDef = func! {
 fn collect_none() {
     let args = vec![ArgSpec::from(1), ArgSpec::from(("b", ValDef::U64(234)))];
     assert_eq!(
-        Ok(ArgVec::new(None, vec!(Val::U64(1), Val::U64(234),), vec!())),
-        COLLECT.argvec(None, args),
+        ArgVec::new(None, vec!(Val::U64(1), Val::U64(234),), vec!()),
+        COLLECT.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -270,12 +257,12 @@ fn collect_with_named() {
         ArgSpec::from(b"world"),
     ];
     assert_eq!(
-        Ok(ArgVec::new(
+        ArgVec::new(
             None,
             vec!(Val::U64(1), Val::U64(234),),
             vec!(Val::str(b"hello"), Val::str(b"world"),),
-        )),
-        COLLECT.argvec(None, args),
+        ),
+        COLLECT.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -288,12 +275,12 @@ fn collect_with_defaults() {
         ArgSpec::from(b"world"),
     ];
     assert_eq!(
-        Ok(ArgVec::new(
+        ArgVec::new(
             None,
             vec!(Val::U64(1), Val::U64(123),),
             vec!(Val::str(b"hello"), Val::str(b"world"),),
-        )),
-        COLLECT.argvec(None, args),
+        ),
+        COLLECT.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -306,11 +293,10 @@ fn collect_bad_type() {
         ArgSpec::from(b"hello"),
         ArgSpec::from(UNCOERCIBLE),
     ];
-    assert_eq!(
-        Err(Error::CollectArgTypeMismatch {
-            func: "COLLECT".into()
-        }),
-        COLLECT.argvec(None, args),
+    let err = COLLECT.argvec(None, args).expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, CollectArgTypeMismatch { func } if &**func == "COLLECT"),
+        "{err:?}"
     )
 }
 
@@ -332,8 +318,8 @@ fn argvec_empty() {
     let args = vec![];
 
     assert_eq!(
-        Ok(ArgVec::new(None, vec!(), vec!(),)),
-        EMPTY.argvec(None, args)
+        ArgVec::new(None, vec!(), vec!(),),
+        EMPTY.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -343,12 +329,8 @@ fn argvec_empty_extra() {
     let args = vec![ArgSpec::from(b"hello"), ArgSpec::from(b"world")];
 
     assert_eq!(
-        Ok(ArgVec::new(
-            None,
-            vec!(),
-            vec!(Val::str(b"hello"), Val::str(b"world"),),
-        )),
-        EMPTY.argvec(None, args)
+        ArgVec::new(None, vec!(), vec!(Val::str(b"hello"), Val::str(b"world"),),),
+        EMPTY.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -376,12 +358,12 @@ fn argvec_optional_anonymous() {
     let args = vec![ArgSpec::from(1u64), ArgSpec::from(b"supplied")];
 
     assert_eq!(
-        Ok(ArgVec::new(
+        ArgVec::new(
             None,
             vec!(Val::U64(1), Val::str(b"supplied"), Val::Bool(true),),
             vec!(),
-        )),
-        NAMED.argvec(None, args)
+        ),
+        NAMED.argvec(None, args).expect("argvec failed"),
     )
 }
 
@@ -410,12 +392,14 @@ fn argvec_optional_collect_str() {
     let args = vec![ArgSpec::from(1u64), ArgSpec::from(b"supplied")];
 
     assert_eq!(
-        Ok(ArgVec::new(
+        ArgVec::new(
             None,
             vec!(Val::Bool(true), Val::U64(123), Val::str(b"hello"),),
             vec!(Val::U64(1), Val::str(b"supplied"),),
-        )),
-        OPTIONAL_COLLECT_STR.argvec(None, args)
+        ),
+        OPTIONAL_COLLECT_STR
+            .argvec(None, args)
+            .expect("argvec failed"),
     )
 }
 
@@ -444,10 +428,11 @@ const OPTIONAL_COLLECT_U64: FuncDef = func! {
 fn argvec_optional_collect_u64() {
     let args = vec![ArgSpec::from(1u64), ArgSpec::from(b"supplied")];
 
-    assert_eq!(
-        Err(Error::CollectArgTypeMismatch {
-            func: "OPTIONAL_COLLECT_U64".into()
-        }),
-        OPTIONAL_COLLECT_U64.argvec(None, args)
+    let err = OPTIONAL_COLLECT_U64
+        .argvec(None, args)
+        .expect_err("argvec succeeded");
+    assert!(
+        matches!(&err, CollectArgTypeMismatch { func } if &**func == "OPTIONAL_COLLECT_U64"),
+        "{err:?}"
     )
 }

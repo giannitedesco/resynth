@@ -1,6 +1,6 @@
-use crate::err::Error::{NameError, TypeError};
 use crate::libapi::{Class, ClassDef};
 use crate::object::ObjRef;
+use crate::program::RuntimeErrorKind::{NameError, TypeError};
 use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 
@@ -87,24 +87,30 @@ fn obj_neq_type() {
 fn method_lookup() {
     let a = Val::from(Tcp::new(123, 456));
     assert_eq!(
-        a.lookup_symbol("client_message"),
-        Ok(Symbol::Val(ValDef::from(1)))
+        a.lookup_symbol("client_message").expect("lookup failed"),
+        Symbol::Val(ValDef::from(1))
     );
 }
 
 #[test]
 fn method_lookup_fail() {
     let a = Val::from(Tcp::new(123, 456));
-    assert_eq!(
-        a.lookup_symbol("client_massage"),
-        Err(NameError("client_massage".into()))
+    let err = a
+        .lookup_symbol("client_massage")
+        .expect_err("lookup succeeded");
+    assert!(
+        matches!(&err, NameError(n) if &**n == "client_massage"),
+        "{err:?}"
     );
 }
 
 #[test]
 fn method_lookup_nil() {
     let a = Val::Nil;
-    assert_eq!(a.lookup_symbol("client_massage"), Err(TypeError));
+    let err = a
+        .lookup_symbol("client_massage")
+        .expect_err("lookup succeeded");
+    assert!(matches!(err, TypeError), "{err:?}");
 }
 
 #[test]

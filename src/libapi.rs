@@ -7,12 +7,11 @@ use std::io::Write;
 use derive_more::Display;
 
 use crate::args::{ArgSpec, ArgVec, Args};
-use crate::err::Error;
-use crate::err::Error::{
-    ArgMultiplySpecified, ArgTypeMismatch, CollectArgTypeMismatch, MissingArg, NoSuchArg,
+use crate::object::ObjRef;
+use crate::program::RuntimeErrorKind::{
+    self, ArgMultiplySpecified, ArgTypeMismatch, CollectArgTypeMismatch, MissingArg, NoSuchArg,
     TooFewArgs, TooManyArgs, UnexpectedCollectArgs, UnexpectedNamedArg,
 };
-use crate::object::ObjRef;
 use crate::sym::Symbol;
 use crate::val::{Typed, Val, ValDef, ValType};
 
@@ -48,7 +47,7 @@ pub struct FuncDef {
     /// minimum number of args: ie. number of positionals
     pub min_args: usize,
     pub collect_type: ValType,
-    pub exec: fn(args: Args) -> Result<Val, Error>,
+    pub exec: fn(args: Args) -> Result<Val, RuntimeErrorKind>,
     pub doc: &'static str,
 }
 
@@ -366,7 +365,7 @@ impl FuncDef {
         self.collect_type != ValType::Void
     }
 
-    fn split_args(&self, args: Vec<ArgSpec>) -> Result<ArgPrep, Error> {
+    fn split_args(&self, args: Vec<ArgSpec>) -> Result<ArgPrep, RuntimeErrorKind> {
         enum State {
             Anon,
             Optional,
@@ -475,7 +474,11 @@ impl FuncDef {
         })
     }
 
-    pub fn argvec(&self, this: Option<ObjRef>, args: Vec<ArgSpec>) -> Result<ArgVec, Error> {
+    pub fn argvec(
+        &self,
+        this: Option<ObjRef>,
+        args: Vec<ArgSpec>,
+    ) -> Result<ArgVec, RuntimeErrorKind> {
         let ArgPrep {
             positional,
             mut named,
@@ -547,7 +550,7 @@ impl FuncDef {
         Ok(ArgVec::new(this, args, extra))
     }
 
-    pub fn args(&self, this: Option<ObjRef>, args: Vec<ArgSpec>) -> Result<Args, Error> {
+    pub fn args(&self, this: Option<ObjRef>, args: Vec<ArgSpec>) -> Result<Args, RuntimeErrorKind> {
         Ok(self.argvec(this, args)?.into())
     }
 

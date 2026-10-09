@@ -18,19 +18,22 @@
 //!
 //! ## Compiler Phases
 //! 1. [Lexer] is a hand-written lexer which splits a source file, a line at a time, in to a
-//!    queue of [tokens](Token), decoding identifiers, integers and IP addresses as it goes
+//!    queue of [tokens](Token), decoding identifiers, integers and IP addresses as it goes. It
+//!    fails with a [LexError]
 //! 2. [parse::parse] is a recursive descent parser, using Pratt parsing for expressions. It turns
-//!    the whole queue of tokens in to a list of [statements](ast::Stmt) before anything runs
+//!    the whole queue of tokens in to a list of [statements](ast::Stmt) before anything runs. It
+//!    fails with a [ParseError]
 //! 3. [Program] maintains the execution state of any given program. It [runs](Program::run) one
 //!    statement at a time, and updates the program state based on that. If the program has a
 //!    [pkt::PcapWriter] attached to it, then any generated packets will be written in to the
-//!    corresponding pcap file as they are generated.
+//!    corresponding pcap file as they are generated. It fails with a [RuntimeError]
+//!
+//! Each phase's error carries the [location](Loc) in the source where it happened.
 
 #[macro_use]
 mod macros;
 mod args;
 pub mod ast;
-mod err;
 mod lex;
 mod libapi;
 mod loc;
@@ -47,8 +50,7 @@ pub mod stdlib;
 #[cfg(test)]
 mod test;
 
-pub use err::Error;
 pub use lex::{LexError, LexErrorKind, Lexer, Tok, Token};
 pub use loc::Loc;
 pub use parse::{ParseError, ParseErrorKind};
-pub use program::Program;
+pub use program::{Program, RuntimeError, RuntimeErrorKind};

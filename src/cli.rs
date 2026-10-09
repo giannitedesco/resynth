@@ -2,7 +2,7 @@ use pkt::PcapWriter;
 
 use resynth::parse::parse;
 use resynth::stdlib::{write_docs, write_stdlib_json};
-use resynth::{Error, LexError, Lexer, Loc, ParseError, Program};
+use resynth::{LexError, Lexer, Loc, ParseError, Program, RuntimeError};
 use resynth::{error, ok, warn};
 
 use std::borrow::Cow;
@@ -168,14 +168,8 @@ enum Introspection {
     StdlibJson { file: Option<PathBuf> },
 }
 
-#[derive(Debug, Display, Error, From)]
-#[display("{loc}: Parse error: {err}")]
-struct LocatedError {
-    loc: Loc,
-    err: Error,
-}
-
-/// A [source code location](Loc) and an error
+/// Why an input file could not be turned in to a pcap: an I/O error, or an error from one of the
+/// compiler's phases
 #[derive(Debug, Display, Error, From)]
 enum CompileError {
     #[from]
@@ -192,22 +186,17 @@ enum CompileError {
 
     #[from]
     #[error(ignore)]
-    Other(LocatedError),
-}
-
-impl From<(Loc, Error)> for CompileError {
-    fn from((loc, err): (Loc, Error)) -> Self {
-        Self::Other(LocatedError { loc, err })
-    }
+    Runtime(RuntimeError),
 }
 
 impl CompileError {
+    /// Where in the input the error is. An I/O error has no location.
     const fn loc(&self) -> Option<Loc> {
         match self {
             Self::Io(_) => None,
             Self::Lex(err) => Some(err.loc),
             Self::Parse(err) => Some(err.loc),
-            Self::Other(err) => Some(err.loc),
+            Self::Runtime(err) => Some(err.loc),
         }
     }
 
@@ -216,7 +205,7 @@ impl CompileError {
             Self::Io(_) => "io",
             Self::Lex(_) => "lex",
             Self::Parse(_) => "parse",
-            Self::Other(_) => "runtime",
+            Self::Runtime(_) => "runtime",
         }
     }
 
@@ -235,7 +224,7 @@ impl CompileError {
             Self::Io(err) => println!("{}", err),
             Self::Lex(err) => println!("{}", err.kind),
             Self::Parse(err) => println!("{}", err.kind),
-            Self::Other(err) => println!("{}", err.err),
+            Self::Runtime(err) => println!("{}", err.kind),
         }
     }
 }
@@ -378,9 +367,9 @@ fn main() -> ExitCode {
 mod tests {
     use super::*;
 
-    use resynth::{LexErrorKind, ParseErrorKind};
+    use resynth::{LexErrorKind, ParseErrorKind, RuntimeErrorKind};
 
-    fn compile_errors() -> [CompileError; 3] {
+    fn compile_errors() -> [CompileError; 4] {
         [
             CompileError::Io(io::ErrorKind::NotFound.into()),
             CompileError::Lex(LexError {
@@ -391,6 +380,10 @@ mod tests {
                 loc: Loc::new(3, 4),
                 kind: ParseErrorKind::IntOutOfRange,
             }),
+            CompileError::Runtime(RuntimeError {
+                loc: Loc::new(5, 6),
+                kind: RuntimeErrorKind::TypeError,
+            }),
         ]
     }
 
@@ -398,7 +391,12 @@ mod tests {
     fn compile_error_loc() {
         assert_eq!(
             compile_errors().map(|err| err.loc()),
-            [None, Some(Loc::new(1, 2)), Some(Loc::new(3, 4))]
+            [
+                None,
+                Some(Loc::new(1, 2)),
+                Some(Loc::new(3, 4)),
+                Some(Loc::new(5, 6))
+            ]
         );
     }
 
@@ -406,7 +404,7 @@ mod tests {
     fn compile_error_phase() {
         assert_eq!(
             compile_errors().map(|err| err.phase()),
-            ["io", "lex", "parse"]
+            ["io", "lex", "parse", "runtime"]
         );
     }
 

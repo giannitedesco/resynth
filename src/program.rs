@@ -1,10 +1,5 @@
 use crate::args::ArgSpec;
 use crate::ast::{Arg, BinOp, Expr, ExprKind, Ident, ModulePath, Stmt};
-use crate::err::Error;
-use crate::err::Error::{
-    ImportError, MultipleAssignError, NameError, NotAModule, NotAValue, NotCallable, NotImported,
-    TypeError,
-};
 use crate::libapi::{FuncDef, Module};
 use crate::loc::Loc;
 use crate::object::ObjRef;
@@ -14,13 +9,134 @@ use crate::val::{Typed, Val, ValType};
 
 use pkt::PcapWriter;
 
+use derive_more::{Display, Error, From};
+
+use std::borrow::Cow;
 use std::collections::HashMap;
+use std::io;
 use std::net::SocketAddrV4;
 use std::rc::Rc;
 
+use RuntimeErrorKind::{
+    ImportError, MultipleAssignError, NameError, NotAModule, NotAValue, NotCallable, NotImported,
+    PcapWrite, TypeError,
+};
+
+/// Why the program could not be run, and where
+#[derive(Debug, Display, Error)]
+#[display("{loc}: {kind}")]
+pub struct RuntimeError {
+    /// The name or expression which failed, or the statement which wrote a packet
+    pub loc: Loc,
+    pub kind: RuntimeErrorKind,
+}
+
+/// What went wrong while running the program
+#[derive(Debug, Display, Error, From)]
+pub enum RuntimeErrorKind {
+    /// An I/O error in the stdlib, such as `io::file` failing to read its file
+    #[display("{}", _0)]
+    #[from]
+    IoError(io::Error),
+
+    /// Writing a packet to the pcap failed
+    #[display("{}", _0)]
+    #[from(ignore)]
+    PcapWrite(io::Error),
+
+    #[display("import error: unknown module {:?}", _0)]
+    #[error(ignore)]
+    ImportError(Box<str>),
+
+    #[display("unknown name {:?}", _0)]
+    #[error(ignore)]
+    NameError(Box<str>),
+
+    #[display("type error")]
+    TypeError,
+
+    #[display("unimplemented stdlib call")]
+    LibTodo,
+
+    #[display("{}", _0)]
+    #[error(ignore)]
+    LibError(Cow<'static, str>),
+
+    #[display("variable {:?} reassigned", _0)]
+    #[error(ignore)]
+    MultipleAssignError(Box<str>),
+
+    #[display("module {:?} not imported", _0)]
+    #[error(ignore)]
+    NotImported(Box<str>),
+
+    #[display("{:?} is not a module", _0)]
+    #[error(ignore)]
+    NotAModule(Box<str>),
+
+    #[display("{:?} is not a value", _0)]
+    #[error(ignore)]
+    NotAValue(Box<str>),
+
+    #[display("value of type {} is not callable", _0)]
+    #[error(ignore)]
+    NotCallable(ValType),
+
+    #[display("{func}: too many arguments: {got} > {want}")]
+    #[error(ignore)]
+    TooManyArgs {
+        func: Box<str>,
+        got: usize,
+        want: usize,
+    },
+
+    #[display("{func}: no such argument: {arg:?}")]
+    #[error(ignore)]
+    NoSuchArg { func: Box<str>, arg: Box<str> },
+
+    #[display("{func}: argument {arg:?} multiply specified")]
+    #[error(ignore)]
+    ArgMultiplySpecified { func: Box<str>, arg: Box<str> },
+
+    #[display("{func}: unexpected collect-arguments")]
+    #[error(ignore)]
+    UnexpectedCollectArgs { func: Box<str> },
+
+    #[display("{func}: unexpected named argument: {arg:?}")]
+    #[error(ignore)]
+    UnexpectedNamedArg { func: Box<str>, arg: Box<str> },
+
+    #[display("{func}: not enough arguments: {got} < {want}")]
+    #[error(ignore)]
+    TooFewArgs {
+        func: Box<str>,
+        got: usize,
+        want: usize,
+    },
+
+    #[display("{func}: argument {arg:?} not specified")]
+    #[error(ignore)]
+    MissingArg { func: Box<str>, arg: Box<str> },
+
+    #[display("{func}: argument {arg:?} has the wrong type")]
+    #[error(ignore)]
+    ArgTypeMismatch { func: Box<str>, arg: Box<str> },
+
+    #[display("{func}: collect argument has the wrong type")]
+    #[error(ignore)]
+    CollectArgTypeMismatch { func: Box<str> },
+}
+
+impl RuntimeErrorKind {
+    /// This error, at `loc`
+    pub(crate) fn at(self, loc: Loc) -> RuntimeError {
+        RuntimeError { loc, kind: self }
+    }
+}
+
 type WarningCallback<'a> = &'a mut dyn FnMut(Loc, &str);
 
-type Result<T> = std::result::Result<T, (Loc, Error)>;
+type Result<T> = std::result::Result<T, RuntimeError>;
 
 /// The interpreter and program-state
 pub struct Program<'a> {
@@ -77,7 +193,7 @@ impl<'a> Program<'a> {
 
     /// Flush the pcap writer, if there is one, and report any error. Dropping the program
     /// flushes too, but ignores any error.
-    pub fn flush(self) -> std::io::Result<()> {
+    pub fn flush(self) -> io::Result<()> {
         match self.wr {
             Some(wr) => wr.flush(),
             None => Ok(()),
@@ -96,14 +212,14 @@ impl<'a> Program<'a> {
         let mut top = self
             .imports
             .get(&*module.name)
-            .ok_or((module.loc, NotImported(module.name)))?;
+            .ok_or(NotImported(module.name).at(module.loc))?;
 
         /* All the double-colon components must be submodules */
         for seg in inner {
             top = match top.get(&seg.name) {
                 Some(Symbol::Module(module)) => module,
-                None => return Err((seg.loc, NameError(seg.name))),
-                _ => return Err((seg.loc, NotAModule(seg.name))),
+                None => return Err(NameError(seg.name).at(seg.loc)),
+                _ => return Err(NotAModule(seg.name).at(seg.loc)),
             }
         }
 
@@ -111,9 +227,9 @@ impl<'a> Program<'a> {
             Some(Symbol::Val(valdef)) => Ok((*valdef).into()),
             Some(Symbol::Func(fndef)) => Ok((*fndef).into()),
             Some(Symbol::Module(_)) | Some(Symbol::Class(_)) => {
-                Err((item.loc, NotAValue(item.name)))
+                Err(NotAValue(item.name).at(item.loc))
             }
-            None => Err((item.loc, NameError(item.name))),
+            None => Err(NameError(item.name).at(item.loc)),
         }
     }
 
@@ -121,7 +237,7 @@ impl<'a> Program<'a> {
         self.regs
             .get(&*ident.name)
             .cloned()
-            .ok_or((ident.loc, NameError(ident.name)))
+            .ok_or(NameError(ident.name).at(ident.loc))
     }
 
     fn eval_args(&mut self, args: Box<[Arg]>) -> Result<Vec<ArgSpec>> {
@@ -143,10 +259,10 @@ impl<'a> Program<'a> {
         args: Box<[Arg]>,
     ) -> Result<Val> {
         let argvals = self.eval_args(args)?;
-        let args = func.args(this, argvals).map_err(|err| (loc, err))?;
+        let args = func.args(this, argvals).map_err(|kind| kind.at(loc))?;
 
         /* Finally, we're ready to make the call */
-        let ret = (func.exec)(args).map_err(|err| (loc, err))?;
+        let ret = (func.exec)(args).map_err(|kind| kind.at(loc))?;
 
         /* This is a debug_assert because the stdlib is not user-defined */
         debug_assert!(ret.val_type() == func.return_type);
@@ -159,7 +275,7 @@ impl<'a> Program<'a> {
         match self.eval(callee)? {
             Val::Func(f) => self.eval_callable(loc, f, None, args),
             Val::Method(obj, f) => self.eval_callable(loc, f, Some(obj), args),
-            other => Err((loc, NotCallable(other.val_type()))),
+            other => Err(NotCallable(other.val_type()).at(loc)),
         }
     }
 
@@ -171,7 +287,7 @@ impl<'a> Program<'a> {
             ExprKind::Member { obj, name } => self
                 .eval(*obj)?
                 .method_lookup(&name.name)
-                .map_err(|err| (name.loc, err))?,
+                .map_err(|kind| kind.at(name.loc))?,
             ExprKind::Call { callee, args } => self.eval_call(*callee, args)?,
             ExprKind::Binary {
                 op: BinOp::Slash,
@@ -182,12 +298,12 @@ impl<'a> Program<'a> {
 
                 let a = self.eval(*lhs)?;
                 if !a.is_type(ValType::Ip4) {
-                    return Err((a_loc, TypeError));
+                    return Err(TypeError.at(a_loc));
                 }
 
                 let b = self.eval(*rhs)?;
                 if !b.is_integral() {
-                    return Err((b_loc, TypeError));
+                    return Err(TypeError.at(b_loc));
                 }
 
                 Val::Sock4(SocketAddrV4::new(a.into(), b.into()))
@@ -204,7 +320,7 @@ impl<'a> Program<'a> {
         }
 
         match toplevel_module(&name) {
-            None => Err((loc, ImportError(name))),
+            None => Err(ImportError(name).at(loc)),
             Some(module) => {
                 self.imports.insert(name.into_string(), module);
                 Ok(())
@@ -216,7 +332,7 @@ impl<'a> Program<'a> {
         let Ident { loc, name } = target;
 
         if self.regs.contains_key(&*name) {
-            return Err((loc, MultipleAssignError(name)));
+            return Err(MultipleAssignError(name).at(loc));
         }
 
         let val = self.eval(value)?;
@@ -243,7 +359,7 @@ impl<'a> Program<'a> {
                     let pkt = Rc::make_mut(&mut ptr);
 
                     wr.write_packet(self.now, pkt)
-                        .map_err(|err| (loc, Error::IoError(err)))?;
+                        .map_err(|err| PcapWrite(err).at(loc))?;
                 };
             }
             Val::PktGen(mut it) => {
@@ -257,7 +373,7 @@ impl<'a> Program<'a> {
 
                     for pkt in inner {
                         wr.write_packet(self.now, pkt)
-                            .map_err(|err| (loc, Error::IoError(err)))?;
+                            .map_err(|err| PcapWrite(err).at(loc))?;
                     }
                 };
             }

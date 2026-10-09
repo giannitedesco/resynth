@@ -2,9 +2,9 @@
 #![allow(clippy::upper_case_acronyms)]
 
 use crate::args::Args;
-use crate::err::Error;
-use crate::err::Error::LibTodo;
 use crate::libapi::{ArgDecl, ClassDef, ClassMap, Documented, FuncDef, Module, SymDesc};
+use crate::program::RuntimeErrorKind;
+use crate::program::RuntimeErrorKind::LibTodo;
 use crate::sym::Symbol;
 use crate::val::{Typed, Val, ValDef, ValType};
 
@@ -15,7 +15,7 @@ use ::std::path::{Path, PathBuf};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde_json::{Map, Value, json};
 
-pub fn unimplemented(mut args: Args) -> Result<Val, Error> {
+pub fn unimplemented(mut args: Args) -> Result<Val, RuntimeErrorKind> {
     args.void();
     Err(LibTodo)
 }

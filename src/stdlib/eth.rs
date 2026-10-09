@@ -3,19 +3,19 @@ use std::net::Ipv4Addr;
 use pkt::Packet;
 use pkt::eth::{BROADCAST, eth_addr, eth_hdr, ethertype};
 
-use crate::err::Error;
 use crate::libapi::{FuncDef, Module};
+use crate::program::RuntimeErrorKind;
 use crate::str::Buf;
 use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 
 const FRAME_OVERHEAD: usize = std::mem::size_of::<eth_hdr>();
 
-fn ether<T: AsRef<[u8]>>(val: T) -> Result<eth_addr, Error> {
+fn ether<T: AsRef<[u8]>>(val: T) -> Result<eth_addr, RuntimeErrorKind> {
     let val = val.as_ref();
 
     if val.len() != 6 {
-        return Err(Error::LibError(
+        return Err(RuntimeErrorKind::LibError(
             format!("ethernet address must be 6 bytes, got {}", val.len()).into(),
         ));
     }

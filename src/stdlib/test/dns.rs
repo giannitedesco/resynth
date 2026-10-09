@@ -1,11 +1,11 @@
 use crate::args::Args;
-use crate::err::Error;
+use crate::program::RuntimeErrorKind;
 use crate::stdlib::dns::DNS_NAME;
 use crate::val::{Val, ValDef};
 
 /// Construct a root name
 #[test]
-fn test_name_root() -> Result<(), Error> {
+fn test_name_root() -> Result<(), RuntimeErrorKind> {
     let ret = (DNS_NAME.exec)(Args::new(None, vec![Val::from(true)], vec![]))?;
 
     let buf: &[u8] = ret.as_ref();
@@ -17,7 +17,7 @@ fn test_name_root() -> Result<(), Error> {
 
 /// Construct an empty name
 #[test]
-fn test_name_nothing() -> Result<(), Error> {
+fn test_name_nothing() -> Result<(), RuntimeErrorKind> {
     let ret = (DNS_NAME.exec)(Args::new(None, vec![Val::from(false)], vec![]))?;
 
     let buf: &[u8] = ret.as_ref();
@@ -29,7 +29,7 @@ fn test_name_nothing() -> Result<(), Error> {
 
 /// Parse a name
 #[test]
-fn test_name_parse() -> Result<(), Error> {
+fn test_name_parse() -> Result<(), RuntimeErrorKind> {
     let ret = (DNS_NAME.exec)(Args::new(
         None,
         vec![Val::from(true)],
@@ -45,7 +45,7 @@ fn test_name_parse() -> Result<(), Error> {
 
 /// Construct a single label
 #[test]
-fn test_single_label() -> Result<(), Error> {
+fn test_single_label() -> Result<(), RuntimeErrorKind> {
     let ret = (DNS_NAME.exec)(Args::new(
         None,
         vec![Val::from(false)],
