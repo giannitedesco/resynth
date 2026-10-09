@@ -19,23 +19,23 @@
 //! ## Compiler Phases
 //! 1. [Lexer] is a hand-written lexer which splits a source file, a line at a time, in to a
 //!    queue of [tokens](Token), decoding identifiers, integers and IP addresses as it goes
-//! 2. [Parser] is a hand-written pushdown parser which takes a token at a time and whenever a
-//!    complete [statement](Stmt) is encountered, the [statement](Stmt) is pushed in to a
-//!    [results vector](Parser::get_results) which can later be [retreived](Parser::get_results)
-//! 3. [Program] maintains the execution state of any given program. It takes one statement at a
-//!    time, and updates the program state based on that. If the program has a [pkt::PcapWriter]
-//!    attached to it, then any generated packets will be written in to the corresponding pcap file
-//!    as they are generated.
+//! 2. [parse::parse] is a recursive descent parser, using Pratt parsing for expressions. It turns
+//!    the whole queue of tokens in to a list of [statements](ast::Stmt) before anything runs
+//! 3. [Program] maintains the execution state of any given program. It [runs](Program::run) one
+//!    statement at a time, and updates the program state based on that. If the program has a
+//!    [pkt::PcapWriter] attached to it, then any generated packets will be written in to the
+//!    corresponding pcap file as they are generated.
 
 #[macro_use]
 mod macros;
 mod args;
+pub mod ast;
 mod err;
 mod lex;
 mod libapi;
 mod loc;
 mod object;
-mod parse;
+pub mod parse;
 mod program;
 mod str;
 mod sym;
@@ -50,5 +50,5 @@ mod test;
 pub use err::Error;
 pub use lex::{LexError, LexErrorKind, Lexer, Tok, Token};
 pub use loc::Loc;
-pub use parse::{Parser, Stmt};
+pub use parse::{ParseError, ParseErrorKind};
 pub use program::Program;

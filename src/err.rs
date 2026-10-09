@@ -13,12 +13,6 @@ pub enum Error {
     #[from]
     IoError(io::Error),
 
-    #[display("Parse Error")]
-    ParseError,
-
-    #[display("Integer literal out of range")]
-    IntLiteralError,
-
     #[display("Import Error: Unknown Module {:?}", _0)]
     #[error(ignore)]
     ImportError(Box<str>),
@@ -52,10 +46,6 @@ pub enum Error {
     #[display("{:?} is not a value", _0)]
     #[error(ignore)]
     NotAValue(Box<str>),
-
-    #[display("Too many components in reference {:?}", _0)]
-    #[error(ignore)]
-    TooManyComponents(Box<str>),
 
     #[display("Value of type {} is not callable", _0)]
     #[error(ignore)]
@@ -112,8 +102,6 @@ impl PartialEq for Error {
         use Error::*;
         match (self, other) {
             (IoError(a), IoError(b)) => a.kind() == b.kind(),
-            (ParseError, ParseError) => true,
-            (IntLiteralError, IntLiteralError) => true,
             (ImportError(a), ImportError(b)) => a == b,
             (NameError(a), NameError(b)) => a == b,
             (TypeError, TypeError) => true,
@@ -123,7 +111,6 @@ impl PartialEq for Error {
             (NotImported(a), NotImported(b)) => a == b,
             (NotAModule(a), NotAModule(b)) => a == b,
             (NotAValue(a), NotAValue(b)) => a == b,
-            (TooManyComponents(a), TooManyComponents(b)) => a == b,
             (
                 TooManyArgs {
                     func: f1,

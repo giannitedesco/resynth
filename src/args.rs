@@ -1,5 +1,4 @@
 use crate::object::ObjRef;
-use crate::parse::Expr;
 use crate::str::Buf;
 use crate::val::{Val, ValDef};
 
@@ -114,18 +113,6 @@ impl Drop for Args {
             self.extra_args.is_empty(),
             "Function didn't consume extra args"
         );
-    }
-}
-
-#[derive(Debug)]
-pub struct ArgExpr {
-    pub name: Option<String>,
-    pub expr: Expr,
-}
-
-impl ArgExpr {
-    pub fn new(name: Option<String>, expr: Expr) -> Self {
-        Self { name, expr }
     }
 }
 

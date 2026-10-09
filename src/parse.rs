@@ -1,901 +1,396 @@
-use crate::args::ArgExpr;
-use crate::err::Error;
-use crate::err::Error::ParseError;
+//! A recursive descent parser, using Pratt parsing for expressions.
+//!
+//! ```ebnf
+//! program  = { stmt } EOF ;
+//! stmt     = "import" IDENT ";"
+//!          | "let" IDENT "=" expr ";"
+//!          | expr ";" ;
+//! expr     = postfix { "/" postfix } ;
+//! postfix  = primary { "." IDENT | "(" [ args ] ")" } ;
+//! primary  = literal
+//!          | IPV4 [ ":" DEC ]
+//!          | IDENT "::" IDENT { "::" IDENT }
+//!          | IDENT ;
+//! literal  = STRING | BOOL | HEX | DEC ;
+//! args     = arg { "," arg } [ "," ] ;
+//! arg      = [ IDENT ":" ] expr ;
+//! ```
+
+use std::collections::VecDeque;
+use std::fmt;
+use std::net::SocketAddrV4;
+
+use derive_more::{Display, Error};
+
+use crate::ast::{Arg, BinOp, Expr, ExprKind, Ident, Lit, ModulePath, Stmt};
 use crate::lex::{Tok, Token};
 use crate::loc::Loc;
-use crate::val::Val;
 
-use std::net::{Ipv4Addr, SocketAddrV4};
-
-#[derive(Debug)]
-pub struct ObjectRef {
+/// Why the tokens could not be parsed, and where
+#[derive(Debug, Display, Error, Clone, PartialEq, Eq)]
+#[display("{loc}: {kind}")]
+pub struct ParseError {
     pub loc: Loc,
-    pub modules: Box<[String]>,
-    pub components: Box<[String]>,
+    pub kind: ParseErrorKind,
 }
 
+/// What is wrong with the tokens
+#[derive(Debug, Display, Error, Clone, PartialEq, Eq)]
+pub enum ParseErrorKind {
+    #[display("expected {}, found {found}", Expected(expected))]
+    #[error(ignore)]
+    UnexpectedToken {
+        /// Every token or category that would have been valid, in the order the parser tries them
+        expected: Box<[&'static str]>,
+        found: Tok,
+    },
+
+    /// An integer literal greater than `u64::MAX`, or a port greater than `u16::MAX`
+    #[display("integer literal out of range")]
+    IntOutOfRange,
+}
+
+impl ParseErrorKind {
+    /// This error, at `loc`
+    pub(crate) fn at(self, loc: Loc) -> ParseError {
+        ParseError { loc, kind: self }
+    }
+}
+
+/// Displays the tokens a parser expected: `` `;` `` for one, and `` one of `(`, `.` or `;` `` for
+/// several.
+struct Expected<'a>(&'a [&'static str]);
+
+impl fmt::Display for Expected<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            [] => f.write_str("nothing"),
+            [one] => f.write_str(one),
+            [first, middle @ .., last] => {
+                write!(f, "one of {first}")?;
+                for entry in middle {
+                    write!(f, ", {entry}")?;
+                }
+                write!(f, " or {last}")
+            }
+        }
+    }
+}
+
+type Result<T> = std::result::Result<T, ParseError>;
+
+/// Parse a whole program. `toks` must end with a single [Tok::Eof], as [Lexer::lex] returns.
+///
+/// Stops at the first error.
+///
+/// [Lexer::lex]: crate::Lexer::lex
+pub fn parse(toks: VecDeque<Token>) -> Result<Vec<Stmt>> {
+    Parser {
+        toks,
+        expected: DedupeVec::default(),
+    }
+    .program()
+}
+
+/// A list built with duplicates, which drops them when it's finished
 #[derive(Debug)]
-pub struct Call {
-    pub obj: ObjectRef,
-    pub args: Vec<ArgExpr>,
-}
+struct DedupeVec<T>(Vec<T>);
 
-#[derive(Debug, Default)]
-pub enum Expr {
-    #[default]
-    Nil,
-
-    Literal(Loc, Val),
-    ObjectRef(ObjectRef), // ObjectRef contains loc
-    Call(Call),           // Call contains obj which contains loc
-
-    /* Binary operators */
-    Slash(Box<Expr>, Box<Expr>),
-}
-
-#[derive(Debug)]
-pub struct Import {
-    pub loc: Loc,
-    pub module: String,
-}
-
-#[derive(Debug)]
-pub struct Assign {
-    pub loc: Loc,
-    pub target: String,
-    pub rvalue: Expr,
-}
-
-/// A complete statement of the resynth language
-#[derive(Debug)]
-pub enum Stmt {
-    //Nop,
-    Import(Import),
-    Assign(Assign),
-    Expr(Expr),
-}
-
-#[derive(Debug, Copy, Clone, Default)]
-enum State {
-    #[default]
-    Initial,
-
-    Import,
-    ImportEnd,
-    ReduceImport,
-
-    Let,
-    Assign,
-
-    RefComponent,
-    ReduceModule,
-    RefModule,
-    ReduceObject,
-    ReduceRefCall,
-    ReduceRefNaked,
-    RefObject,
-    RefObjEnd,
-
-    ReduceCall,
-
-    ReduceArg,
-    ArgNext,
-
-    ExprArg,
-    ArgName,
-    ArgVal,
-    ExprStmt,
-    Expr,
-    ExprRvalue,
-
-    IPv4,
-    IPv4Colon,
-
-    ReduceLiteralExpr,
-    ReduceRefExpr,
-    ReduceCallExpr,
-    Slash,
-    ReduceExpr,
-    ReduceSockAddr,
-
-    ExprStmtEnd,
-    AssignStmtEnd,
-    ReduceBop,
-
-    ReduceAssign,
-
-    ReduceExprStmt,
-    ReduceAssignStmt,
-
-    ReduceStmt,
-
-    Accept,
-}
-
-#[derive(Debug)]
-struct PathBuilder {
-    loc: Loc,
-    module: Vec<String>,
-    object: Vec<String>,
-}
-
-impl PathBuilder {
-    pub fn new(loc: Loc) -> Self {
-        Self {
-            loc,
-            module: Vec::new(),
-            object: Vec::new(),
-        }
+impl<T> Default for DedupeVec<T> {
+    fn default() -> Self {
+        Self(Vec::new())
     }
 }
 
-#[derive(Debug)]
-enum Node {
-    State(State),
+impl<T: PartialEq> DedupeVec<T> {
+    fn push(&mut self, item: T) {
+        self.0.push(item);
+    }
 
-    Literal(Val),
+    fn clear(&mut self) {
+        self.0.clear();
+    }
 
-    Module(String),
-    AssignTo(String),
-    Component(String),
-
-    ArgName(Option<String>),
-    ArgList(Vec<ArgExpr>),
-
-    Path(PathBuilder),
-
-    Object(ObjectRef),
-
-    Expr(Expr),
-    Assign(Assign),
-    Call(Call),
-
-    Stmt(Stmt),
-
-    Loc(Loc),
-
-    Slash,
-}
-
-impl From<Node> for Loc {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Loc(loc) => loc,
-            _ => unreachable!(),
+    /// The items in the order they were first pushed, without duplicates
+    fn into_vec(self) -> Vec<T> {
+        let mut out = Vec::with_capacity(self.0.len());
+        for item in self.0 {
+            if !out.contains(&item) {
+                out.push(item);
+            }
         }
+        out
     }
 }
 
-impl From<Node> for State {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::State(s) => s,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for u16 {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Literal(Val::U64(u)) => u as u16,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Ipv4Addr {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Literal(Val::Ip4(addr)) => addr,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for String {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Module(s) => s,
-            Node::AssignTo(s) => s,
-            Node::Component(s) => s,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Option<String> {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::ArgName(s) => s,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Vec<ArgExpr> {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::ArgList(list) => list,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Val {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Literal(val) => val,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Expr {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Expr(expr) => expr,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Box<Expr> {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Expr(expr) => Box::new(expr),
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for PathBuilder {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Path(p) => p,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for ObjectRef {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Object(obj) => obj,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Call {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Call(c) => c,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Assign {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Assign(a) => a,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl From<Node> for Stmt {
-    fn from(node: Node) -> Self {
-        match node {
-            Node::Stmt(stmt) => stmt,
-            _ => unreachable!(),
-        }
-    }
-}
-
-/// A hand-written LR-parser which [takes a token at a time](Parser::feed) and whenever a complete
-/// [statement](Stmt) is encountered, the [statement](Stmt) is pushed in to a [results
-/// vector](Parser::get_results) which can later be retreived with [Parser::get_results]. Each type
-/// of statement which is produced contains a [line number and column number](Loc) which allows any
-/// error mesages to locate themselves within the source file.
-#[derive(Default)]
-pub struct Parser {
-    state: State,
-    stack: Vec<Node>,
-
-    stmts: Vec<Stmt>,
-}
-
-enum Action {
-    Discard(State),
-    Shift(State, Node),
-    Goto(State),
-    Accept,
+/// Invariant: the queue ends with [Tok::Eof], which is only taken when reporting an error. After
+/// an error the parser is not used again.
+///
+/// # Expected tokens
+///
+/// When a parse error lists every token that would have been valid (see
+/// [ParseErrorKind::UnexpectedToken]), the list comes from `expected`. Every test of the next
+/// token that fails records what it was looking for, and taking a token clears the list. So at an
+/// error, `expected` holds everything tried at that position, by every rule still on the stack, in
+/// the order they were tried.
+///
+/// This only works if every test of the next token goes through a recording helper: [Parser::check],
+/// [Parser::eat], [Parser::expect], [Parser::check_expr_start] or [Parser::take_matching]. A
+/// bare [Parser::peek] in a decision silently drops its token from messages.
+struct Parser {
+    toks: VecDeque<Token>,
+    expected: DedupeVec<&'static str>,
 }
 
 impl Parser {
-    fn push(&mut self, item: Node) {
-        self.stack.push(item);
+    /// Binding power of the postfix operators, `.` and `(`, which bind tightest
+    const POSTFIX_BP: u8 = 30;
+
+    fn peek(&self) -> &Tok {
+        self.toks
+            .front()
+            .expect("the token queue ends with Eof")
+            .tok()
     }
 
-    fn push_goto(&mut self, st: State) {
-        self.stack.push(Node::State(st));
+    /// Take the next token, and clear the expected list. Only call this after a recording helper
+    /// has matched a token other than [Tok::Eof], or when reporting an error.
+    fn take(&mut self) -> Token {
+        self.expected.clear();
+        self.toks
+            .pop_front()
+            .expect("the token queue ends with Eof")
     }
 
-    fn pop(&mut self) -> Node {
-        self.stack.pop().unwrap()
+    /// Whether the next token is `want`. If not, records `label` as expected.
+    fn check(&mut self, want: &Tok, label: &'static str) -> bool {
+        let found = self.peek() == want;
+        if !found {
+            self.expected.push(label);
+        }
+        found
     }
 
-    fn reduce_module(&mut self) {
-        let component: String = self.pop().into();
-        let mut builder: PathBuilder = self.pop().into();
-
-        //println!("{:?} -> module {:?}", builder, component);
-
-        builder.module.push(component);
-        self.push(Node::Path(builder));
+    /// Take the next token if it's `want`. If not, records `label` as expected.
+    fn eat(&mut self, want: &Tok, label: &'static str) -> bool {
+        let found = self.check(want, label);
+        if found {
+            self.take();
+        }
+        found
     }
 
-    fn reduce_object(&mut self) {
-        let component: String = self.pop().into();
-        let mut builder: PathBuilder = self.pop().into();
-
-        //println!("{:?} -> object {:?}", builder, component);
-
-        builder.object.push(component);
-        self.push(Node::Path(builder));
+    fn expect(&mut self, want: &Tok, label: &'static str) -> Result<()> {
+        if self.eat(want, label) {
+            Ok(())
+        } else {
+            Err(self.unexpected())
+        }
     }
 
-    fn reduce_ref(&mut self) {
-        self.reduce_object();
+    /// Take the next token if `matches` accepts it. If not, records `label` as expected and fails.
+    fn take_matching(&mut self, label: &'static str, matches: fn(&Tok) -> bool) -> Result<Token> {
+        if matches(self.peek()) {
+            Ok(self.take())
+        } else {
+            self.expected.push(label);
+            Err(self.unexpected())
+        }
+    }
 
-        let builder: PathBuilder = self.pop().into();
+    /// Whether the next token can start an expression. If not, records `expression` as expected.
+    fn check_expr_start(&mut self) -> bool {
+        let found = matches!(
+            self.peek(),
+            Tok::Identifier(_)
+                | Tok::BooleanLiteral(_)
+                | Tok::IPv4Literal(_)
+                | Tok::StringLiteral(_)
+                | Tok::HexLiteral(_)
+                | Tok::DecLiteral(_)
+        );
+        if !found {
+            self.expected.push("expression");
+        }
+        found
+    }
 
-        let obj = ObjectRef {
-            loc: builder.loc,
-            modules: builder.module.into_boxed_slice(),
-            components: builder.object.into_boxed_slice(),
+    /// Take the next token as the `found` of an error, with everything expected at its position
+    fn unexpected(&mut self) -> ParseError {
+        let expected = std::mem::take(&mut self.expected).into_vec().into();
+        let (loc, found) = self.take().into_parts();
+        ParseErrorKind::UnexpectedToken { expected, found }.at(loc)
+    }
+
+    fn ident(&mut self) -> Result<Ident> {
+        let (loc, tok) = self
+            .take_matching("identifier", |tok| matches!(tok, Tok::Identifier(_)))?
+            .into_parts();
+        let Tok::Identifier(name) = tok else {
+            unreachable!("take_matching only takes an identifier");
         };
-
-        //println!("push: completed object reference {:?}", obj);
-        self.push(Node::Object(obj));
+        Ok(Ident { loc, name })
     }
 
-    fn reduce_sockaddr(&mut self) {
-        let port = self.pop();
-        let _ = self.pop();
-        let addr = self.pop();
-        let loc = self.pop();
-
-        //println!("reduce sockaddr: {:?} {:?}", addr, port);
-
-        let val = Val::from(SocketAddrV4::new(addr.into(), port.into()));
-        self.push(loc);
-        self.push(Node::Literal(val));
+    /// Take an infix operator that binds at least as tightly as `min_bp`. Returns the operator
+    /// and its right binding power.
+    fn eat_infix(&mut self, min_bp: u8) -> Option<(BinOp, u8)> {
+        // Left binding power 10, right 11: left associative
+        if 10 >= min_bp && self.eat(&Tok::Slash, "`/`") {
+            return Some((BinOp::Slash, 11));
+        }
+        None
     }
 
-    fn reduce_literal_expr(&mut self) {
-        let lit = self.pop();
-        let loc = self.pop();
-        self.push(Node::Expr(Expr::Literal(loc.into(), lit.into())));
+    fn program(mut self) -> Result<Vec<Stmt>> {
+        let mut stmts = Vec::new();
+        while !self.check(&Tok::Eof, "eof") {
+            stmts.push(self.stmt()?);
+        }
+        Ok(stmts)
     }
 
-    fn reduce_ref_expr(&mut self) {
-        let obj = self.pop();
-        self.push(Node::Expr(Expr::ObjectRef(obj.into())));
-    }
-
-    fn reduce_call_expr(&mut self) {
-        let call = self.pop();
-        self.push(Node::Expr(Expr::Call(call.into())));
-    }
-
-    fn reduce_bop_expr(&mut self) {
-        let b = self.pop();
-        let op = self.pop();
-        let a = self.pop();
-
-        let expr = match op {
-            Node::Slash => Expr::Slash(a.into(), b.into()),
-            _ => unreachable!(),
-        };
-
-        self.push(Node::Expr(expr));
-    }
-
-    fn reduce_arg(&mut self) {
-        let arg = self.pop();
-        let arg_name = self.pop();
-        let def = ArgExpr::new(arg_name.into(), arg.into());
-
-        let mut list: Vec<ArgExpr> = self.pop().into();
-
-        //println!("reduce arg: {:?} + {:?}", list, def);
-
-        list.push(def);
-        self.push(Node::ArgList(list));
-    }
-
-    fn reduce_call(&mut self) {
-        let args: Vec<ArgExpr> = self.pop().into();
-        let obj = self.pop();
-
-        let call = Call {
-            obj: obj.into(),
-            args,
-        };
-
-        //println!("reduce call: {:?}", call);
-        self.push(Node::Call(call));
-    }
-
-    fn reduce_assign(&mut self) {
-        let call = self.pop();
-        let target = self.pop();
-        let loc = self.pop();
-
-        let assign = Assign {
-            loc: loc.into(),
-            target: target.into(),
-            rvalue: call.into(),
-        };
-
-        //println!("reduce assign: {:?}", assign);
-        self.push(Node::Assign(assign));
-    }
-
-    fn reduce_expr_stmt(&mut self) {
-        let expr = self.pop();
-
-        //println!("reduce expr stmt: {:?}", expr);
-        self.push(Node::Stmt(Stmt::Expr(expr.into())));
-    }
-
-    fn reduce_assign_stmt(&mut self) {
-        let assign = self.pop();
-
-        //println!("reduce assign stmt: {:?}", assign);
-        self.push(Node::Stmt(Stmt::Assign(assign.into())));
-    }
-
-    fn reduce_import_stmt(&mut self) {
-        let module = self.pop();
-        let loc = self.pop();
-
-        let import = Import {
-            loc: loc.into(),
-            module: module.into(),
-        };
-
-        //println!("reduce import stmt: {:?}", import);
-        self.push(Node::Stmt(Stmt::Import(import)));
-    }
-
-    fn reduce_stmt(&mut self) {
-        let stmt = self.pop();
-        self.stmts.push(stmt.into());
-    }
-
-    fn state_initial(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::ImportKeyword => Ok(Action::Discard(State::Import)),
-            Tok::LetKeyword => Ok(Action::Discard(State::Let)),
-            Tok::Identifier(_) => Ok(Action::Goto(State::ExprStmt)),
-            Tok::Eof => Ok(Action::Accept),
-            _ => Err(ParseError),
+    fn stmt(&mut self) -> Result<Stmt> {
+        if self.eat(&Tok::ImportKeyword, "`import`") {
+            let module = self.ident()?;
+            self.expect(&Tok::SemiColon, "`;`")?;
+            Ok(Stmt::Import(module))
+        } else if self.eat(&Tok::LetKeyword, "`let`") {
+            let target = self.ident()?;
+            self.expect(&Tok::Equals, "`=`")?;
+            let value = self.expr(0)?;
+            self.expect(&Tok::SemiColon, "`;`")?;
+            Ok(Stmt::Let { target, value })
+        } else if self.check_expr_start() {
+            let expr = self.expr(0)?;
+            self.expect(&Tok::SemiColon, "`;`")?;
+            Ok(Stmt::Expr(expr))
+        } else {
+            Err(self.unexpected())
         }
     }
 
-    fn state_import(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::Identifier(name) => {
-                self.push(Node::Loc(tok.loc()));
-                Ok(Action::Shift(
-                    State::ImportEnd,
-                    Node::Module(name.to_string()),
-                ))
-            }
-            _ => Err(ParseError),
-        }
-    }
+    fn expr(&mut self, min_bp: u8) -> Result<Expr> {
+        let mut lhs = self.primary()?;
 
-    fn state_import_end(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::SemiColon => Ok(Action::Discard(State::ReduceImport)),
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_reduce_import(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_import_stmt();
-        Ok(Action::Goto(State::ReduceStmt))
-    }
-
-    fn state_let(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::Identifier(name) => {
-                self.push(Node::Loc(tok.loc()));
-                Ok(Action::Shift(
-                    State::Assign,
-                    Node::AssignTo(name.to_string()),
-                ))
-            }
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_assign(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::Equals => Ok(Action::Discard(State::ExprRvalue)),
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_ref_component(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::DoubleColon => Ok(Action::Discard(State::ReduceModule)),
-            Tok::Dot => Ok(Action::Discard(State::ReduceObject)),
-            Tok::LParen => Ok(Action::Discard(State::ReduceRefCall)),
-            _ => Ok(Action::Goto(State::ReduceRefNaked)),
-        }
-    }
-
-    fn state_reduce_object(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_object();
-        Ok(Action::Goto(State::RefObject))
-    }
-
-    fn state_reduce_ref_call(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_ref();
-        self.push(Node::ArgList(Vec::new()));
-        Ok(Action::Goto(State::ExprArg))
-    }
-
-    fn state_reduce_ref_naked(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_ref();
-        Ok(Action::Goto(State::ReduceRefExpr))
-    }
-
-    fn state_reduce_module(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_module();
-        Ok(Action::Goto(State::RefModule))
-    }
-
-    fn state_ref_module(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::Identifier(name) => Ok(Action::Shift(
-                State::RefComponent,
-                Node::Component(name.to_string()),
-            )),
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_ref_object(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::Identifier(name) => Ok(Action::Shift(
-                State::RefObjEnd,
-                Node::Component(name.to_string()),
-            )),
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_ref_obj_end(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok() {
-            Tok::Dot => Action::Discard(State::ReduceObject),
-            Tok::LParen => Action::Discard(State::ReduceRefCall),
-            _ => Action::Goto(State::ReduceRefNaked),
-        })
-    }
-
-    fn state_arg_next(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::Comma => Ok(Action::Discard(State::ExprArg)),
-            Tok::RParen => Ok(Action::Shift(
-                State::ReduceCall,
-                Node::State(State::ReduceArg),
-            )),
-            _ => Err(ParseError),
-        }
-    }
-
-    #[inline(always)]
-    fn push_literal(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::StringLiteral(_)
-            | Tok::BooleanLiteral(_)
-            | Tok::HexLiteral(_)
-            | Tok::DecLiteral(_) => {
-                self.push(Node::Loc(tok.loc()));
-                Ok(Action::Shift(
-                    State::ReduceLiteralExpr,
-                    Node::Literal(Val::from_tok(tok.tok())?),
-                ))
-            }
-            Tok::IPv4Literal(_) => {
-                self.push(Node::Loc(tok.loc()));
-                Ok(Action::Shift(
-                    State::IPv4,
-                    Node::Literal(Val::from_tok(tok.tok())?),
-                ))
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    fn state_expr_arg(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok() {
-            Tok::Identifier(name) => {
-                Action::Shift(State::ArgName, Node::ArgName(Some(name.to_string())))
-            }
-            _ => {
-                self.push(Node::ArgName(None));
-                Action::Goto(State::ArgVal)
-            }
-        })
-    }
-
-    fn state_arg_name(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok() {
-            Tok::Colon => Action::Discard(State::ArgVal),
-            _ => {
-                let component: Option<String> = self.pop().into();
-                self.push(Node::ArgName(None));
-                self.push_goto(State::ReduceArg);
-                self.push(Node::Path(PathBuilder::new(tok.loc())));
-                self.push(Node::Component(component.unwrap()));
-                Action::Goto(State::RefComponent)
-            }
-        })
-    }
-
-    fn state_arg_val(&mut self, tok: &Token) -> Result<Action, Error> {
-        self.push_goto(State::ReduceArg);
-        match tok.tok() {
-            Tok::Identifier(name) => {
-                self.push(Node::Path(PathBuilder::new(tok.loc())));
-                Ok(Action::Shift(
-                    State::RefComponent,
-                    Node::Component(name.to_string()),
-                ))
-            }
-            Tok::StringLiteral(_)
-            | Tok::BooleanLiteral(_)
-            | Tok::HexLiteral(_)
-            | Tok::DecLiteral(_)
-            | Tok::IPv4Literal(_) => Ok(self.push_literal(tok)?),
-            Tok::RParen => {
-                let st = self.pop();
-                let _ = self.pop();
-                self.push(st);
-                Ok(Action::Discard(State::ReduceCall))
-            }
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_expr_stmt(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.push_goto(State::ExprStmtEnd);
-        Ok(Action::Goto(State::Expr))
-    }
-
-    fn state_expr(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::Identifier(name) => {
-                self.push(Node::Path(PathBuilder::new(tok.loc())));
-                Ok(Action::Shift(
-                    State::RefComponent,
-                    Node::Component(name.to_string()),
-                ))
-            }
-            Tok::StringLiteral(_)
-            | Tok::BooleanLiteral(_)
-            | Tok::HexLiteral(_)
-            | Tok::DecLiteral(_)
-            | Tok::IPv4Literal(_) => Ok(self.push_literal(tok)?),
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_expr_rvalue(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.push_goto(State::AssignStmtEnd);
-        Ok(Action::Goto(State::Expr))
-    }
-
-    fn state_ipv4(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok() {
-            Tok::Colon => Action::Discard(State::IPv4Colon),
-            _ => Action::Goto(State::ReduceLiteralExpr),
-        })
-    }
-
-    fn state_ipv4_colon(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::DecLiteral(_) => {
-                self.push(Node::Loc(tok.loc()));
-                Ok(Action::Shift(
-                    State::ReduceSockAddr,
-                    Node::Literal(Val::from_tok(tok.tok())?),
-                ))
-            }
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_reduce_arg(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_arg();
-        Ok(Action::Goto(State::ArgNext))
-    }
-
-    fn state_reduce_literal_expr(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_literal_expr();
-        Ok(Action::Goto(State::Slash))
-    }
-
-    fn state_reduce_ref_expr(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_ref_expr();
-        Ok(Action::Goto(State::Slash))
-    }
-
-    fn state_reduce_call_expr(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_call_expr();
-        Ok(Action::Goto(State::Slash))
-    }
-
-    fn state_slash(&mut self, tok: &Token) -> Result<Action, Error> {
-        Ok(match tok.tok() {
-            Tok::Slash => {
-                self.push(Node::Slash);
-                self.push_goto(State::ReduceBop);
-                Action::Discard(State::Expr)
-            }
-            _ => Action::Goto(State::ReduceExpr),
-        })
-    }
-
-    fn state_reduce_expr(&mut self, _tok: &Token) -> Result<Action, Error> {
-        let expr = self.pop();
-        let st = self.pop();
-        self.push(expr);
-        Ok(Action::Goto(st.into()))
-    }
-
-    fn state_reduce_sockaddr(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_sockaddr();
-        Ok(Action::Goto(State::ReduceLiteralExpr))
-    }
-
-    fn state_reduce_call(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.pop(); // state for next arg
-        self.reduce_call();
-        Ok(Action::Goto(State::ReduceCallExpr))
-    }
-
-    fn state_expr_stmt_end(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::SemiColon => Ok(Action::Discard(State::ReduceExprStmt)),
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_assign_stmt_end(&mut self, tok: &Token) -> Result<Action, Error> {
-        match tok.tok() {
-            Tok::SemiColon => Ok(Action::Discard(State::ReduceAssign)),
-            _ => Err(ParseError),
-        }
-    }
-
-    fn state_reduce_bop(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_bop_expr();
-        Ok(Action::Goto(State::ReduceExpr))
-    }
-
-    fn state_reduce_assign(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_assign();
-        Ok(Action::Goto(State::ReduceAssignStmt))
-    }
-
-    fn state_reduce_expr_stmt(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_expr_stmt();
-        Ok(Action::Goto(State::ReduceStmt))
-    }
-
-    fn state_reduce_assign_stmt(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_assign_stmt();
-        Ok(Action::Goto(State::ReduceStmt))
-    }
-
-    fn state_reduce_stmt(&mut self, _tok: &Token) -> Result<Action, Error> {
-        self.reduce_stmt();
-        Ok(Action::Goto(State::Initial))
-    }
-
-    fn dispatch(&mut self, tok: &Token) -> Result<Action, Error> {
-        //println!("{:<24} {:?}", format!("State::{:?}", self.state), tok.tok());
-        match self.state {
-            State::Initial => self.state_initial(tok),
-            State::Import => self.state_import(tok),
-            State::ImportEnd => self.state_import_end(tok),
-            State::ReduceImport => self.state_reduce_import(tok),
-
-            State::Let => self.state_let(tok),
-            State::Assign => self.state_assign(tok),
-
-            State::RefComponent => self.state_ref_component(tok),
-            State::ReduceModule => self.state_reduce_module(tok),
-            State::RefModule => self.state_ref_module(tok),
-            State::ReduceObject => self.state_reduce_object(tok),
-            State::ReduceRefCall => self.state_reduce_ref_call(tok),
-            State::ReduceRefNaked => self.state_reduce_ref_naked(tok),
-            State::RefObject => self.state_ref_object(tok),
-            State::RefObjEnd => self.state_ref_obj_end(tok),
-
-            State::ReduceArg => self.state_reduce_arg(tok),
-            State::ArgNext => self.state_arg_next(tok),
-            State::ReduceCall => self.state_reduce_call(tok),
-
-            State::ExprArg => self.state_expr_arg(tok),
-            State::ArgName => self.state_arg_name(tok),
-            State::ArgVal => self.state_arg_val(tok),
-            State::ExprStmt => self.state_expr_stmt(tok),
-            State::Expr => self.state_expr(tok),
-            State::ExprRvalue => self.state_expr_rvalue(tok),
-
-            State::IPv4 => self.state_ipv4(tok),
-            State::IPv4Colon => self.state_ipv4_colon(tok),
-
-            State::ReduceLiteralExpr => self.state_reduce_literal_expr(tok),
-            State::ReduceRefExpr => self.state_reduce_ref_expr(tok),
-            State::ReduceCallExpr => self.state_reduce_call_expr(tok),
-            State::Slash => self.state_slash(tok),
-            State::ReduceExpr => self.state_reduce_expr(tok),
-            State::ReduceSockAddr => self.state_reduce_sockaddr(tok),
-
-            State::ExprStmtEnd => self.state_expr_stmt_end(tok),
-            State::AssignStmtEnd => self.state_assign_stmt_end(tok),
-            State::ReduceBop => self.state_reduce_bop(tok),
-
-            State::ReduceAssign => self.state_reduce_assign(tok),
-
-            State::ReduceExprStmt => self.state_reduce_expr_stmt(tok),
-            State::ReduceAssignStmt => self.state_reduce_assign_stmt(tok),
-
-            State::ReduceStmt => self.state_reduce_stmt(tok),
-
-            State::Accept => Err(ParseError),
-            //_ => Err(ParseError),
-        }
-    }
-
-    pub fn feed(&mut self, tok: &Token) -> Result<(), Error> {
         loop {
-            let action = self.dispatch(tok)?;
-            match action {
-                Action::Discard(st) => {
-                    self.state = st;
-                    //println!("");
+            let loc = lhs.loc;
+            let kind = if Self::POSTFIX_BP >= min_bp && self.eat(&Tok::LParen, "`(`") {
+                ExprKind::Call {
+                    callee: Box::new(lhs),
+                    args: self.args()?,
                 }
-                Action::Shift(st, frag) => {
-                    self.push(frag);
-                    self.state = st;
-                    //println!("");
+            } else if Self::POSTFIX_BP >= min_bp && self.eat(&Tok::Dot, "`.`") {
+                ExprKind::Member {
+                    obj: Box::new(lhs),
+                    name: self.ident()?,
                 }
-                Action::Goto(st) => {
-                    self.state = st;
-                    continue;
+            } else if let Some((op, r_bp)) = self.eat_infix(min_bp) {
+                ExprKind::Binary {
+                    op,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(self.expr(r_bp)?),
                 }
-                Action::Accept => {
-                    self.state = State::Accept;
-                    //println!("");
-                }
+            } else {
+                break;
             };
-            return Ok(());
+            lhs = Expr { loc, kind };
         }
+
+        Ok(lhs)
     }
 
-    pub fn get_results(&mut self) -> Vec<Stmt> {
-        std::mem::take(&mut self.stmts)
+    fn primary(&mut self) -> Result<Expr> {
+        if !self.check_expr_start() {
+            return Err(self.unexpected());
+        }
+        let (loc, tok) = self.take().into_parts();
+
+        let kind = match tok {
+            Tok::BooleanLiteral(b) => ExprKind::Literal(Lit::Bool(b)),
+            Tok::StringLiteral(buf) => ExprKind::Literal(Lit::Str(buf)),
+            Tok::HexLiteral(i) | Tok::DecLiteral(i) => {
+                let i = u64::try_from(i).map_err(|_| ParseErrorKind::IntOutOfRange.at(loc))?;
+                ExprKind::Literal(Lit::Int(i))
+            }
+            Tok::IPv4Literal(addr) if self.eat(&Tok::Colon, "`:`") => {
+                ExprKind::Literal(Lit::Sock4(SocketAddrV4::new(addr, self.port()?)))
+            }
+            Tok::IPv4Literal(addr) => ExprKind::Literal(Lit::Ip4(addr)),
+            Tok::Identifier(name) if self.check(&Tok::DoubleColon, "`::`") => {
+                ExprKind::ModulePath(Box::new(self.module_path(Ident { loc, name })?))
+            }
+            Tok::Identifier(name) => ExprKind::LocalRef(Ident { loc, name }),
+            _ => unreachable!("check_expr_start only accepts the tokens above"),
+        };
+
+        Ok(Expr { loc, kind })
+    }
+
+    /// The port after `ip:`, which is decimal and must fit in a `u16`
+    fn port(&mut self) -> Result<u16> {
+        let (loc, tok) = self
+            .take_matching("decimal port", |tok| matches!(tok, Tok::DecLiteral(_)))?
+            .into_parts();
+        let Tok::DecLiteral(port) = tok else {
+            unreachable!("take_matching only takes a decimal literal");
+        };
+        u16::try_from(port).map_err(|_| ParseErrorKind::IntOutOfRange.at(loc))
+    }
+
+    /// The rest of a module path, after its first segment. The next token is `::`.
+    fn module_path(&mut self, module: Ident) -> Result<ModulePath> {
+        let mut segs = Vec::new();
+        while self.eat(&Tok::DoubleColon, "`::`") {
+            segs.push(self.ident()?);
+        }
+
+        let item = segs.pop().expect("a module path has at least two segments");
+        Ok(ModulePath {
+            module,
+            inner: segs.into(),
+            item,
+        })
+    }
+
+    /// The arguments of a call, after the `(`, and the closing `)`
+    fn args(&mut self) -> Result<Box<[Arg]>> {
+        let mut args = Vec::new();
+
+        loop {
+            if self.check_expr_start() {
+                args.push(self.arg()?);
+            } else if self.eat(&Tok::RParen, "`)`") {
+                break;
+            } else {
+                return Err(self.unexpected());
+            }
+
+            if self.eat(&Tok::Comma, "`,`") {
+                continue;
+            } else if self.eat(&Tok::RParen, "`)`") {
+                break;
+            } else {
+                return Err(self.unexpected());
+            }
+        }
+
+        Ok(args.into())
+    }
+
+    /// An argument. A positional argument that is a lone identifier becomes the name of a named
+    /// argument if `:` follows it.
+    fn arg(&mut self) -> Result<Arg> {
+        let Expr { loc, kind } = self.expr(0)?;
+        match kind {
+            ExprKind::LocalRef(name) if self.eat(&Tok::Colon, "`:`") => Ok(Arg {
+                name: Some(name),
+                value: self.expr(0)?,
+            }),
+            kind => Ok(Arg {
+                name: None,
+                value: Expr { loc, kind },
+            }),
+        }
     }
 }

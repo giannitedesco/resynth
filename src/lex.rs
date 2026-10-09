@@ -8,32 +8,53 @@ use crate::loc::Loc;
 use crate::str::{Buf, StringLiteralErrorKind};
 
 /// A token of the resynth language. Literals carry their decoded values.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// Its [Display](std::fmt::Display) is for diagnostics. A string literal's decoded bytes are not
+/// re-encoded, and integers print their value, not their source text.
+#[derive(Debug, Display, Clone, PartialEq, Eq)]
 pub enum Tok {
     /// At the start of the line after the last, so its line is one more than the number of lines
+    #[display("eof")]
     Eof,
 
+    #[display("`(`")]
     LParen,
+    #[display("`)`")]
     RParen,
+    #[display("`.`")]
     Dot,
+    #[display("`::`")]
     DoubleColon,
+    #[display("`:`")]
     Colon,
+    #[display("`;`")]
     SemiColon,
+    #[display("`=`")]
     Equals,
+    #[display("`,`")]
     Comma,
+    #[display("`/`")]
     Slash,
 
+    #[display("`import`")]
     ImportKeyword,
+    #[display("`let`")]
     LetKeyword,
 
+    #[display("`{_0}`")]
     Identifier(Box<str>),
+    #[display("`{_0}`")]
     BooleanLiteral(bool),
+    #[display("`{_0}`")]
     IPv4Literal(Ipv4Addr),
     /// The decoded bytes of one or more adjacent string literals, joined
+    #[display("string literal")]
     StringLiteral(Buf),
     /// In `0..=i128::MAX`
+    #[display("`{_0:#x}`")]
     HexLiteral(i128),
     /// In `0..=i128::MAX`
+    #[display("`{_0}`")]
     DecLiteral(i128),
 }
 

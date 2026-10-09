@@ -1,7 +1,8 @@
 use pkt::PcapWriter;
 
+use resynth::parse::parse;
 use resynth::stdlib::{write_docs, write_stdlib_json};
-use resynth::{Error, LexError, Lexer, Loc, Parser, Program};
+use resynth::{Error, LexError, Lexer, Loc, ParseError, Program};
 use resynth::{error, ok, warn};
 
 use std::borrow::Cow;
@@ -187,6 +188,10 @@ enum CompileError {
 
     #[from]
     #[error(ignore)]
+    Parse(ParseError),
+
+    #[from]
+    #[error(ignore)]
     Other(LocatedError),
 }
 
@@ -201,6 +206,7 @@ impl CompileError {
         match self {
             Self::Io(_) => None,
             Self::Lex(err) => Some(err.loc),
+            Self::Parse(err) => Some(err.loc),
             Self::Other(err) => Some(err.loc),
         }
     }
@@ -209,7 +215,8 @@ impl CompileError {
         match self {
             Self::Io(_) => "io",
             Self::Lex(_) => "lex",
-            Self::Other(_) => "parse",
+            Self::Parse(_) => "parse",
+            Self::Other(_) => "runtime",
         }
     }
 
@@ -227,6 +234,7 @@ impl CompileError {
         match self {
             Self::Io(err) => println!("{}", err),
             Self::Lex(err) => println!("{}", err.kind),
+            Self::Parse(err) => println!("{}", err.kind),
             Self::Other(err) => println!("{}", err.err),
         }
     }
@@ -247,12 +255,13 @@ fn process_file(
         lex.line(&line?)?;
     }
 
+    let stmts = parse(lex.finish())?;
+
     let wr = {
         let wr = PcapWriter::create(out)?;
         if verbose { wr.debug() } else { wr }
     };
     let mut prog = Program::with_pcap_writer(wr);
-    let mut parse = Parser::default();
     prog.update_time(start_time.as_nanos());
 
     let mut warning = |loc: Loc, warn: &str| {
@@ -266,15 +275,7 @@ fn process_file(
     };
     prog.set_warning(&mut warning);
 
-    for tok in lex.finish() {
-        if let Err(err) = parse.feed(&tok) {
-            return Err((tok.loc(), err).into());
-        }
-
-        if let Err(err) = prog.add_stmts(parse.get_results()) {
-            return Err((prog.loc(), err).into());
-        }
-    }
+    prog.run(stmts)?;
     prog.flush()?;
 
     Ok(())
@@ -376,6 +377,38 @@ fn main() -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use resynth::{LexErrorKind, ParseErrorKind};
+
+    fn compile_errors() -> [CompileError; 3] {
+        [
+            CompileError::Io(io::ErrorKind::NotFound.into()),
+            CompileError::Lex(LexError {
+                loc: Loc::new(1, 2),
+                kind: LexErrorKind::UnterminatedString,
+            }),
+            CompileError::Parse(ParseError {
+                loc: Loc::new(3, 4),
+                kind: ParseErrorKind::IntOutOfRange,
+            }),
+        ]
+    }
+
+    #[test]
+    fn compile_error_loc() {
+        assert_eq!(
+            compile_errors().map(|err| err.loc()),
+            [None, Some(Loc::new(1, 2)), Some(Loc::new(3, 4))]
+        );
+    }
+
+    #[test]
+    fn compile_error_phase() {
+        assert_eq!(
+            compile_errors().map(|err| err.phase()),
+            ["io", "lex", "parse"]
+        );
+    }
 
     /// `mode`'s output path for `input`, owned for easy comparison
     fn out(mode: &OutputMode, input: &str) -> PathBuf {

@@ -6,9 +6,9 @@ use derive_more::Display;
 
 use pkt::Packet;
 
+use crate::ast::Lit;
 use crate::err::Error;
-use crate::err::Error::{IntLiteralError, NameError, TypeError};
-use crate::lex::Tok;
+use crate::err::Error::{NameError, TypeError};
 use crate::libapi::{ClassDef, FuncDef};
 use crate::object::{Obj, ObjRef};
 use crate::str::{Buf, Literal};
@@ -276,6 +276,18 @@ impl From<ValDef> for Val {
             Sock4(sock) => Val::Sock4(sock),
             Str(s) => Val::str(s),
             Type(_) => Val::Nil,
+        }
+    }
+}
+
+impl From<Lit> for Val {
+    fn from(lit: Lit) -> Self {
+        match lit {
+            Lit::Bool(b) => Self::Bool(b),
+            Lit::Int(i) => Self::U64(i),
+            Lit::Ip4(addr) => Self::Ip4(addr),
+            Lit::Sock4(sa) => Self::Sock4(sa),
+            Lit::Str(buf) => Self::Str(buf),
         }
     }
 }
@@ -555,18 +567,6 @@ impl Val {
 
     /// Convert a literal token in to a value. Integer literals are lexed as `i128` and become
     /// [Val::U64] here.
-    pub fn from_tok(tok: &Tok) -> Result<Self, Error> {
-        Ok(match tok {
-            Tok::StringLiteral(buf) => Self::Str(buf.clone()),
-            Tok::IPv4Literal(addr) => Self::Ip4(*addr),
-            Tok::BooleanLiteral(b) => Self::Bool(*b),
-            Tok::HexLiteral(i) | Tok::DecLiteral(i) => {
-                Self::U64(u64::try_from(*i).or(Err(IntLiteralError))?)
-            }
-            _ => unreachable!("not a literal: {tok:?}"),
-        })
-    }
-
     pub fn method_lookup(&self, name: &str) -> Result<Self, Error> {
         let obj = match self {
             Val::Obj(obj) => obj,
