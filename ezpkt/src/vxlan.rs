@@ -28,6 +28,7 @@ impl VxlanDgram {
         }
     }
 
+    #[must_use]
     fn push(mut self, bytes: &[u8]) -> Self {
         self.outer = self.outer.push(bytes);
         self

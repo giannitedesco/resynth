@@ -1,3 +1,5 @@
+#![warn(clippy::return_self_not_must_use)]
+
 mod dhcp;
 mod erspan1;
 mod erspan2;

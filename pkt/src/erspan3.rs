@@ -153,71 +153,85 @@ impl Default for Erspan3 {
 }
 
 impl Erspan3 {
+    #[must_use]
     pub fn ver(mut self, ver: u8) -> Self {
         self.ver = ver;
         self
     }
 
+    #[must_use]
     pub fn vlan(mut self, vlan: u16) -> Self {
         self.vlan = vlan;
         self
     }
 
+    #[must_use]
     pub fn cos(mut self, cos: u8) -> Self {
         self.cos = cos;
         self
     }
 
+    #[must_use]
     pub fn bso(mut self, bso: Bso) -> Self {
         self.bso = bso;
         self
     }
 
+    #[must_use]
     pub fn truncated(mut self, t: bool) -> Self {
         self.t = t;
         self
     }
 
+    #[must_use]
     pub fn session_id(mut self, sess_id: u16) -> Self {
         self.sess_id = sess_id;
         self
     }
 
+    #[must_use]
     pub fn timestamp(mut self, timestamp: u32) -> Self {
         self.timestamp = timestamp;
         self
     }
 
+    #[must_use]
     pub fn sgt(mut self, sgt: u16) -> Self {
         self.sgt = sgt;
         self
     }
 
+    #[must_use]
     pub fn p(mut self, p: bool) -> Self {
         self.p = p;
         self
     }
 
+    #[must_use]
     pub fn ft(mut self, ft: u8) -> Self {
         self.ft = ft;
         self
     }
 
+    #[must_use]
     pub fn hwid(mut self, hwid: u8) -> Self {
         self.hwid = hwid;
         self
     }
 
+    #[must_use]
     pub fn direction(mut self, d: bool) -> Self {
         self.d = d;
         self
     }
 
+    #[must_use]
     pub fn gra(mut self, gra: u8) -> Self {
         self.gra = gra;
         self
     }
 
+    #[must_use]
     pub fn optional(mut self, o: bool) -> Self {
         self.o = o;
         self

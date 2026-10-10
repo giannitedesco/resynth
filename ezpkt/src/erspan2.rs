@@ -29,26 +29,31 @@ impl Erspan2Frame {
         }
     }
 
+    #[must_use]
     pub fn raw(mut self, raw: bool) -> Self {
         self.raw = raw;
         self
     }
 
+    #[must_use]
     pub fn src(mut self, src: Ipv4Addr) -> Self {
         self.src = src;
         self
     }
 
+    #[must_use]
     pub fn dst(mut self, dst: Ipv4Addr) -> Self {
         self.dst = dst;
         self
     }
 
+    #[must_use]
     pub fn erspan(mut self, erspan: Erspan2) -> Self {
         self.erspan = erspan;
         self
     }
 
+    #[must_use]
     pub fn seq(mut self, seq: u32) -> Self {
         self.seq = seq;
         self

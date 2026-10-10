@@ -124,16 +124,19 @@ impl Default for Erspan2 {
 }
 
 impl Erspan2 {
+    #[must_use]
     pub fn ver(mut self, ver: u8) -> Self {
         self.ver = ver;
         self
     }
 
+    #[must_use]
     pub fn session_id(mut self, sess_id: u16) -> Self {
         self.sess_id = sess_id;
         self
     }
 
+    #[must_use]
     pub fn port_index(mut self, port_index: u32) -> Self {
         self.index = port_index;
         self

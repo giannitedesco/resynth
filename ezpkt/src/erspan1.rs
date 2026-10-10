@@ -18,16 +18,19 @@ impl Erspan1Frame {
         Self { src, dst, raw }
     }
 
+    #[must_use]
     pub fn raw(mut self, raw: bool) -> Self {
         self.raw = raw;
         self
     }
 
+    #[must_use]
     pub fn src(mut self, src: Ipv4Addr) -> Self {
         self.src = src;
         self
     }
 
+    #[must_use]
     pub fn dst(mut self, dst: Ipv4Addr) -> Self {
         self.dst = dst;
         self

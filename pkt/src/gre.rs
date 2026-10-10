@@ -48,46 +48,55 @@ pub struct GreFlags {
 }
 
 impl GreFlags {
+    #[must_use]
     pub fn csum(mut self, c: bool) -> Self {
         self.c = c;
         self
     }
 
+    #[must_use]
     pub fn routing(mut self, r: bool) -> Self {
         self.r = r;
         self
     }
 
+    #[must_use]
     pub fn key(mut self, k: bool) -> Self {
         self.k = k;
         self
     }
 
+    #[must_use]
     pub fn seq(mut self, s: bool) -> Self {
         self.s = s;
         self
     }
 
+    #[must_use]
     pub fn source_routing(mut self, sr: bool) -> Self {
         self.sr = sr;
         self
     }
 
+    #[must_use]
     pub fn recursion(mut self, recur: u8) -> Self {
         self.recur = recur;
         self
     }
 
+    #[must_use]
     pub fn ack(mut self, a: bool) -> Self {
         self.a = a;
         self
     }
 
+    #[must_use]
     pub fn flags(mut self, flags: u8) -> Self {
         self.flags = flags;
         self
     }
 
+    #[must_use]
     pub fn ver(mut self, v: u8) -> Self {
         self.v = v;
         self
@@ -173,11 +182,13 @@ pub struct gre_hdr_sum {
 }
 
 impl gre_hdr_sum {
+    #[must_use]
     pub fn csum(mut self, csum: u16) -> Self {
         self.csum = csum.to_be();
         self
     }
 
+    #[must_use]
     pub fn rsvd(mut self, rsvd: u16) -> Self {
         self.rsvd = rsvd.to_be();
         self
@@ -199,6 +210,7 @@ pub struct gre_hdr_key {
 }
 
 impl gre_hdr_key {
+    #[must_use]
     pub fn key(mut self, key: u32) -> Self {
         self.key = key.to_be();
         self
@@ -216,6 +228,12 @@ pub struct gre_hdr_seq {
 }
 
 impl gre_hdr_seq {
+    #[must_use]
+    pub const fn init(seq: u32) -> Self {
+        Self { seq: seq.to_be() }
+    }
+
+    #[must_use]
     pub fn seq(mut self, seq: u32) -> Self {
         self.seq = seq.to_be();
         self

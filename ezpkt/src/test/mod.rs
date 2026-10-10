@@ -3,6 +3,7 @@ use pkt::Packet;
 use pkt::eth::{eth_hdr, ethertype};
 use pkt::ipv4::{ip_csum, ip_csum_fold, ip_csum_partial, ip_hdr};
 
+mod gre;
 mod icmp4;
 mod tcp4;
 
@@ -29,6 +30,11 @@ impl Frame {
     /// Where the IP payload starts, after the IP header and any options
     fn l4_off(&self) -> usize {
         Self::IP_OFF + ((self.ip().get_ihl_version() & 0xf) as usize) * 4
+    }
+
+    /// The header of type `T` at `off` bytes into the IP payload
+    fn l4<T: Pod>(&self, off: usize) -> T {
+        self.hdr(self.l4_off() + off)
     }
 
     /// Everything after the IP header, up to the IP total length

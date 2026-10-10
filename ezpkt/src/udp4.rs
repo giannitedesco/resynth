@@ -134,6 +134,7 @@ impl UdpDgram {
         self.udp.len_from(&self.pkt) as u16
     }
 
+    #[must_use]
     pub fn csum(self) -> Self {
         let ip_phdr = self.ip_pseudo_hdr(self.csum_len()).csum_partial();
         let udp_hdr = ip_csum_partial(&self.udp.as_bytes(&self.pkt));

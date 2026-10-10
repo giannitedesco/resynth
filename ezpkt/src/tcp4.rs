@@ -62,6 +62,7 @@ impl TcpSeg {
         }
     }
 
+    #[must_use]
     fn syn(mut self) -> Self {
         {
             let mut tcph = self.tcp.get_mut(&self.pkt);
@@ -73,6 +74,7 @@ impl TcpSeg {
         self
     }
 
+    #[must_use]
     fn rst(self) -> Self {
         {
             let mut tcph = self.tcp.get_mut(&self.pkt);
@@ -83,6 +85,7 @@ impl TcpSeg {
         self
     }
 
+    #[must_use]
     fn syn_ack(mut self) -> Self {
         {
             let mut tcph = self.tcp.get_mut(&self.pkt);
@@ -94,6 +97,7 @@ impl TcpSeg {
         self
     }
 
+    #[must_use]
     fn ack(self) -> Self {
         {
             let mut tcph = self.tcp.get_mut(&self.pkt);
@@ -104,6 +108,7 @@ impl TcpSeg {
         self
     }
 
+    #[must_use]
     fn push(self) -> Self {
         {
             let mut tcph = self.tcp.get_mut(&self.pkt);
@@ -114,16 +119,19 @@ impl TcpSeg {
         self.ack()
     }
 
+    #[must_use]
     fn append_data(mut self, bytes: &[u8]) -> Self {
         self.pkt.push_bytes(bytes);
         self.data_len += bytes.len() as u32;
         self.update_tot_len(bytes.len() as u16)
     }
 
+    #[must_use]
     fn push_bytes(self, bytes: &[u8]) -> Self {
         self.push().append_data(bytes)
     }
 
+    #[must_use]
     fn fin(mut self) -> Self {
         {
             let mut tcph = self.tcp.get_mut(&self.pkt);
@@ -135,12 +143,14 @@ impl TcpSeg {
         self
     }
 
+    #[must_use]
     fn fin_ack(mut self) -> Self {
         self = self.fin();
         self = self.ack();
         self
     }
 
+    #[must_use]
     fn frag_off(self, frag_off: u16) -> Self {
         {
             let mut iph = self.ip.get_mut(&self.pkt);
@@ -152,6 +162,7 @@ impl TcpSeg {
         self
     }
 
+    #[must_use]
     fn update_tot_len(self, more: u16) -> Self {
         {
             let mut iph = self.ip.get_mut(&self.pkt);
@@ -174,6 +185,7 @@ impl TcpSeg {
         (self.data_len as usize + self.tcp.len()) as u16
     }
 
+    #[must_use]
     fn tcp_csum(self) -> Self {
         let ip_phdr = self.ip_pseudo_hdr(self.csum_len()).csum_partial();
         let tcp_hdr = ip_csum_partial(&self.tcp.as_bytes(&self.pkt));

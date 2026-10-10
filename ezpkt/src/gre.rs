@@ -77,6 +77,7 @@ impl GreFrame {
         ret
     }
 
+    #[must_use]
     pub fn set_hdr<T: Pod>(mut self, item: T) -> Self {
         let hdr = self.pkt.push(item);
         self.update_tot_len(hdr.len() as u16);
@@ -84,6 +85,7 @@ impl GreFrame {
         self
     }
 
+    #[must_use]
     pub fn push<T: AsRef<[u8]>>(mut self, bytes: T) -> Self {
         let b = bytes.as_ref();
 
@@ -93,9 +95,10 @@ impl GreFrame {
         self
     }
 
+    #[must_use]
     pub fn seq(self, seq: u32) -> Self {
         if let Some(shdr) = self.seq {
-            shdr.get(&self.pkt).seq(seq);
+            shdr.mutate(&self.pkt, |hdr| *hdr = gre_hdr_seq::init(seq));
         };
         self
     }

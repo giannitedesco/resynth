@@ -1,3 +1,5 @@
+#![warn(clippy::return_self_not_must_use)]
+
 pub mod arp;
 pub mod dhcp;
 pub mod dns;

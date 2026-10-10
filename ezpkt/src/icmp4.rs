@@ -60,16 +60,19 @@ impl IcmpDgram {
         }
     }
 
+    #[must_use]
     fn push(self, bytes: &[u8]) -> Self {
         self.pkt.push_bytes(bytes);
         self.update_tot_len(bytes.len() as u16)
     }
 
+    #[must_use]
     fn update_tot_len(self, more: u16) -> Self {
         self.ip.get_mut(&self.pkt).add_tot_len(more).calc_csum();
         self
     }
 
+    #[must_use]
     fn ping(mut self, id: u16, seq: u16, bytes: &[u8]) -> Self {
         self = self.push(bytes);
         self.icmp.get_mut(&self.pkt).set_typ(ICMP_ECHO);
@@ -86,6 +89,7 @@ impl IcmpDgram {
         self
     }
 
+    #[must_use]
     fn pong(mut self, id: u16, seq: u16, bytes: &[u8]) -> Self {
         self = self.push(bytes);
         self.icmp.get_mut(&self.pkt).set_typ(ICMP_ECHOREPLY);
