@@ -193,7 +193,7 @@ impl erspan2_hdr {
     }
 
     pub fn index(&mut self, index: u32) -> &mut Self {
-        self.flags = index.to_be();
+        self.index = index.to_be();
         self
     }
 
