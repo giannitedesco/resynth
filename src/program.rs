@@ -12,6 +12,7 @@ use pkt::PcapWriter;
 use derive_more::{Display, Error, From};
 
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::io;
 use std::net::SocketAddrV4;
@@ -145,7 +146,7 @@ type Result<T> = std::result::Result<T, RuntimeError>;
 
 /// The interpreter and program-state
 pub struct Program<'a> {
-    now: u64,
+    now: Cell<u64>,
     regs: HashMap<String, Val>,
     imports: HashMap<String, &'static Module>,
     wr: Option<PcapWriter>,
@@ -155,7 +156,7 @@ pub struct Program<'a> {
 impl<'a> Program<'a> {
     pub fn dummy() -> Self {
         Program {
-            now: 0,
+            now: Cell::new(0),
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: None,
@@ -165,7 +166,7 @@ impl<'a> Program<'a> {
 
     pub fn with_pcap_writer(wr: PcapWriter) -> Self {
         Program {
-            now: 0,
+            now: Cell::new(0),
             regs: HashMap::new(),
             imports: HashMap::new(),
             wr: Some(wr),
@@ -350,7 +351,11 @@ impl<'a> Program<'a> {
     }
 
     pub fn update_time(&mut self, ns: u64) {
-        self.now += ns;
+        self.now.set(self.now().saturating_add(ns));
+    }
+
+    pub fn now(&self) -> u64 {
+        self.now.get()
     }
 
     fn add_expr(&mut self, expr: Expr) -> Result<()> {
@@ -358,31 +363,28 @@ impl<'a> Program<'a> {
         let val = self.eval(expr)?;
         match val {
             Val::Nil => {}
-            Val::Pkt(mut ptr) => {
-                self.update_time(ptr.bit_time());
+            Val::Pkt(mut pkt) => {
+                self.update_time(pkt.bit_time());
 
                 /* XXX: cloning the packet here is wasteful */
                 if let Some(ref mut wr) = self.wr {
-                    let pkt = Rc::make_mut(&mut ptr);
+                    let pkt = Rc::make_mut(&mut pkt);
 
-                    wr.write_packet(self.now, pkt)
+                    wr.write_packet(self.now.get(), pkt)
                         .map_err(|err| PcapWrite(err).at(loc))?;
                 };
             }
             Val::PktGen(mut it) => {
-                for pkt in it.iter() {
-                    self.update_time(pkt.bit_time());
-                }
-
                 /* XXX: cloning the packets here is wasteful */
-                if let Some(ref mut wr) = self.wr {
-                    let inner = Rc::make_mut(&mut it);
+                let inner = Rc::make_mut(&mut it);
 
-                    for pkt in inner {
-                        wr.write_packet(self.now, pkt)
+                for pkt in inner {
+                    self.update_time(pkt.bit_time());
+                    if let Some(ref mut wr) = self.wr {
+                        wr.write_packet(self.now.get(), pkt)
                             .map_err(|err| PcapWrite(err).at(loc))?;
                     }
-                };
+                }
             }
             Val::TimeJump(ns) => self.update_time(ns),
             _ => self.warn(loc, &format!("discarded value {:?}", val)),
