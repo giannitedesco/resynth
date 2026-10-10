@@ -87,7 +87,8 @@ const TCP_SV_MSG: FuncDef = func!(
 
         let bytes: Buf = args.join_extra(b"").into();
 
-        let saved = this.push_state(seq, ack);
+        // push_state takes the client seq first, which is the server's ack
+        let saved = this.push_state(ack, seq);
         let pkt = this.server_message(bytes.as_ref(), send_ack, frag_off);
         this.pop_state(saved);
 
@@ -147,7 +148,8 @@ const TCP_SV_SEG: FuncDef = func!(
 
         let bytes: Buf = args.join_extra(b"").into();
 
-        let saved = this.push_state(seq, ack);
+        // push_state takes the client seq first, which is the server's ack
+        let saved = this.push_state(ack, seq);
         let pkt: Packet = this.server_data_segment(bytes.as_ref()).into();
         this.pop_state(saved);
 
@@ -209,7 +211,8 @@ const TCP_SV_RAW_SEG: FuncDef = func!(
 
         let bytes: Buf = args.join_extra(b"").into();
 
-        let saved = this.push_state(seq, ack);
+        // push_state takes the client seq first, which is the server's ack
+        let saved = this.push_state(ack, seq);
         let pkt = this.server_data_segment(bytes.as_ref());
         this.pop_state(saved);
 
@@ -309,7 +312,8 @@ const TCP_SV_ACK: FuncDef = func!(
         let seq: Option<u32> = args.next().into();
         let ack: Option<u32> = args.next().into();
 
-        let saved = this.push_state(seq, ack);
+        // push_state takes the client seq first, which is the server's ack
+        let saved = this.push_state(ack, seq);
         let pkt: Packet = this.server_ack().into();
         this.pop_state(saved);
 
