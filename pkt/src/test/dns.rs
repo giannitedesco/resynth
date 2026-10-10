@@ -42,12 +42,39 @@ fn test_parse() {
     assert_eq!(b"\x03www\x08evildoer\x03n3t\x00", n.as_ref());
 }
 
-/// Name parsing with a final dot
-/// To be honest, we should probably detect and ignore that final dot?
+/// A final dot is the root label of a fully-qualified name
 #[test]
 fn test_trailing_dot() {
     let n = DnsName::from(b"www.evildoer.n3t.");
-    assert_eq!(b"\x03www\x08evildoer\x03n3t\x00\x00", n.as_ref());
+    assert_eq!(b"\x03www\x08evildoer\x03n3t\x00", n.as_ref());
+}
+
+/// The empty name is the root
+#[test]
+fn test_parse_empty() {
+    let n = DnsName::from(b"");
+    assert_eq!(b"\x00", n.as_ref());
+}
+
+/// A lone dot is the root
+#[test]
+fn test_parse_dot() {
+    let n = DnsName::from(b".");
+    assert_eq!(b"\x00", n.as_ref());
+}
+
+/// Only one trailing dot is the root, a second is an empty label
+#[test]
+fn test_two_trailing_dots() {
+    let n = DnsName::from(b"n3t..");
+    assert_eq!(b"\x03n3t\x00\x00", n.as_ref());
+}
+
+/// An empty label in the middle is kept
+#[test]
+fn test_empty_label() {
+    let n = DnsName::from(b"www..n3t");
+    assert_eq!(b"\x03www\x00\x03n3t\x00", n.as_ref());
 }
 
 /// Pushing raw bytes

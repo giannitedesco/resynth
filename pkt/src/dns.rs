@@ -349,9 +349,17 @@ impl DnsName {
         this
     }
 
+    /// Parse a dotted name. One trailing dot is the root label, as in a fully-qualified name, so
+    /// `""` and `"."` are both the root. Other empty labels are kept, so `"a..b"` has one.
     pub fn from(name: &[u8]) -> Self {
+        let name = name.strip_suffix(b".").unwrap_or(name);
+
+        if name.is_empty() {
+            return Self::root();
+        }
+
         let mut ret = Self {
-            buf: Vec::with_capacity(name.len() + 1),
+            buf: Vec::with_capacity(name.len() + 2),
         };
 
         for part in name.split(|x| *x == b'.') {
