@@ -88,8 +88,7 @@ impl PcapWriter {
         self.wr.write_all(bytes_of(&hdr))
     }
 
-    #[inline(always)]
-    pub fn write_packet(&mut self, time: u64, pkt: &mut Packet) -> Result<(), io::Error> {
+    pub fn write_packet_mut(&mut self, time: u64, pkt: &mut Packet) -> Result<(), io::Error> {
         let len = pkt.len() as u32;
 
         if self.dbg {
@@ -111,6 +110,25 @@ impl PcapWriter {
         }
 
         pkt.return_headroom(hdr);
+
+        Ok(())
+    }
+
+    pub fn write_packet(&mut self, time: u64, pkt: &Packet) -> Result<(), io::Error> {
+        let len = pkt.len() as u32;
+        if self.dbg {
+            println!("pcap: writing {:#?}", pkt);
+        }
+
+        let pkt_hdr = pcap_pkt {
+            sec: Self::ts_to_secs(time),
+            nsec: Self::ts_to_nsecs(time),
+            len,
+            caplen: len,
+        };
+
+        self.wr.write_all(bytes_of(&pkt_hdr))?;
+        self.wr.write_all(&pkt.as_slice().get(pkt))?;
 
         Ok(())
     }

@@ -16,7 +16,6 @@ use std::cell::Cell;
 use std::collections::HashMap;
 use std::io;
 use std::net::SocketAddrV4;
-use std::rc::Rc;
 
 use RuntimeErrorKind::{
     ImportError, MultipleAssignError, NameError, NotAModule, NotAValue, NotCallable, NotImported,
@@ -363,22 +362,16 @@ impl<'a> Program<'a> {
         let val = self.eval(expr)?;
         match val {
             Val::Nil => {}
-            Val::Pkt(mut pkt) => {
+            Val::Pkt(pkt) => {
                 self.update_time(pkt.bit_time());
 
-                /* XXX: cloning the packet here is wasteful */
                 if let Some(ref mut wr) = self.wr {
-                    let pkt = Rc::make_mut(&mut pkt);
-
-                    wr.write_packet(self.now.get(), pkt)
+                    wr.write_packet(self.now.get(), &pkt)
                         .map_err(|err| PcapWrite(err).at(loc))?;
                 };
             }
-            Val::PktGen(mut it) => {
-                /* XXX: cloning the packets here is wasteful */
-                let inner = Rc::make_mut(&mut it);
-
-                for pkt in inner {
+            Val::PktGen(it) => {
+                for pkt in it.iter() {
                     self.update_time(pkt.bit_time());
                     if let Some(ref mut wr) = self.wr {
                         wr.write_packet(self.now.get(), pkt)
