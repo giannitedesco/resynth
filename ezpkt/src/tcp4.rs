@@ -390,11 +390,11 @@ impl TcpFlow {
     }
 
     pub fn client_reset(&self) -> Packet {
-        self.cl().rst().into()
+        self.cl().rst().tcp_csum().into()
     }
 
     pub fn server_reset(&self) -> Packet {
-        self.sv().rst().into()
+        self.sv().rst().tcp_csum().into()
     }
 
     pub fn client_message(&mut self, bytes: &[u8], send_ack: bool, frag_off: u16) -> Vec<Packet> {

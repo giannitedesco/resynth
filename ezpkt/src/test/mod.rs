@@ -1,9 +1,10 @@
 use bytemuck::{Pod, pod_read_unaligned};
 use pkt::Packet;
 use pkt::eth::{eth_hdr, ethertype};
-use pkt::ipv4::{ip_csum, ip_hdr};
+use pkt::ipv4::{ip_csum, ip_csum_fold, ip_csum_partial, ip_hdr};
 
 mod icmp4;
+mod tcp4;
 
 /// An Ethernet frame holding an IPv4 datagram, read back through pkt's headers
 struct Frame(Vec<u8>);
@@ -38,6 +39,14 @@ impl Frame {
     /// Whether the IP header checksum is correct
     fn ip_csum_ok(&self) -> bool {
         ip_csum(&self.0[Self::IP_OFF..self.l4_off()]) == 0
+    }
+
+    /// Whether the TCP or UDP checksum is correct, over the pseudo-header and the IP payload
+    fn l4_csum_ok(&self) -> bool {
+        let l4 = self.ip_payload();
+        let phdr = self.ip().get_pseudo_hdr(l4.len() as u16);
+
+        ip_csum_fold(phdr.csum_partial() + ip_csum_partial(l4)) == 0
     }
 }
 
