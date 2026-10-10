@@ -6,6 +6,7 @@ use pkt::ipv4::{ip_csum, ip_csum_fold, ip_csum_partial, ip_hdr};
 mod gre;
 mod icmp4;
 mod tcp4;
+mod udp4;
 
 /// An Ethernet frame holding an IPv4 datagram, read back through pkt's headers
 struct Frame(Vec<u8>);

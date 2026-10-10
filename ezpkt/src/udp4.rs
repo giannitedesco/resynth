@@ -65,14 +65,17 @@ impl UdpDgram {
 
     #[must_use]
     pub fn srcip(self, src: Ipv4Addr) -> Self {
-        self.ip.get_mut(&self.pkt).set_saddr(src);
+        self.ip.get_mut(&self.pkt).set_saddr(src).calc_csum();
 
         self
     }
 
     #[must_use]
     pub fn frag_off(self, frag_off: u16) -> Self {
-        self.ip.get_mut(&self.pkt).set_frag_off(frag_off);
+        self.ip
+            .get_mut(&self.pkt)
+            .set_frag_off(frag_off)
+            .calc_csum();
 
         self
     }
