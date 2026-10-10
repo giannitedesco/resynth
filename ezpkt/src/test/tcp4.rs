@@ -1,6 +1,7 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
 
 use pkt::Packet;
+use pkt::ipv4::tcp_hdr;
 
 use super::Frame;
 use crate::TcpFlow;
@@ -72,4 +73,24 @@ fn test_frag_off_ip_csum() {
         assert_eq!(frame.ip().get_frag_off(), 1);
         assert!(frame.ip_csum_ok());
     }
+}
+
+/// The sequence number of the first segment of a client message
+fn client_message_seq(flow: &mut TcpFlow) -> u32 {
+    let pkts = flow.client_message(b"hello", false, 0);
+    Frame::from(&pkts[0]).l4::<tcp_hdr>(0).get_seq()
+}
+
+/// Sequence numbers wrap around 2^32, which used to panic in debug builds
+#[test]
+fn test_seq_wraps() {
+    let mut flow = TcpFlow::new(CL, SV, 0xffff_ffff, 5000, false);
+    flow.open();
+    assert_eq!(client_message_seq(&mut flow), 0, "the SYN wraps it");
+
+    flow.client_hole(0xffff_ffff);
+    assert_eq!(client_message_seq(&mut flow), 4, "a hole wraps it");
+
+    flow.client_hdr(0xffff_ffff);
+    assert_eq!(client_message_seq(&mut flow), 8, "a bare header wraps it");
 }

@@ -136,7 +136,7 @@ impl GreFlow {
     fn next_seq(&mut self) -> u32 {
         let ret = self.seq;
 
-        self.seq += 1;
+        self.seq = self.seq.wrapping_add(1);
 
         ret
     }

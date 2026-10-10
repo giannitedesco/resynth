@@ -276,11 +276,11 @@ impl TcpFlow {
     }
 
     fn cl_update(&mut self, bytes: u32) {
-        self.cl_seq += bytes;
+        self.cl_seq = self.cl_seq.wrapping_add(bytes);
     }
 
     fn sv_update(&mut self, bytes: u32) {
-        self.sv_seq += bytes;
+        self.sv_seq = self.sv_seq.wrapping_add(bytes);
     }
 
     fn cl_tx(&mut self, seg: TcpSeg) {
@@ -361,7 +361,7 @@ impl TcpFlow {
         let seg = self.cl().push();
         let hdr = seg.tcp_hdr_bytes();
 
-        self.cl_update(seg.seq_consumed() + dlen);
+        self.cl_update(seg.seq_consumed().wrapping_add(dlen));
 
         hdr.to_vec()
     }
@@ -370,7 +370,7 @@ impl TcpFlow {
         let seg = self.sv().push();
         let hdr = seg.tcp_hdr_bytes();
 
-        self.sv_update(seg.seq_consumed() + dlen);
+        self.sv_update(seg.seq_consumed().wrapping_add(dlen));
 
         hdr.to_vec()
     }

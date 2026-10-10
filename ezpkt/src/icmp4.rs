@@ -136,14 +136,14 @@ impl IcmpFlow {
     pub fn echo(&mut self, bytes: &[u8]) -> Packet {
         //println!("trace: icmp:ping({} bytes)", bytes.len());
         let ret = self.clnt().ping(self.id, self.ping_seq, bytes).into();
-        self.ping_seq += 1;
+        self.ping_seq = self.ping_seq.wrapping_add(1);
         ret
     }
 
     pub fn echo_reply(&mut self, bytes: &[u8]) -> Packet {
         //println!("trace: icmp:pong({} bytes)", bytes.len());
         let ret = self.srvr().pong(self.id, self.pong_seq, bytes).into();
-        self.pong_seq += 1;
+        self.pong_seq = self.pong_seq.wrapping_add(1);
         ret
     }
 }
