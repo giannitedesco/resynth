@@ -76,7 +76,7 @@ impl eth_hdr {
     }
 
     pub fn src_from_ip(&mut self, addr: Ipv4Addr) -> &mut Self {
-        self.dst = addr.into();
+        self.src = addr.into();
         self
     }
 
