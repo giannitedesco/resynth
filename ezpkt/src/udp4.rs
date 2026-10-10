@@ -147,9 +147,13 @@ impl UdpDgram {
                 .bytes_after(&self.pkt, self.udp.len_after(&self.pkt)),
         );
 
-        self.udp
-            .get_mut(&self.pkt)
-            .set_csum(ip_csum_fold(ip_phdr + udp_hdr + payload));
+        // A zero checksum means there isn't one, so RFC 768 sends a computed zero as all ones
+        let csum = match ip_csum_fold(ip_phdr + udp_hdr + payload) {
+            0 => 0xffff,
+            csum => csum,
+        };
+
+        self.udp.get_mut(&self.pkt).set_csum(csum);
 
         self
     }

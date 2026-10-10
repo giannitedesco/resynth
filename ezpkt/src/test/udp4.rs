@@ -69,3 +69,28 @@ fn test_srcip_ip_csum() {
     assert_eq!(frame.ip().get_saddr(), Ipv4Addr::UNSPECIFIED);
     assert!(frame.ip_csum_ok());
 }
+
+#[test]
+fn test_csum() {
+    let pkt: Packet = UdpFlow::new(CL, SV, false)
+        .client_dgram(b"hello")
+        .csum()
+        .into();
+
+    assert!(Frame::from(&pkt).l4_csum_ok());
+}
+
+/// A checksum that computes to zero used to be sent as zero, which means "no checksum"
+#[test]
+fn test_csum_zero_is_all_ones() {
+    // This payload makes the one's-complement sum 0xffff, so the checksum computes to zero
+    let pkt: Packet = UdpFlow::new(CL, SV, false)
+        .client_dgram(&[0x4f, 0x8e])
+        .csum()
+        .into();
+    let frame = Frame::from(&pkt);
+    let udp: udp_hdr = frame.l4(0);
+
+    assert_eq!(udp.get_csum(), 0xffff);
+    assert!(frame.l4_csum_ok());
+}
