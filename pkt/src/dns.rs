@@ -174,6 +174,30 @@ impl dns_hdr {
         self.arcount = arcount.to_be();
         self
     }
+
+    pub fn get_id(&self) -> u16 {
+        u16::from_be(self.id)
+    }
+
+    pub fn get_flags(&self) -> u16 {
+        u16::from_be(self.flags)
+    }
+
+    pub fn get_qdcount(&self) -> u16 {
+        u16::from_be(self.qdcount)
+    }
+
+    pub fn get_ancount(&self) -> u16 {
+        u16::from_be(self.ancount)
+    }
+
+    pub fn get_nscount(&self) -> u16 {
+        u16::from_be(self.nscount)
+    }
+
+    pub fn get_arcount(&self) -> u16 {
+        u16::from_be(self.arcount)
+    }
 }
 
 #[derive(Debug, Copy, Clone, Default)]

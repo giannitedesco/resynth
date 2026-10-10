@@ -1,4 +1,6 @@
-use crate::dns::DnsName;
+use bytemuck::pod_read_unaligned;
+
+use crate::dns::{DnsName, dns_hdr};
 
 /// Construct a root name
 #[test]
@@ -87,4 +89,17 @@ fn test_push_raw() {
     n.push_raw(b"\xf0\x0f");
     n.finish();
     assert_eq!(b"\x03www\x08evildoer\x03n3t\xf0\x0f\x00", n.as_ref());
+}
+
+/// ID, flags, then the four section counts, RFC 1035 section 4.1.1
+#[test]
+fn test_hdr_getters() {
+    let hdr: dns_hdr = pod_read_unaligned(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+    assert_eq!(hdr.get_id(), 0x0102);
+    assert_eq!(hdr.get_flags(), 0x0304);
+    assert_eq!(hdr.get_qdcount(), 0x0506);
+    assert_eq!(hdr.get_ancount(), 0x0708);
+    assert_eq!(hdr.get_nscount(), 0x090a);
+    assert_eq!(hdr.get_arcount(), 0x0b0c);
 }

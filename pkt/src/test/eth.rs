@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 
-use bytemuck::bytes_of;
+use bytemuck::{bytes_of, pod_read_unaligned};
 
 use crate::eth::{eth_addr, eth_hdr};
 
@@ -60,4 +60,13 @@ fn test_set_broadcast() {
         bytes_of(&hdr),
         [&[0xff; 6][..], &SRC, &[0x08, 0x00]].concat()
     );
+}
+
+#[test]
+fn test_getters() {
+    let hdr: eth_hdr = pod_read_unaligned(&[&DST[..], &SRC, &[0x88, 0xbe]].concat());
+
+    assert_eq!(hdr.get_dst(), eth_addr::new(DST));
+    assert_eq!(hdr.get_src(), eth_addr::new(SRC));
+    assert_eq!(hdr.get_proto(), 0x88be);
 }

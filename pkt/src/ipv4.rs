@@ -55,6 +55,47 @@ impl ip_hdr {
         self
     }
 
+    pub fn get_ihl_version(&self) -> u8 {
+        self.ihl_version
+    }
+
+    pub fn get_tos(&self) -> u8 {
+        self.tos
+    }
+
+    pub fn get_id(&self) -> u16 {
+        u16::from_be(self.id)
+    }
+
+    /// Fragment offset, in units of 8 bytes
+    pub fn get_frag_off(&self) -> u16 {
+        u16::from_be(self.frag_off) & 0x1fff
+    }
+
+    pub fn get_mf(&self) -> bool {
+        (u16::from_be(self.frag_off) & flags::MF) != 0
+    }
+
+    pub fn get_df(&self) -> bool {
+        (u16::from_be(self.frag_off) & flags::DF) != 0
+    }
+
+    pub fn get_evil(&self) -> bool {
+        (u16::from_be(self.frag_off) & flags::EVIL) != 0
+    }
+
+    pub fn get_ttl(&self) -> u8 {
+        self.ttl
+    }
+
+    pub fn get_protocol(&self) -> u8 {
+        self.protocol
+    }
+
+    pub fn get_csum(&self) -> u16 {
+        u16::from_be(self.csum)
+    }
+
     pub fn get_saddr(&self) -> Ipv4Addr {
         u32::from_be(self.saddr).into()
     }
@@ -287,6 +328,43 @@ impl tcp_hdr {
         self.urp = urp.to_be();
         self
     }
+
+    pub fn get_sport(&self) -> u16 {
+        u16::from_be(self.sport)
+    }
+
+    pub fn get_dport(&self) -> u16 {
+        u16::from_be(self.dport)
+    }
+
+    pub fn get_seq(&self) -> u32 {
+        u32::from_be(self.seq)
+    }
+
+    pub fn get_ack(&self) -> u32 {
+        u32::from_be(self.ack)
+    }
+
+    /// The data offset byte, with the header length in 32-bit words in its top 4 bits
+    pub fn get_doff(&self) -> u8 {
+        self.doff
+    }
+
+    pub fn get_flags(&self) -> u8 {
+        self.flags
+    }
+
+    pub fn get_win(&self) -> u16 {
+        u16::from_be(self.win)
+    }
+
+    pub fn get_csum(&self) -> u16 {
+        u16::from_be(self.csum)
+    }
+
+    pub fn get_urp(&self) -> u16 {
+        u16::from_be(self.urp)
+    }
 }
 
 #[repr(C, packed(1))]
@@ -336,6 +414,18 @@ impl udp_hdr {
     pub fn set_csum(&mut self, csum: u16) -> &mut Self {
         self.csum = csum.to_be();
         self
+    }
+
+    pub fn get_sport(&self) -> u16 {
+        u16::from_be(self.sport)
+    }
+
+    pub fn get_dport(&self) -> u16 {
+        u16::from_be(self.dport)
+    }
+
+    pub fn get_csum(&self) -> u16 {
+        u16::from_be(self.csum)
     }
 }
 
@@ -389,6 +479,18 @@ impl icmp_hdr {
         self
     }
 
+    pub fn get_typ(&self) -> u8 {
+        self.typ
+    }
+
+    pub fn get_code(&self) -> u8 {
+        self.code
+    }
+
+    pub fn get_csum(&self) -> u16 {
+        u16::from_be(self.csum)
+    }
+
     pub fn set_csum(&mut self, csum: u16) -> &mut Self {
         self.csum = csum.to_be();
         self
@@ -411,6 +513,14 @@ impl icmp_echo_hdr {
     pub fn set_seq(&mut self, seq: u16) -> &mut Self {
         self.seq = seq.to_be();
         self
+    }
+
+    pub fn get_id(&self) -> u16 {
+        u16::from_be(self.id)
+    }
+
+    pub fn get_seq(&self) -> u16 {
+        u16::from_be(self.seq)
     }
 }
 

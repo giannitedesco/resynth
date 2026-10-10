@@ -86,3 +86,16 @@ fn test_optional_fields() {
     let seq = gre_hdr_seq::zeroed().seq(0x0506_0708);
     assert_eq!(bytes_of(&seq), [0x05, 0x06, 0x07, 0x08]);
 }
+
+#[test]
+fn test_optional_getters() {
+    let sum: gre_hdr_sum = pod_read_unaligned(&[0x12, 0x34, 0x56, 0x78]);
+    assert_eq!(sum.get_csum(), 0x1234);
+    assert_eq!(sum.get_rsvd(), 0x5678);
+
+    let key: gre_hdr_key = pod_read_unaligned(&[1, 2, 3, 4]);
+    assert_eq!(key.get_key(), 0x0102_0304);
+
+    let seq: gre_hdr_seq = pod_read_unaligned(&[5, 6, 7, 8]);
+    assert_eq!(seq.get_seq(), 0x0506_0708);
+}

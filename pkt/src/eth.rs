@@ -16,7 +16,7 @@ pub mod ethertype {
 }
 
 #[repr(C, packed(1))]
-#[derive(Pod, Zeroable, Debug, Copy, Clone, Default)]
+#[derive(Pod, Zeroable, Debug, Copy, Clone, Default, PartialEq, Eq)]
 pub struct eth_addr {
     octets: [u8; 6],
 }
@@ -88,5 +88,17 @@ impl eth_hdr {
     pub fn set_broadcast(&mut self) -> &mut Self {
         self.dst.octets = BROADCAST;
         self
+    }
+
+    pub fn get_dst(&self) -> eth_addr {
+        self.dst
+    }
+
+    pub fn get_src(&self) -> eth_addr {
+        self.src
+    }
+
+    pub fn get_proto(&self) -> u16 {
+        u16::from_be(self.proto)
     }
 }

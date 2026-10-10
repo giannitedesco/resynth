@@ -157,13 +157,42 @@ fn test_ip_calc_csum_again() {
 #[test]
 fn test_ip_getters() {
     let hdr: ip_hdr = pod_read_unaligned(&[
-        0x45, 0x00, 0x00, 0x73, 0x00, 0x00, 0x40, 0x00, 0x40, 0x11, 0xb8, 0x61, 0xc0, 0xa8, 0x00,
+        0x46, 0x07, 0x01, 0x02, 0x03, 0x04, 0xba, 0xbc, 0x05, 0x06, 0x07, 0x08, 0xc0, 0xa8, 0x00,
         0x01, 0xc0, 0xa8, 0x00, 0xc7,
     ]);
 
-    assert_eq!(hdr.get_tot_len(), 0x73);
+    assert_eq!(hdr.get_ihl_version(), 0x46);
+    assert_eq!(hdr.get_tos(), 7);
+    assert_eq!(hdr.get_tot_len(), 0x0102);
+    assert_eq!(hdr.get_id(), 0x0304);
+    assert_eq!(hdr.get_frag_off(), 0x1abc);
+    assert!(hdr.get_evil());
+    assert!(!hdr.get_df());
+    assert!(hdr.get_mf());
+    assert_eq!(hdr.get_ttl(), 5);
+    assert_eq!(hdr.get_protocol(), 6);
+    assert_eq!(hdr.get_csum(), 0x0708);
     assert_eq!(hdr.get_saddr(), SRC);
     assert_eq!(hdr.get_daddr(), DST);
+}
+
+/// Each flag getter reads its own bit
+#[test]
+fn test_ip_flag_getters() {
+    let flags = |word: [u8; 2]| {
+        let hdr: ip_hdr = pod_read_unaligned(&zeroed_with::<20>(6, &word));
+        (
+            hdr.get_evil(),
+            hdr.get_df(),
+            hdr.get_mf(),
+            hdr.get_frag_off(),
+        )
+    };
+
+    assert_eq!(flags([0x80, 0]), (true, false, false, 0));
+    assert_eq!(flags([0x40, 0]), (false, true, false, 0));
+    assert_eq!(flags([0x20, 0]), (false, false, true, 0));
+    assert_eq!(flags([0x1f, 0xff]), (false, false, false, 0x1fff));
 }
 
 /// Source, destination, a zero byte, the protocol and the length, RFC 9293 section 3.1
@@ -292,12 +321,6 @@ fn test_udp_setters() {
 }
 
 #[test]
-fn test_udp_get_len() {
-    let hdr: udp_hdr = pod_read_unaligned(&[0, 0, 0, 0, 5, 6, 0, 0]);
-    assert_eq!(hdr.get_len(), 0x0506);
-}
-
-#[test]
 fn test_icmp_types() {
     assert_eq!(ICMP_ECHOREPLY, 0);
     assert_eq!(ICMP_ECHO, 8);
@@ -329,4 +352,45 @@ fn test_icmp_echo_setters() {
     let mut hdr = icmp_echo_hdr::zeroed();
     hdr.set_seq(0x0304);
     assert_eq!(bytes_of(&hdr), [0, 0, 3, 4]);
+}
+
+#[test]
+fn test_tcp_getters() {
+    let hdr: tcp_hdr = pod_read_unaligned(&[
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0x50, 0x12, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12,
+    ]);
+
+    assert_eq!(hdr.get_sport(), 0x0102);
+    assert_eq!(hdr.get_dport(), 0x0304);
+    assert_eq!(hdr.get_seq(), 0x0506_0708);
+    assert_eq!(hdr.get_ack(), 0x090a_0b0c);
+    assert_eq!(hdr.get_doff(), 0x50);
+    assert_eq!(hdr.get_flags(), 0x12);
+    assert_eq!(hdr.get_win(), 0x0d0e);
+    assert_eq!(hdr.get_csum(), 0x0f10);
+    assert_eq!(hdr.get_urp(), 0x1112);
+}
+
+#[test]
+fn test_udp_getters() {
+    let hdr: udp_hdr = pod_read_unaligned(&[1, 2, 3, 4, 5, 6, 7, 8]);
+
+    assert_eq!(hdr.get_sport(), 0x0102);
+    assert_eq!(hdr.get_dport(), 0x0304);
+    assert_eq!(hdr.get_len(), 0x0506);
+    assert_eq!(hdr.get_csum(), 0x0708);
+}
+
+#[test]
+fn test_icmp_getters() {
+    let hdr: icmp_hdr = pod_read_unaligned(&[1, 2, 3, 4]);
+
+    assert_eq!(hdr.get_typ(), 1);
+    assert_eq!(hdr.get_code(), 2);
+    assert_eq!(hdr.get_csum(), 0x0304);
+
+    let hdr: icmp_echo_hdr = pod_read_unaligned(&[1, 2, 3, 4]);
+
+    assert_eq!(hdr.get_id(), 0x0102);
+    assert_eq!(hdr.get_seq(), 0x0304);
 }

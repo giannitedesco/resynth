@@ -182,6 +182,14 @@ impl gre_hdr_sum {
         self.rsvd = rsvd.to_be();
         self
     }
+
+    pub fn get_csum(&self) -> u16 {
+        u16::from_be(self.csum)
+    }
+
+    pub fn get_rsvd(&self) -> u16 {
+        u16::from_be(self.rsvd)
+    }
 }
 
 #[repr(C, packed(1))]
@@ -195,6 +203,10 @@ impl gre_hdr_key {
         self.key = key.to_be();
         self
     }
+
+    pub fn get_key(&self) -> u32 {
+        u32::from_be(self.key)
+    }
 }
 
 #[repr(C, packed(1))]
@@ -207,5 +219,9 @@ impl gre_hdr_seq {
     pub fn seq(mut self, seq: u32) -> Self {
         self.seq = seq.to_be();
         self
+    }
+
+    pub fn get_seq(&self) -> u32 {
+        u32::from_be(self.seq)
     }
 }
