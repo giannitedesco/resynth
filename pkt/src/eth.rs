@@ -32,7 +32,7 @@ impl From<Ipv4Addr> for eth_addr {
         let ip = addr.octets();
 
         Self {
-            octets: [0x00, 0x02, ip[0], ip[1], ip[2], ip[3]],
+            octets: [0x02, 0x00, ip[0], ip[1], ip[2], ip[3]],
         }
     }
 }
