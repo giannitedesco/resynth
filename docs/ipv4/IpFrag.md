@@ -65,8 +65,8 @@ Return an IPv4 packet fragment
  Slices the stored datagram at the given offset and length and wraps it in
  an IPv4 header. Both are in units of 8 bytes, as the fragment offset is in RFC 791,
  so `fragment(1, 2)` is bytes 8 to 23 of the payload. A fragment that would run past
- the end of the payload stops there. The MF (more-fragments) bit is set unless the
- fragment reaches the end of the payload.
+ the end of the payload stops there, and one that starts past the end is empty. The
+ MF (more-fragments) bit is set unless the fragment reaches the end of the payload.
 
 ### Parameters
 

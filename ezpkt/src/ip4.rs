@@ -65,13 +65,13 @@ impl IpFrag {
         Self { hdr, payload }
     }
 
-    /// Offset and len are in 8-byte blocks
+    /// Offset and len are in 8-byte blocks. A fragment past the end of the payload is empty.
     pub fn fragment(&self, off: u16, len: u16, raw: bool) -> Packet {
         let byte_off = (off as usize) << 3;
         let byte_len = (len as usize) << 3;
-        let byte_end = byte_off + byte_len;
-        let end = min(byte_end, self.payload.len());
-        let content = &self.payload[byte_off..end];
+        let start = min(byte_off, self.payload.len());
+        let end = min(byte_off + byte_len, self.payload.len());
+        let content = &self.payload[start..end];
 
         IpDgram::new(self.hdr, content, raw)
             .frag(off, end != self.payload.len())

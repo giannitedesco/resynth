@@ -60,3 +60,12 @@ fn test_datagram() {
         (PAYLOAD.to_vec(), 0, false)
     );
 }
+
+/// A fragment offset past the end of the payload used to panic. It's an empty fragment there.
+#[test]
+fn test_fragment_past_end() {
+    assert_eq!(
+        parts(&frag(b"01234567").fragment(2, 1, false)),
+        (Vec::new(), 2, false)
+    );
+}
