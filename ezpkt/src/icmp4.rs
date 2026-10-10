@@ -66,7 +66,7 @@ impl IcmpDgram {
     }
 
     fn update_tot_len(self, more: u16) -> Self {
-        self.ip.get_mut(&self.pkt).add_tot_len(more);
+        self.ip.get_mut(&self.pkt).add_tot_len(more).calc_csum();
         self
     }
 

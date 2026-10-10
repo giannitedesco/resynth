@@ -19,3 +19,6 @@ pub use ip4::{IpDgram, IpFrag};
 pub use tcp4::{TcpFlow, TcpSeg};
 pub use udp4::{UdpDgram, UdpFlow};
 pub use vxlan::{VxlanDgram, VxlanFlow};
+
+#[cfg(test)]
+mod test;
