@@ -168,6 +168,14 @@ resynth fn name (
 ```
 A DNS name encoded with DNS label format (length-prefixed labels, null-terminated).
 
+ With one argument, the name is dotted, and split into labels at each `.`, so
+ `dns::name("www.example.com")` has three labels. One trailing dot is allowed, as in a
+ fully-qualified name, and `dns::name("")` is the root.
+
+ With several arguments, each one is a single label, used as is, even if it contains a
+ dot. So `dns::name("www", "example", "com")` is the same name as above, and
+ `dns::name("www", "example.com")` has two labels.
+
  Also used to wrap a `netbios::name::encode()` result into a complete NBNS
  name label for use in NBNS packets (which share the DNS wire format).
 

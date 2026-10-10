@@ -373,23 +373,13 @@ impl DnsName {
         this
     }
 
-    /// Parse a dotted name. One trailing dot is the root label, as in a fully-qualified name, so
-    /// `""` and `"."` are both the root. Other empty labels are kept, so `"a..b"` has one.
+    /// Parse a dotted name, see [push_dotted](Self::push_dotted)
     pub fn from(name: &[u8]) -> Self {
-        let name = name.strip_suffix(b".").unwrap_or(name);
-
-        if name.is_empty() {
-            return Self::root();
-        }
-
         let mut ret = Self {
             buf: Vec::with_capacity(name.len() + 2),
         };
 
-        for part in name.split(|x| *x == b'.') {
-            ret.push(part);
-        }
-
+        ret.push_dotted(name);
         ret.finish();
 
         ret
@@ -413,6 +403,21 @@ impl DnsName {
         // we absolutely allow invalid lengths here
         self.buf.push(component.len() as u8);
         self.buf.extend(component);
+    }
+
+    /// Push each label of a dotted name. One trailing dot stands for the root label of a
+    /// fully-qualified name, so it pushes nothing, and `""` and `"."` push nothing at all. Other
+    /// empty labels are kept, so `"a..b"` has one.
+    pub fn push_dotted(&mut self, name: &[u8]) {
+        let name = name.strip_suffix(b".").unwrap_or(name);
+
+        if name.is_empty() {
+            return;
+        }
+
+        for part in name.split(|x| *x == b'.') {
+            self.push(part);
+        }
     }
 
     #[inline(always)]

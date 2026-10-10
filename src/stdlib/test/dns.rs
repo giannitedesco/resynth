@@ -58,3 +58,36 @@ fn test_single_label() -> Result<(), RuntimeErrorKind> {
 
     Ok(())
 }
+
+/// One empty argument is the root, but used to encode as two root labels
+#[test]
+fn test_name_empty_string() {
+    assert_eq!(super::bytes("import dns;\ndns::name(\"\");"), b"\x00");
+}
+
+/// A dotted name and its labels as separate arguments are the same name
+#[test]
+fn test_name_labels_equal_dotted() {
+    assert_eq!(
+        super::bytes("import dns;\ndns::name(\"www\", \"example\", \"com\");"),
+        super::bytes("import dns;\ndns::name(\"www.example.com\");"),
+    );
+}
+
+/// With several arguments, each is one label, even with a dot in it
+#[test]
+fn test_name_labels_are_raw() {
+    assert_eq!(
+        super::bytes("import dns;\ndns::name(\"www\", \"example.com\");"),
+        b"\x03www\x0bexample.com\x00",
+    );
+}
+
+/// An open name with one argument used to be one label, dots and all
+#[test]
+fn test_name_open_dotted() {
+    assert_eq!(
+        super::bytes("import dns;\ndns::name(complete: false, \"www.example\");"),
+        b"\x03www\x07example",
+    );
+}

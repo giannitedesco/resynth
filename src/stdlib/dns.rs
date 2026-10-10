@@ -128,6 +128,14 @@ const CLASS: Module = module! {
 pub(crate) const DNS_NAME: FuncDef = func! (
     /// A DNS name encoded with DNS label format (length-prefixed labels, null-terminated).
     ///
+    /// With one argument, the name is dotted, and split into labels at each `.`, so
+    /// `dns::name("www.example.com")` has three labels. One trailing dot is allowed, as in a
+    /// fully-qualified name, and `dns::name("")` is the root.
+    ///
+    /// With several arguments, each one is a single label, used as is, even if it contains a
+    /// dot. So `dns::name("www", "example", "com")` is the same name as above, and
+    /// `dns::name("www", "example.com")` has two labels.
+    ///
     /// Also used to wrap a `netbios::name::encode()` result into a complete NBNS
     /// name label for use in NBNS packets (which share the DNS wire format).
     resynth fn name(
@@ -141,26 +149,20 @@ pub(crate) const DNS_NAME: FuncDef = func! (
         let complete: bool = args.next().into();
         let v: Vec<Buf> = args.collect_extra_args();
 
-        let name = if complete {
-            match v.len() {
-                0 => DnsName::root(),
-                1 => DnsName::from(v[0].as_ref()),
-                _ => {
-                    let mut name = DnsName::new();
-                    for arg in v {
-                        name.push(arg.as_ref());
-                    }
-                    name.finish();
-                    name
+        let mut name = DnsName::new();
+
+        match v.as_slice() {
+            [dotted] => name.push_dotted(dotted.as_ref()),
+            labels => {
+                for label in labels {
+                    name.push(label.as_ref());
                 }
             }
-        } else {
-            let mut name = DnsName::new();
-            for arg in v {
-                name.push(arg.as_ref());
-            }
-            name
-        };
+        }
+
+        if complete {
+            name.finish();
+        }
 
         Ok(Val::str(name.as_ref()))
     }

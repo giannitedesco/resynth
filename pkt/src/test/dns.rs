@@ -103,3 +103,29 @@ fn test_hdr_getters() {
     assert_eq!(hdr.get_nscount(), 0x090a);
     assert_eq!(hdr.get_arcount(), 0x0b0c);
 }
+
+/// Pushing a dotted name pushes each label, and no root
+#[test]
+fn test_push_dotted() {
+    let mut n = DnsName::new();
+    n.push_dotted(b"www.evildoer");
+    assert_eq!(b"\x03www\x08evildoer", n.as_ref());
+}
+
+/// One trailing dot stands for the root, so it pushes nothing
+#[test]
+fn test_push_dotted_trailing_dot() {
+    let mut n = DnsName::new();
+    n.push_dotted(b"www.evildoer.");
+    assert_eq!(b"\x03www\x08evildoer", n.as_ref());
+}
+
+/// The root pushes nothing, written either way
+#[test]
+fn test_push_dotted_root() {
+    for root in [&b""[..], b"."] {
+        let mut n = DnsName::new();
+        n.push_dotted(root);
+        assert_eq!(b"", n.as_ref());
+    }
+}
