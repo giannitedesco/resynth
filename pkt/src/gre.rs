@@ -98,7 +98,7 @@ impl From<GreFlags> for u16 {
     fn from(s: GreFlags) -> Self {
         ((s.v as u16) & flags::V)
             | (((s.recur as u16) & 0x7) << 8)
-            | (((s.recur as u16) & 0xf) << 3)
+            | (((s.flags as u16) & 0xf) << 3)
             | (if s.c { flags::C } else { 0 })
             | (if s.r { flags::R } else { 0 })
             | (if s.k { flags::K } else { 0 })
