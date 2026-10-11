@@ -120,6 +120,12 @@ impl TcpSeg {
     }
 
     #[must_use]
+    /// Set the checksum field to a given value, rather than computing it
+    fn csum(self, csum: u16) -> Self {
+        self.tcp.get_mut(&self.pkt).set_csum(csum);
+        self
+    }
+
     fn append_data(mut self, bytes: &[u8]) -> Self {
         self.pkt.push_bytes(bytes);
         self.data_len += bytes.len() as u32;
@@ -357,8 +363,8 @@ impl TcpFlow {
         self.sv_ack().tcp_csum()
     }
 
-    pub fn client_hdr(&mut self, dlen: u32) -> Vec<u8> {
-        let seg = self.cl().push();
+    pub fn client_hdr(&mut self, dlen: u32, csum: u16) -> Vec<u8> {
+        let seg = self.cl().push().csum(csum);
         let hdr = seg.tcp_hdr_bytes();
 
         self.cl_update(seg.seq_consumed().wrapping_add(dlen));
@@ -366,8 +372,8 @@ impl TcpFlow {
         hdr.to_vec()
     }
 
-    pub fn server_hdr(&mut self, dlen: u32) -> Vec<u8> {
-        let seg = self.sv().push();
+    pub fn server_hdr(&mut self, dlen: u32, csum: u16) -> Vec<u8> {
+        let seg = self.sv().push().csum(csum);
         let hdr = seg.tcp_hdr_bytes();
 
         self.sv_update(seg.seq_consumed().wrapping_add(dlen));

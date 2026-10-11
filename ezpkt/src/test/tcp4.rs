@@ -1,5 +1,6 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
 
+use bytemuck::pod_read_unaligned;
 use pkt::Packet;
 use pkt::ipv4::tcp_hdr;
 
@@ -91,6 +92,17 @@ fn test_seq_wraps() {
     flow.client_hole(0xffff_ffff);
     assert_eq!(client_message_seq(&mut flow), 4, "a hole wraps it");
 
-    flow.client_hdr(0xffff_ffff);
+    flow.client_hdr(0xffff_ffff, 0);
     assert_eq!(client_message_seq(&mut flow), 8, "a bare header wraps it");
+}
+
+/// A bare header's checksum is whatever the caller says, since the payload isn't known
+#[test]
+fn test_hdr_csum() {
+    let mut flow = flow();
+
+    for hdr in [flow.client_hdr(8, 0x1234), flow.server_hdr(8, 0x1234)] {
+        let tcp: tcp_hdr = pod_read_unaligned(&hdr);
+        assert_eq!(tcp.get_csum(), 0x1234);
+    }
 }

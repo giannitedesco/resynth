@@ -54,3 +54,20 @@ fn ipfrag_methods_reject_extra_args() {
         assert!(matches!(err.kind, TooManyArgs { .. }), "{call}: {err}");
     }
 }
+
+/// The TCP checksum of a bare header is whatever csum says, zero by default
+#[test]
+fn tcp_hdr_csum() {
+    let src = "import ipv4;\n\
+               let flow = ipv4::tcp::flow(10.0.0.1/40000, 10.0.0.2/80);\n";
+
+    for side in ["client", "server"] {
+        let tcp: tcp_hdr = hdr(&bytes(&format!(
+            "{src}flow.{side}_hdr(bytes: 8, csum: 0x1234);"
+        )));
+        assert_eq!(tcp.get_csum(), 0x1234, "{side}");
+
+        let tcp: tcp_hdr = hdr(&bytes(&format!("{src}flow.{side}_hdr(bytes: 8);")));
+        assert_eq!(tcp.get_csum(), 0, "{side}");
+    }
+}

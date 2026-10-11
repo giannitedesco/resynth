@@ -89,6 +89,7 @@ Shutdown both sides of the TCP connection, with the client sending the first FIN
 ```resynth
 resynth fn client_hdr (
     bytes: u32 = 0x00000000,
+    csum: u16 = 0x0000,
 ) -> bytes;
 ```
 Returns a TCP header only (no payload, no IP header) for a
@@ -98,11 +99,16 @@ Returns a TCP header only (no payload, no IP header) for a
  to craft fragmented packets where the TCP header lands in one fragment
  and the payload in another.
 
+ The payload isn't known here, so the TCP checksum can't be computed. It is zero
+ unless you pass the right value as `csum`, so a receiver that checks it will
+ discard the reassembled segment.
+
 ### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `bytes` | `u32` | Number of payload bytes to advance the sequence number by, without emitting them _(default: `0x00000000`)_ |
+| `csum` | `u16` | Value for the TCP checksum field _(default: `0x0000`)_ |
 
 ### Returns
 
@@ -277,6 +283,7 @@ Shutdown both sides of the TCP connection, with the server sending the first FIN
 ```resynth
 resynth fn server_hdr (
     bytes: u32 = 0x00000000,
+    csum: u16 = 0x0000,
 ) -> bytes;
 ```
 Returns a TCP header only (no payload, no IP header) for a
@@ -286,11 +293,16 @@ Returns a TCP header only (no payload, no IP header) for a
  to craft fragmented packets where the TCP header lands in one fragment
  and the payload in another.
 
+ The payload isn't known here, so the TCP checksum can't be computed. It is zero
+ unless you pass the right value as `csum`, so a receiver that checks it will
+ discard the reassembled segment.
+
 ### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `bytes` | `u32` | Number of payload bytes to advance the sequence number by, without emitting them _(default: `0x00000000`)_ |
+| `csum` | `u16` | Value for the TCP checksum field _(default: `0x0000`)_ |
 
 ### Returns
 

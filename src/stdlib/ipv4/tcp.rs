@@ -227,10 +227,16 @@ const TCP_CL_HDR: FuncDef = func!(
     /// sequence number, without actually emitting them. Use with `ipv4::frag`
     /// to craft fragmented packets where the TCP header lands in one fragment
     /// and the payload in another.
+    ///
+    /// The payload isn't known here, so the TCP checksum can't be computed. It is zero
+    /// unless you pass the right value as `csum`, so a receiver that checks it will
+    /// discard the reassembled segment.
     resynth fn client_hdr(
         =>
         /// Number of payload bytes to advance the sequence number by, without emitting them
         bytes: U32 = 0,
+        /// Value for the TCP checksum field
+        csum: U16 = 0,
         =>
         Void
     ) -> Str
@@ -239,8 +245,9 @@ const TCP_CL_HDR: FuncDef = func!(
         let mut r = obj.borrow_mut();
         let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
         let bytes: u32 = args.next().into();
+        let csum: u16 = args.next().into();
 
-        Ok(Val::Str(Buf::from(this.client_hdr(bytes))))
+        Ok(Val::Str(Buf::from(this.client_hdr(bytes, csum))))
     }
 );
 
@@ -251,10 +258,16 @@ const TCP_SV_HDR: FuncDef = func!(
     /// sequence number, without actually emitting them. Use with `ipv4::frag`
     /// to craft fragmented packets where the TCP header lands in one fragment
     /// and the payload in another.
+    ///
+    /// The payload isn't known here, so the TCP checksum can't be computed. It is zero
+    /// unless you pass the right value as `csum`, so a receiver that checks it will
+    /// discard the reassembled segment.
     resynth fn server_hdr(
         =>
         /// Number of payload bytes to advance the sequence number by, without emitting them
         bytes: U32 = 0,
+        /// Value for the TCP checksum field
+        csum: U16 = 0,
         =>
         Void
     ) -> Str
@@ -263,8 +276,9 @@ const TCP_SV_HDR: FuncDef = func!(
         let mut r = obj.borrow_mut();
         let this: &mut TcpFlow = r.as_mut_any().downcast_mut().unwrap();
         let bytes: u32 = args.next().into();
+        let csum: u16 = args.next().into();
 
-        Ok(Val::Str(Buf::from(this.server_hdr(bytes))))
+        Ok(Val::Str(Buf::from(this.server_hdr(bytes, csum))))
     }
 );
 
