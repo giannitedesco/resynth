@@ -152,7 +152,12 @@ const HDR: FuncDef = func!(
 const OPTION: FuncDef = func!(
     /// DHCP Option
     ///
-    /// Length fields wrap around if the content is too long for them.
+    /// Encodes the option code, a one-byte length, and the data. The length wraps around if
+    /// the data is longer than 255 bytes.
+    ///
+    /// [PADDING](opt/README.md) and [END](opt/README.md) have no length (RFC 2132 §3.1, §3.2),
+    /// so with no data they encode as the code byte alone. Pass them data to get a malformed
+    /// option with a length.
     resynth fn option(
         /// DHCP option code
         opt: U8,
@@ -162,9 +167,13 @@ const OPTION: FuncDef = func!(
     ) -> Str
     |mut args| {
         let opt: u8 = args.next().into();
-        let data = args.join_extra(b"");
-        let optbuf = dhcp_opt::create(opt, &data);
-        Ok(Val::str(optbuf))
+        let data: Buf = args.join_extra(b"").into();
+
+        if data.len() == 0 && matches!(opt, opt::PADDING | opt::END) {
+            return Ok(Val::str(&[opt]));
+        }
+
+        Ok(Val::str(dhcp_opt::create(opt, &data)))
     }
 );
 

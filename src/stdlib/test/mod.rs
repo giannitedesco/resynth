@@ -9,6 +9,7 @@ use crate::program::{Program, RuntimeError};
 use crate::val::Val;
 
 mod arp;
+mod dhcp;
 mod dns;
 mod io;
 mod ipv4;

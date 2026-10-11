@@ -83,7 +83,12 @@ resynth fn option (
 ```
 DHCP Option
 
- Length fields wrap around if the content is too long for them.
+ Encodes the option code, a one-byte length, and the data. The length wraps around if
+ the data is longer than 255 bytes.
+
+ [PADDING](opt/README.md) and [END](opt/README.md) have no length (RFC 2132 §3.1, §3.2),
+ so with no data they encode as the code byte alone. Pass them data to get a malformed
+ option with a length.
 
 ### Parameters
 
