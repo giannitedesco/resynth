@@ -1,6 +1,6 @@
-use bytemuck::pod_read_unaligned;
+use bytemuck::{Zeroable, bytes_of, pod_read_unaligned};
 
-use crate::dns::{DnsName, dns_hdr};
+use crate::dns::{DnsFlags, DnsName, dns_hdr};
 
 /// Construct a root name
 #[test]
@@ -128,4 +128,65 @@ fn test_push_dotted_root() {
         n.push_dotted(root);
         assert_eq!(b"", n.as_ref());
     }
+}
+
+/// Each flag lands in its own bits, RFC 1035 section 4.1.1 and RFC 4035 section 3.2
+#[test]
+fn test_flags() {
+    let dfl = DnsFlags::default;
+
+    assert_eq!(dfl().response(true).build(), 0x8000);
+    assert_eq!(dfl().opcode(0x5).build(), 0x2800);
+    assert_eq!(dfl().aa(true).build(), 0x0400);
+    assert_eq!(dfl().tc(true).build(), 0x0200);
+    assert_eq!(dfl().rd(true).build(), 0x0100);
+    assert_eq!(dfl().ra(true).build(), 0x0080);
+    assert_eq!(dfl().z(true).build(), 0x0040);
+    assert_eq!(dfl().ad(true).build(), 0x0020);
+    assert_eq!(dfl().cd(true).build(), 0x0010);
+    assert_eq!(dfl().rcode(0x5).build(), 0x0005);
+}
+
+/// Values too wide for a field don't spill into the next one
+#[test]
+fn test_flags_field_widths() {
+    assert_eq!(DnsFlags::default().opcode(0xff).build(), 0x7800);
+    assert_eq!(DnsFlags::default().rcode(0xff).build(), 0x000f);
+}
+
+/// Clearing a flag keeps the others
+#[test]
+fn test_flags_clear() {
+    let all = DnsFlags::default()
+        .response(true)
+        .aa(true)
+        .tc(true)
+        .rd(true)
+        .ra(true)
+        .z(true)
+        .ad(true)
+        .cd(true);
+
+    assert_eq!(all.response(false).build(), 0x07f0);
+    assert_eq!(all.aa(false).build(), 0x83f0);
+    assert_eq!(all.tc(false).build(), 0x85f0);
+    assert_eq!(all.rd(false).build(), 0x86f0);
+    assert_eq!(all.ra(false).build(), 0x8770);
+    assert_eq!(all.z(false).build(), 0x87b0);
+    assert_eq!(all.ad(false).build(), 0x87d0);
+    assert_eq!(all.cd(false).build(), 0x87e0);
+}
+
+/// ID, flags, then the four section counts, RFC 1035 section 4.1.1
+#[test]
+fn test_hdr_setters() {
+    let mut hdr = dns_hdr::zeroed();
+    hdr.set_id(0x0102)
+        .set_flags(0x0304)
+        .set_qdcount(0x0506)
+        .set_ancount(0x0708)
+        .set_nscount(0x090a)
+        .set_arcount(0x0b0c);
+
+    assert_eq!(bytes_of(&hdr), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 }

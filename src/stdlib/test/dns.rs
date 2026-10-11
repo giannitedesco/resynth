@@ -1,3 +1,6 @@
+use pkt::dns::dns_hdr;
+use pkt::ipv4::udp_hdr;
+
 use crate::args::Args;
 use crate::program::RuntimeErrorKind;
 use crate::stdlib::dns::DNS_NAME;
@@ -90,4 +93,17 @@ fn test_name_open_dotted() {
         super::bytes("import dns;\ndns::name(complete: false, \"www.example\");"),
         b"\x03www\x07example",
     );
+}
+
+/// The response must copy RD from the query, but used to clear it
+#[test]
+fn test_host_response_flags() {
+    let frames = super::frames("import dns;\ndns::host(10.0.0.1, \"www.example.com\", 192.0.2.1);");
+
+    let flags: Vec<u16> = frames
+        .iter()
+        .map(|f| f.l4::<dns_hdr>(size_of::<udp_hdr>()).get_flags())
+        .collect();
+
+    assert_eq!(flags, [0x0100, 0x8180], "query RD, response QR RD RA");
 }

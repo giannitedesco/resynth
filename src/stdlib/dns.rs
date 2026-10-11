@@ -402,6 +402,7 @@ const DNS_HOST: FuncDef = func!(
             .flags(DnsFlags::default()
                    .response(true)
                    .opcode(opcode::QUERY)
+                   .rd(true) // copied from the query, RFC 1035 4.1.1
                    .ra(true)
                    .build())
             .qdcount(1)
