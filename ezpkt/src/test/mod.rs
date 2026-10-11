@@ -5,6 +5,7 @@ use pkt::ipv4::{ip_csum, ip_csum_fold, ip_csum_partial, ip_hdr};
 
 mod gre;
 mod icmp4;
+mod ip4;
 mod tcp4;
 mod udp4;
 

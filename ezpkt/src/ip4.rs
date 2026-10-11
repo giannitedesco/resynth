@@ -65,7 +65,7 @@ impl IpFrag {
         Self { hdr, payload }
     }
 
-    /// Offset is in 8-byte blocks, len is in bytes
+    /// Offset and len are in 8-byte blocks
     pub fn fragment(&self, off: u16, len: u16, raw: bool) -> Packet {
         let byte_off = (off as usize) << 3;
         let byte_len = (len as usize) << 3;
