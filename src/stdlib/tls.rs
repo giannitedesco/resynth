@@ -1190,12 +1190,12 @@ pub const TLS: Module = module! {
     /// );
     /// ```
     ///
-    /// ### Server Hello, Certificate, and Server Hello Done
+    /// ### Server Hello, Certificate, Server Key Exchange, and Server Hello Done
     ///
     /// The server responds with its chosen cipher suite and extensions, followed by its
-    /// certificate chain, and a Server Hello Done to signal it is ready for key exchange.
-    /// All three messages are bundled into a single `server_message` call so they arrive
-    /// in the same TCP segment.
+    /// certificate chain, its key exchange parameters, and a Server Hello Done to signal it
+    /// is ready for key exchange. All four messages are bundled into a single
+    /// `server_message` call so they arrive in the same TCP segment.
     ///
     /// ```resynth
     /// tls.server_message(
@@ -1227,7 +1227,8 @@ pub const TLS: Module = module! {
     ///     tls::certificates(io::file("./example-data/rsa4096.x509.cert.der")),
     ///   ),
     ///
-    ///   // Server Key Exchange — ECDH parameters (load from file or embed as hex bytes)
+    ///   // Server Key Exchange — ECDH parameters, after their 3-byte length (load from file
+    ///   // or embed as hex bytes)
     ///   tls::message(
     ///     content: tls::content::HANDSHAKE,
     ///     version: tls::version::TLS_1_2,
