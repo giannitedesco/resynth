@@ -26,7 +26,7 @@ impl IpDgram {
             ));
         }
 
-        iph.set_tot_len(payload.len() as u16 + IPH_LEN as u16);
+        iph.set_tot_len((payload.len() as u16).wrapping_add(IPH_LEN as u16));
 
         let ip = pkt.push(iph);
 

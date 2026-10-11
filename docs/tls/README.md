@@ -152,6 +152,8 @@ resynth fn certificates (
 ```
 Returns a chain of X.509 certificates
 
+ Length fields wrap around if the content is too long for them.
+
 ### Parameters
 
 | Name | Type | Description |
@@ -172,6 +174,8 @@ resynth fn ciphers (
 ) -> bytes;
 ```
 Build a TLS cipher suites list
+
+ Length fields wrap around if the content is too long for them.
 
  Encodes the supplied [cipher suite](cipher/README.md) constants as a
  16-bit length-prefixed list, ready to embed in a [client_hello](#client_hello)
@@ -202,6 +206,8 @@ resynth fn client_hello (
 ```
 Construct a TLS ClientHello handshake message
 
+ Length fields wrap around if the content is too long for them.
+
  Must be framed inside a [tls::content::HANDSHAKE](content/README.md)
  [message](#message). The random field is fixed to a placeholder value.
 
@@ -230,6 +236,8 @@ resynth fn extension (
 ) -> bytes;
 ```
 Construct a TLS extension
+
+ Length fields wrap around if the content is too long for them.
 
  Wraps payload bytes in the TLS extension framing:
 
@@ -264,6 +272,8 @@ resynth fn message (
 ) -> bytes;
 ```
 Construct a TLS record
+
+ Length fields wrap around if the content is too long for them.
 
  Wraps payload bytes in the TLS record framing:
 
@@ -303,6 +313,8 @@ resynth fn server_hello (
 ```
 Construct a TLS ServerHello handshake message
 
+ Length fields wrap around if the content is too long for them.
+
  Must be framed inside a [tls::content::HANDSHAKE](content/README.md)
  [message](#message). The random field is fixed to a placeholder value.
 
@@ -330,6 +342,8 @@ resynth fn sni (
 ) -> bytes;
 ```
 Construct a TLS Server Name Indication (SNI) extension
+
+ Length fields wrap around if the content is too long for them.
 
  Encodes one or more server names as a [tls::ext::SERVER_NAME](ext/README.md)
  extension, ready to pass to [extension](#extension) or embed directly in

@@ -85,6 +85,8 @@ resynth fn hdr (
 ```
 Returns a UDP header (with no IP header)
 
+ The length field wraps around if `len` is too big for it.
+
 ### Parameters
 
 | Name | Type | Description |

@@ -85,6 +85,16 @@ fn test_ip_setters() {
     assert_eq!(ip(|h| _ = h.set_daddr(DST)), zeroed_with(16, &DST.octets()));
 }
 
+/// Growing the total length past 65535 wraps, for malformed packets, rather than panicking in
+/// debug builds
+#[test]
+fn test_ip_add_tot_len_wraps() {
+    assert_eq!(
+        ip(|h| _ = h.set_tot_len(0xffff).add_tot_len(2)),
+        zeroed_with(2, &[0, 1])
+    );
+}
+
 #[test]
 fn test_ip_add_tot_len() {
     assert_eq!(
@@ -369,6 +379,16 @@ fn test_tcp_getters() {
     assert_eq!(hdr.get_win(), 0x0d0e);
     assert_eq!(hdr.get_csum(), 0x0f10);
     assert_eq!(hdr.get_urp(), 0x1112);
+}
+
+/// Growing the length past 65535 wraps, for malformed packets, rather than panicking in debug
+/// builds
+#[test]
+fn test_udp_add_len_wraps() {
+    assert_eq!(
+        udp(|h| _ = h.set_len(0xffff).add_len(2)),
+        [0, 0, 0, 0, 0, 1, 0, 0]
+    );
 }
 
 #[test]

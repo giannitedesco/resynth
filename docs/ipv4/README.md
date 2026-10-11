@@ -46,6 +46,8 @@ resynth fn datagram (
 ```
 Create a raw IPv4 header or datagram
 
+ The IP total length wraps around if the payload is too long for it.
+
 ### Parameters
 
 | Name | Type | Description |

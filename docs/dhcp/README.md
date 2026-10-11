@@ -83,6 +83,8 @@ resynth fn option (
 ```
 DHCP Option
 
+ Length fields wrap around if the content is too long for them.
+
 ### Parameters
 
 | Name | Type | Description |

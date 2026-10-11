@@ -839,6 +839,8 @@ const CIPHER: Module = module! {
 const TLS_MESSAGE: FuncDef = func! (
     /// Construct a TLS record
     ///
+    /// Length fields wrap around if the content is too long for them.
+    ///
     /// Wraps payload bytes in the TLS record framing:
     ///
     /// ```c
@@ -878,6 +880,8 @@ const TLS_MESSAGE: FuncDef = func! (
 const TLS_EXTENSION: FuncDef = func! (
     /// Construct a TLS extension
     ///
+    /// Length fields wrap around if the content is too long for them.
+    ///
     /// Wraps payload bytes in the TLS extension framing:
     ///
     /// ```c
@@ -916,6 +920,8 @@ fn len24(len: usize) -> [u8; 3] {
 const TLS_CIPHERS: FuncDef = func! (
     /// Build a TLS cipher suites list
     ///
+    /// Length fields wrap around if the content is too long for them.
+    ///
     /// Encodes the supplied [cipher suite](cipher/README.md) constants as a
     /// 16-bit length-prefixed list, ready to embed in a [client_hello](#client_hello)
     /// or [server_hello](#server_hello).
@@ -941,6 +947,8 @@ const TLS_CIPHERS: FuncDef = func! (
 
 const TLS_CLIENT_HELLO: FuncDef = func! (
     /// Construct a TLS ClientHello handshake message
+    ///
+    /// Length fields wrap around if the content is too long for them.
     ///
     /// Must be framed inside a [tls::content::HANDSHAKE](content/README.md)
     /// [message](#message). The random field is fixed to a placeholder value.
@@ -996,6 +1004,8 @@ const TLS_CLIENT_HELLO: FuncDef = func! (
 
 const TLS_SERVER_HELLO: FuncDef = func! (
     /// Construct a TLS ServerHello handshake message
+    ///
+    /// Length fields wrap around if the content is too long for them.
     ///
     /// Must be framed inside a [tls::content::HANDSHAKE](content/README.md)
     /// [message](#message). The random field is fixed to a placeholder value.
@@ -1053,6 +1063,8 @@ const TLS_SERVER_HELLO: FuncDef = func! (
 const TLS_SNI: FuncDef = func! (
     /// Construct a TLS Server Name Indication (SNI) extension
     ///
+    /// Length fields wrap around if the content is too long for them.
+    ///
     /// Encodes one or more server names as a [tls::ext::SERVER_NAME](ext/README.md)
     /// extension, ready to pass to [extension](#extension) or embed directly in
     /// [client_hello](#client_hello).
@@ -1085,6 +1097,8 @@ const TLS_SNI: FuncDef = func! (
 
 const TLS_CERTIFICATES: FuncDef = func! (
     /// Returns a chain of X.509 certificates
+    ///
+    /// Length fields wrap around if the content is too long for them.
     resynth fn certificates(
         =>
         =>

@@ -157,6 +157,8 @@ Prefix a buffer with a 16-bit big-endian length field
 
  Prepends a 2-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
 
+ The length wraps around if it doesn\'t fit in the field.
+
 ### Parameters
 
 | Name | Type | Description |
@@ -181,6 +183,8 @@ resynth fn len_be32 (
 Prefix a buffer with a 32-bit big-endian length field
 
  Prepends a 4-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
+
+ The length wraps around if it doesn\'t fit in the field.
 
 ### Parameters
 
@@ -207,6 +211,8 @@ Prefix a buffer with a 64-bit big-endian length field
 
  Prepends an 8-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
 
+ The length wraps around if it doesn\'t fit in the field.
+
 ### Parameters
 
 | Name | Type | Description |
@@ -231,6 +237,8 @@ resynth fn len_le16 (
 Prefix a buffer with a 16-bit little-endian length field
 
  Prepends a 2-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
+
+ The length wraps around if it doesn\'t fit in the field.
 
 ### Parameters
 
@@ -257,6 +265,8 @@ Prefix a buffer with a 32-bit little-endian length field
 
  Prepends a 4-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
 
+ The length wraps around if it doesn\'t fit in the field.
+
 ### Parameters
 
 | Name | Type | Description |
@@ -282,6 +292,8 @@ Prefix a buffer with a 64-bit little-endian length field
 
  Prepends an 8-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
 
+ The length wraps around if it doesn\'t fit in the field.
+
 ### Parameters
 
 | Name | Type | Description |
@@ -306,6 +318,8 @@ resynth fn len_u8 (
 Prefix a buffer with an 8-bit byte length field
 
  Prepends a single byte encoding of `len(payload) + adjust` to the payload bytes.
+
+ The length wraps around if it doesn\'t fit in the field.
 
 ### Parameters
 

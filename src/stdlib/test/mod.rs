@@ -11,6 +11,7 @@ use crate::val::Val;
 mod dns;
 mod io;
 mod ipv4;
+mod std_fns;
 
 /// Run a program and evaluate its final statement, which must be an expression
 fn eval(src: &str) -> Result<Val, RuntimeError> {

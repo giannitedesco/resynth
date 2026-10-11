@@ -4,7 +4,7 @@ use pkt::Packet;
 use pkt::ipv4::ip_hdr;
 
 use super::Frame;
-use crate::IpFrag;
+use crate::{IpDgram, IpFrag};
 
 fn frag(payload: &[u8]) -> IpFrag {
     let mut hdr = ip_hdr::default();
@@ -68,4 +68,12 @@ fn test_fragment_past_end() {
         parts(&frag(b"01234567").fragment(2, 1, false)),
         (Vec::new(), 2, false)
     );
+}
+
+/// A payload too long for the total length wraps it, rather than panicking in debug builds
+#[test]
+fn test_dgram_tot_len_wraps() {
+    let pkt: Packet = IpDgram::new(ip_hdr::default(), &[0; 65516], false).into();
+
+    assert_eq!(Frame::from(&pkt).ip().get_tot_len(), 0);
 }

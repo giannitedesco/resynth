@@ -151,6 +151,8 @@ const HDR: FuncDef = func!(
 
 const OPTION: FuncDef = func!(
     /// DHCP Option
+    ///
+    /// Length fields wrap around if the content is too long for them.
     resynth fn option(
         /// DHCP option code
         opt: U8,

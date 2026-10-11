@@ -112,6 +112,8 @@ const LEN_BE64: FuncDef = func! (
     /// Prefix a buffer with a 64-bit big-endian length field
     ///
     /// Prepends an 8-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
+    ///
+    /// The length wraps around if it doesn\'t fit in the field.
     resynth fn len_be64(
         =>
         /// Adjustment value added to the computed length before encoding
@@ -124,7 +126,7 @@ const LEN_BE64: FuncDef = func! (
         let bytes: Buf = args.join_extra(b"").into();
         let mut msg: Vec<u8> = Vec::with_capacity(bytes.len() + 5);
 
-        msg.extend((bytes.len() as u64 + adjust).to_be_bytes());
+        msg.extend((bytes.len() as u64).wrapping_add(adjust).to_be_bytes());
 
         msg.extend(bytes.as_ref());
 
@@ -136,6 +138,8 @@ const LEN_BE32: FuncDef = func! (
     /// Prefix a buffer with a 32-bit big-endian length field
     ///
     /// Prepends a 4-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
+    ///
+    /// The length wraps around if it doesn\'t fit in the field.
     resynth fn len_be32(
         =>
         /// Adjustment value added to the computed length before encoding
@@ -148,7 +152,7 @@ const LEN_BE32: FuncDef = func! (
         let bytes: Buf = args.join_extra(b"").into();
         let mut msg: Vec<u8> = Vec::with_capacity(bytes.len() + 5);
 
-        msg.extend((bytes.len() as u32 + adjust).to_be_bytes());
+        msg.extend((bytes.len() as u32).wrapping_add(adjust).to_be_bytes());
 
         msg.extend(bytes.as_ref());
 
@@ -160,6 +164,8 @@ const LEN_BE16: FuncDef = func! (
     /// Prefix a buffer with a 16-bit big-endian length field
     ///
     /// Prepends a 2-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
+    ///
+    /// The length wraps around if it doesn\'t fit in the field.
     resynth fn len_be16(
         =>
         /// Adjustment value added to the computed length before encoding
@@ -172,7 +178,7 @@ const LEN_BE16: FuncDef = func! (
         let bytes: Buf = args.join_extra(b"").into();
         let mut msg: Vec<u8> = Vec::with_capacity(bytes.len() + 5);
 
-        msg.extend((bytes.len() as u16 + adjust).to_be_bytes());
+        msg.extend((bytes.len() as u16).wrapping_add(adjust).to_be_bytes());
 
         msg.extend(bytes.as_ref());
 
@@ -184,6 +190,8 @@ const LEN_LE64: FuncDef = func! (
     /// Prefix a buffer with a 64-bit little-endian length field
     ///
     /// Prepends an 8-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
+    ///
+    /// The length wraps around if it doesn\'t fit in the field.
     resynth fn len_le64(
         =>
         /// Adjustment value added to the computed length before encoding
@@ -196,7 +204,7 @@ const LEN_LE64: FuncDef = func! (
         let bytes: Buf = args.join_extra(b"").into();
         let mut msg: Vec<u8> = Vec::with_capacity(bytes.len() + 9);
 
-        msg.extend((bytes.len() as u64 + adjust).to_le_bytes());
+        msg.extend((bytes.len() as u64).wrapping_add(adjust).to_le_bytes());
         msg.extend(bytes.as_ref());
 
         Ok(Val::str(msg))
@@ -207,6 +215,8 @@ const LEN_LE32: FuncDef = func! (
     /// Prefix a buffer with a 32-bit little-endian length field
     ///
     /// Prepends a 4-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
+    ///
+    /// The length wraps around if it doesn\'t fit in the field.
     resynth fn len_le32(
         =>
         /// Adjustment value added to the computed length before encoding
@@ -219,7 +229,7 @@ const LEN_LE32: FuncDef = func! (
         let bytes: Buf = args.join_extra(b"").into();
         let mut msg: Vec<u8> = Vec::with_capacity(bytes.len() + 5);
 
-        msg.extend((bytes.len() as u32 + adjust).to_le_bytes());
+        msg.extend((bytes.len() as u32).wrapping_add(adjust).to_le_bytes());
         msg.extend(bytes.as_ref());
 
         Ok(Val::str(msg))
@@ -230,6 +240,8 @@ const LEN_LE16: FuncDef = func! (
     /// Prefix a buffer with a 16-bit little-endian length field
     ///
     /// Prepends a 2-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
+    ///
+    /// The length wraps around if it doesn\'t fit in the field.
     resynth fn len_le16(
         =>
         /// Adjustment value added to the computed length before encoding
@@ -242,7 +254,7 @@ const LEN_LE16: FuncDef = func! (
         let bytes: Buf = args.join_extra(b"").into();
         let mut msg: Vec<u8> = Vec::with_capacity(bytes.len() + 3);
 
-        msg.extend((bytes.len() as u16 + adjust).to_le_bytes());
+        msg.extend((bytes.len() as u16).wrapping_add(adjust).to_le_bytes());
         msg.extend(bytes.as_ref());
 
         Ok(Val::str(msg))
@@ -253,6 +265,8 @@ const LEN_U8: FuncDef = func! (
     /// Prefix a buffer with an 8-bit byte length field
     ///
     /// Prepends a single byte encoding of `len(payload) + adjust` to the payload bytes.
+    ///
+    /// The length wraps around if it doesn\'t fit in the field.
     resynth fn len_u8(
         =>
         /// Adjustment value added to the computed length before encoding
@@ -265,7 +279,7 @@ const LEN_U8: FuncDef = func! (
         let bytes: Buf = args.join_extra(b"").into();
         let mut msg: Vec<u8> = Vec::with_capacity(bytes.len() + 5);
 
-        msg.push(bytes.len() as u8 + adjust);
+        msg.push((bytes.len() as u8).wrapping_add(adjust));
 
         msg.extend(bytes.as_ref());
 

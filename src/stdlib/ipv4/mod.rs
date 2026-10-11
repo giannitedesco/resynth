@@ -33,6 +33,8 @@ const IPV4_DGRAM_OVERHEAD: usize = std::mem::size_of::<eth_hdr>() + std::mem::si
 
 const DGRAM: FuncDef = func!(
     /// Create a raw IPv4 header or datagram
+    ///
+    /// The IP total length wraps around if the payload is too long for it.
     resynth fn datagram(
         /// Source IPv4 address
         src: Ip4,
@@ -70,8 +72,7 @@ const DGRAM: FuncDef = func!(
 
         let data: Buf = args.join_extra(b"").into();
 
-        let payload_size: u16 = data.len() as u16;
-        let tot_len: u16 = std::mem::size_of::<ip_hdr>() as u16 + payload_size;
+        let tot_len: u16 = (data.len() as u16).wrapping_add(std::mem::size_of::<ip_hdr>() as u16);
 
         let eth = eth_hdr::new(
             src.into(),
@@ -92,7 +93,7 @@ const DGRAM: FuncDef = func!(
             .set_daddr(dst)
             .calc_csum();
 
-        let pkt = Packet::with_capacity(IPV4_DGRAM_OVERHEAD + payload_size as usize);
+        let pkt = Packet::with_capacity(IPV4_DGRAM_OVERHEAD + data.len());
         pkt.push(eth);
         pkt.push(iph);
         pkt.push_bytes(data);

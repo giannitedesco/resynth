@@ -181,6 +181,8 @@ Build the complete RDATA section for an NBSTAT resource record.
  the one-byte name count (derived from the total length), and appends a
  zeroed 64-byte statistics block.
 
+ The name count wraps around if there are more than 255 entries.
+
  To include a MAC address in the statistics block, append
  `netbios::ns::statistics("|aa bb cc dd ee ff|")` manually and omit this
  function in favour of assembling the RDATA yourself.

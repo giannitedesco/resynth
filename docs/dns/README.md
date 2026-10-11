@@ -43,6 +43,8 @@ resynth fn answer (
 ```
 A DNS answer (RR)
 
+ Length fields wrap around if the content is too long for them.
+
 ### Parameters
 
 | Name | Type | Description |

@@ -76,6 +76,8 @@ const UNICAST: FuncDef = func!(
 
 const HDR: FuncDef = func!(
     /// Returns a UDP header (with no IP header)
+    ///
+    /// The length field wraps around if `len` is too big for it.
     resynth fn hdr(
         /// Source UDP port
         src: U16,
@@ -98,7 +100,7 @@ const HDR: FuncDef = func!(
         let hdr = udp_hdr {
             sport: src.to_be(),
             dport: dst.to_be(),
-            len: (len + std::mem::size_of::<udp_hdr>() as u16).to_be(),
+            len: len.wrapping_add(std::mem::size_of::<udp_hdr>() as u16).to_be(),
             csum: csum.to_be(),
         };
 

@@ -124,7 +124,7 @@ impl ip_hdr {
     }
 
     pub fn add_tot_len(&mut self, more: u16) -> &mut Self {
-        self.set_tot_len(self.get_tot_len() + more)
+        self.set_tot_len(self.get_tot_len().wrapping_add(more))
     }
 
     pub fn set_id(&mut self, id: u16) -> &mut Self {
@@ -408,7 +408,7 @@ impl udp_hdr {
     }
 
     pub fn add_len(&mut self, more: u16) -> &mut Self {
-        self.set_len(self.get_len() + more)
+        self.set_len(self.get_len().wrapping_add(more))
     }
 
     pub fn set_csum(&mut self, csum: u16) -> &mut Self {

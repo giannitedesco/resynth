@@ -312,6 +312,8 @@ const DNS_QUESTION: FuncDef = func!(
 
 const DNS_ANSWER: FuncDef = func!(
     /// A DNS answer (RR)
+    ///
+    /// Length fields wrap around if the content is too long for them.
     resynth fn answer(
         /// Encoded DNS name this record applies to
         aname: Str,
