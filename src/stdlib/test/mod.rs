@@ -13,6 +13,7 @@ mod dhcp;
 mod dns;
 mod io;
 mod ipv4;
+mod netbios;
 mod std_fns;
 
 /// Run a program and evaluate its final statement, which must be an expression

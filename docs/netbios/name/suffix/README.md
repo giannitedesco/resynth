@@ -20,7 +20,6 @@
 
  | Constant | Value | Service |
  |----------|-------|---------|
- | `DOMAIN_NAME` | `0x00` | Domain name (group) |
  | `BROWSER_ELECTIONS` | `0x1E` | Browser elections |
 ## Index
 
