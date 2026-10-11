@@ -118,7 +118,7 @@ const FRAG_FRAGMENT: FuncDef = func!(
         /// If true, omit the ethernet header
         raw: Bool = false,
         =>
-        Str
+        Void
     ) -> Pkt
     |mut args| {
         let obj = args.take_this();
@@ -145,7 +145,7 @@ const FRAG_TAIL: FuncDef = func!(
         /// If true, omit the ethernet header
         raw: Bool = false,
         =>
-        Str
+        Void
     ) -> Pkt
     |mut args| {
         let obj = args.take_this();
@@ -168,7 +168,7 @@ const FRAG_DATAGRAM: FuncDef = func!(
         /// If true, omit the ethernet header
         raw: Bool = false,
         =>
-        Str
+        Void
     ) -> Pkt
     |mut args| {
         let obj = args.take_this();

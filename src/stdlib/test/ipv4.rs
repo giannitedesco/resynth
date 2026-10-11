@@ -1,6 +1,8 @@
 use pkt::ipv4::tcp_hdr;
 
-use super::{bytes, frames, hdr};
+use crate::program::RuntimeErrorKind::TooManyArgs;
+
+use super::{bytes, eval, frames, hdr};
 
 /// A TCP flow whose client and server sequence numbers are easy to tell apart
 const SEQ_FLOW: &str = "import ipv4;\n\
@@ -34,5 +36,21 @@ fn tcp_raw_segment_seq_ack_overrides() {
         let tcp: tcp_hdr = hdr(&bytes(&format!("{SEQ_FLOW}{call}")));
 
         assert_eq!((tcp.get_seq(), tcp.get_ack()), (7777, 8888), "{call}");
+    }
+}
+
+/// IpFrag's methods take no payload, and passing one used to abort the process
+#[test]
+fn ipfrag_methods_reject_extra_args() {
+    let src = "import ipv4;\n\
+               let pkt = ipv4::frag(10.0.0.1, 10.0.0.2, \"01234567\");\n";
+
+    for call in [
+        "pkt.fragment(0, 1, false, \"x\");",
+        "pkt.tail(0, false, \"x\");",
+        "pkt.datagram(false, \"x\");",
+    ] {
+        let err = eval(&format!("{src}{call}")).expect_err(call);
+        assert!(matches!(err.kind, TooManyArgs { .. }), "{call}: {err}");
     }
 }

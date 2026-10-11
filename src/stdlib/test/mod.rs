@@ -9,6 +9,7 @@ use crate::program::{Program, RuntimeError};
 use crate::val::Val;
 
 mod dns;
+mod io;
 mod ipv4;
 
 /// Run a program and evaluate its final statement, which must be an expression

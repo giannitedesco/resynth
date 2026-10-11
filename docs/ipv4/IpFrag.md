@@ -29,8 +29,6 @@
 ```resynth
 resynth fn datagram (
     raw: bool = false,
-    =>
-    *collect_args: bytes,
 ) -> Pkt;
 ```
 Return the entire datagram as a single unfragmented packet
@@ -42,7 +40,6 @@ Return the entire datagram as a single unfragmented packet
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `raw` | `bool` | If true, omit the ethernet header _(default: `false`)_ |
-| `…` | `bytes` | Zero or more additional values |
 
 ### Returns
 
@@ -56,8 +53,6 @@ resynth fn fragment (
     frag_off: u16,
     len: u16,
     raw: bool = false,
-    =>
-    *collect_args: bytes,
 ) -> Pkt;
 ```
 Return an IPv4 packet fragment
@@ -75,7 +70,6 @@ Return an IPv4 packet fragment
 | `frag_off` | `u16` | Fragment offset in 8-byte blocks |
 | `len` | `u16` | Length of this fragment in 8-byte blocks |
 | `raw` | `bool` | If true, omit the ethernet header _(default: `false`)_ |
-| `…` | `bytes` | Zero or more additional values |
 
 ### Returns
 
@@ -88,8 +82,6 @@ Return an IPv4 packet fragment
 resynth fn tail (
     frag_off: u16,
     raw: bool = false,
-    =>
-    *collect_args: bytes,
 ) -> Pkt;
 ```
 Return the final IPv4 fragment with MF=0
@@ -103,7 +95,6 @@ Return the final IPv4 fragment with MF=0
 | ---- | ---- | ----------- |
 | `frag_off` | `u16` | Fragment offset in 8-byte blocks |
 | `raw` | `bool` | If true, omit the ethernet header _(default: `false`)_ |
-| `…` | `bytes` | Zero or more additional values |
 
 ### Returns
 

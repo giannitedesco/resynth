@@ -48,8 +48,6 @@ Create a `BufIO` buffer from one or more byte strings, from which bytes
 ```resynth
 resynth fn file (
     filename: bytes,
-    =>
-    *collect_args: bytes,
 ) -> bytes;
 ```
 Load the contents of a file into a string
@@ -59,7 +57,6 @@ Load the contents of a file into a string
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `filename` | `bytes` | Path to the file to load |
-| `…` | `bytes` | Zero or more additional values |
 
 ### Returns
 

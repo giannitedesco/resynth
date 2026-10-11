@@ -16,7 +16,7 @@ const IO_FILE: FuncDef = func!(
         filename: Str,
         =>
         =>
-        Str
+        Void
     ) -> Str
     |mut args| {
         let arg: Buf = args.next().into();
