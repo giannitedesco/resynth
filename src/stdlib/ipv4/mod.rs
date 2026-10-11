@@ -32,9 +32,11 @@ const PROTO: Module = module! {
 const IPV4_DGRAM_OVERHEAD: usize = std::mem::size_of::<eth_hdr>() + std::mem::size_of::<ip_hdr>();
 
 const DGRAM: FuncDef = func!(
-    /// Create a raw IPv4 header or datagram
+    /// Create an IPv4 datagram, in an ethernet frame
     ///
-    /// The IP total length wraps around if the payload is too long for it.
+    /// The payload follows the IPv4 header as is, so it must include any transport header,
+    /// with the protocol given by `proto`. The IP total length wraps around if the payload is
+    /// too long for it.
     resynth fn datagram(
         /// Source IPv4 address
         src: Ip4,

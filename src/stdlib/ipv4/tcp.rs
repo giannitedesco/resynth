@@ -336,7 +336,7 @@ const TCP_SV_ACK: FuncDef = func!(
 );
 
 const TCP_CL_HOLE: FuncDef = func!(
-    /// Creates a hole in the sever's Tx sequence space, making it look like we missed a packet
+    /// Creates a hole in the client's Tx sequence space, making it look like we missed a packet
     /// from the client
     resynth fn client_hole(
         /// Number of bytes to advance the client sequence number without emitting a packet
@@ -357,7 +357,7 @@ const TCP_CL_HOLE: FuncDef = func!(
 );
 
 const TCP_SV_HOLE: FuncDef = func!(
-    /// Creates a hole in the sever's Tx sequence space, making it look like we missed a packet
+    /// Creates a hole in the server's Tx sequence space, making it look like we missed a packet
     /// from the server
     resynth fn server_hole(
         /// Number of bytes to advance the server sequence number without emitting a packet

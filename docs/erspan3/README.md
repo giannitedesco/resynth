@@ -36,8 +36,8 @@ Create an erspan3 session
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `cl` | `Ip4` | Source (collector) IP address |
-| `sv` | `Ip4` | Destination (monitor) IP address |
+| `cl` | `Ip4` | Source IP address, of the switch mirroring the traffic |
+| `sv` | `Ip4` | Destination IP address, of the collector receiving the mirrored traffic |
 | `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 | `hwid` | `u32` | Hardware ID field in the ERSPAN3 header _(default: `0x00000000`)_ |
 | `sgt` | `u32` | Security Group Tag (SGT) field _(default: `0x00000000`)_ |

@@ -33,7 +33,7 @@
 | [client_ack](#client_ack) | `Pkt` | Sends an ACK from the client |
 | [client_close](#client_close) | `PktGen` | Shutdown both sides of the TCP connection, with the client sending the first FIN |
 | [client_hdr](#client_hdr) | `bytes` | Returns a TCP header only (no payload, no IP header) for a client-to-server segment, as `bytes`. The optional `bytes` argument declares how many payload bytes the header should account for in the sequence number, without actually emitting them. Use with `ipv4::frag` to craft fragmented packets where the TCP header lands in one fragment and the payload in another. |
-| [client_hole](#client_hole) | `void` | Creates a hole in the sever's Tx sequence space, making it look like we missed a packet from the client |
+| [client_hole](#client_hole) | `void` | Creates a hole in the client's Tx sequence space, making it look like we missed a packet from the client |
 | [client_message](#client_message) | `PktGen` | Sends a message from client to server, advancing the sequence number. By default also emits an ACK from the server in response (`send_ack: true`). Use `send_ack: false` to suppress the ACK, for example when building out-of-order or reassembly test cases. |
 | [client_raw_segment](#client_raw_segment) | `bytes` | Returns TCP header + payload bytes only (no Ethernet or IP header) for a client-to-server segment, advancing the sequence number. Returns `bytes` rather than `Pkt`. Use this with `ipv4::frag` to build IP-fragmented TCP segments. |
 | [client_reset](#client_reset) | `Pkt` | Send a RST packet from the client |
@@ -42,7 +42,7 @@
 | [server_ack](#server_ack) | `Pkt` | Sends an ACK from the server |
 | [server_close](#server_close) | `PktGen` | Shutdown both sides of the TCP connection, with the server sending the first FIN |
 | [server_hdr](#server_hdr) | `bytes` | Returns a TCP header only (no payload, no IP header) for a server-to-client segment, as `bytes`. The optional `bytes` argument declares how many payload bytes the header should account for in the sequence number, without actually emitting them. Use with `ipv4::frag` to craft fragmented packets where the TCP header lands in one fragment and the payload in another. |
-| [server_hole](#server_hole) | `void` | Creates a hole in the sever's Tx sequence space, making it look like we missed a packet from the server |
+| [server_hole](#server_hole) | `void` | Creates a hole in the server's Tx sequence space, making it look like we missed a packet from the server |
 | [server_message](#server_message) | `PktGen` | Sends a message from server to client, advancing the sequence number. By default also emits an ACK from the client in response (`send_ack: true`). Use `send_ack: false` to suppress the ACK, for example when building out-of-order or reassembly test cases. |
 | [server_raw_segment](#server_raw_segment) | `bytes` | Returns TCP header + payload bytes only (no Ethernet or IP header) for a server-to-client segment, advancing the sequence number. Returns `bytes` rather than `Pkt`. Use this with `ipv4::frag` to build IP-fragmented TCP segments. |
 | [server_reset](#server_reset) | `Pkt` | Send a RST packet from the server |
@@ -122,7 +122,7 @@ resynth fn client_hole (
     bytes: u32,
 ) -> void;
 ```
-Creates a hole in the sever's Tx sequence space, making it look like we missed a packet
+Creates a hole in the client's Tx sequence space, making it look like we missed a packet
  from the client
 
 ### Parameters
@@ -316,7 +316,7 @@ resynth fn server_hole (
     bytes: u32,
 ) -> void;
 ```
-Creates a hole in the sever's Tx sequence space, making it look like we missed a packet
+Creates a hole in the server's Tx sequence space, making it look like we missed a packet
  from the server
 
 ### Parameters

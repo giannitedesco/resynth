@@ -923,8 +923,9 @@ const TLS_CIPHERS: FuncDef = func! (
     /// Length fields wrap around if the content is too long for them.
     ///
     /// Encodes the supplied [cipher suite](cipher/README.md) constants as a
-    /// 16-bit length-prefixed list, ready to embed in a [client_hello](#client_hello)
-    /// or [server_hello](#server_hello).
+    /// 16-bit length-prefixed list, ready to pass as the `ciphers` argument of
+    /// [client_hello](#client_hello). [server_hello](#server_hello) takes a single cipher
+    /// suite instead.
     resynth fn ciphers(
         =>
         =>
@@ -1065,9 +1066,9 @@ const TLS_SNI: FuncDef = func! (
     ///
     /// Length fields wrap around if the content is too long for them.
     ///
-    /// Encodes one or more server names as a [tls::ext::SERVER_NAME](ext/README.md)
-    /// extension, ready to pass to [extension](#extension) or embed directly in
-    /// [client_hello](#client_hello).
+    /// Encodes one or more server names as a complete [tls::ext::SERVER_NAME](ext/README.md)
+    /// extension, including its type and length, ready to embed directly in
+    /// [client_hello](#client_hello). Don't wrap it in [extension](#extension).
     resynth fn sni(
         =>
         =>

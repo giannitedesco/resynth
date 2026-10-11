@@ -48,9 +48,9 @@ impl Class for Erspan1Flow {
 const SESSION: FuncDef = func!(
     /// Create an ERSPAN session
     resynth fn session(
-        /// Source (collector) IP address
+        /// Source IP address, of the switch mirroring the traffic
         cl: Ip4,
-        /// Destination (monitor) IP address
+        /// Destination IP address, of the collector receiving the mirrored traffic
         sv: Ip4,
         =>
         /// Enable raw mode; omits ethernet framing

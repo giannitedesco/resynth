@@ -32,8 +32,8 @@ Create an erspan2 session
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `cl` | `Ip4` | Source (collector) IP address |
-| `sv` | `Ip4` | Destination (monitor) IP address |
+| `cl` | `Ip4` | Source IP address, of the switch mirroring the traffic |
+| `sv` | `Ip4` | Destination IP address, of the collector receiving the mirrored traffic |
 | `raw` | `bool` | Enable raw mode; omits ethernet framing _(default: `false`)_ |
 
 ### Returns
