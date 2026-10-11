@@ -8,6 +8,7 @@ use crate::parse::parse;
 use crate::program::{Program, RuntimeError};
 use crate::val::Val;
 
+mod arp;
 mod dns;
 mod io;
 mod ipv4;
