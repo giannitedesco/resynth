@@ -34,6 +34,7 @@
 mod macros;
 mod args;
 pub mod ast;
+pub mod hir;
 mod lex;
 mod libapi;
 mod loc;
