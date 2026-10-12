@@ -1,7 +1,7 @@
 use crate::lex::{
     LexError,
     LexErrorKind::{self, *},
-    Lexer, Tok, Token,
+    Lexer, Scanner, Tok, Token,
 };
 use crate::loc::Loc;
 use crate::str::Buf;
@@ -384,4 +384,38 @@ fn lex_hex_error_points_at_character() {
 #[test]
 fn lex_string_error_on_second_line_of_join() {
     assert_eq!(lex_err("\"ab\"\n  \"|0|\";"), str_err(2, 6, OddHexDigits));
+}
+
+#[test]
+fn scan_spans_tile_line() {
+    let lines = [
+        "",
+        "let x = \"a\" \"b\"; # comment",
+        "().:::;=,/ // cpp",
+        "1.2.3.4/24 0x1f 123",
+        "\tlet\r",
+        // Scanning carries on past errors, so they must tile too
+        "x @ y",
+        "123abc 1.2.3.256 x",
+        "x \"abc",
+        "letä é",
+        "x\ny",
+    ];
+
+    for line in lines {
+        let mut end = 0;
+        for span in Scanner::lexemes(line).map(|lexeme| match lexeme {
+            Ok(lexeme) => lexeme.span,
+            Err(err) => err.span,
+        }) {
+            assert_eq!(span.start, end, "{line:?}: gap or overlap at {span:?}");
+            assert!(span.start < span.end, "{line:?}: empty span {span:?}");
+            assert!(
+                line.is_char_boundary(span.end),
+                "{line:?}: {span:?} splits a char"
+            );
+            end = span.end;
+        }
+        assert_eq!(end, line.len(), "{line:?}: not covered to the end");
+    }
 }

@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::net::Ipv4Addr;
 use std::num::{IntErrorKind, ParseIntError};
+use std::ops::Range;
 
 use derive_more::{Display, Error};
 
@@ -118,6 +119,27 @@ impl Token {
 
 /// Why the source could not be lexed, and where
 #[derive(Debug, Display, Error, Clone, PartialEq, Eq)]
+#[display("{}-{}: {kind}", span.start + 1, span.end)]
+pub struct LexLineError {
+    pub span: Range<usize>,
+    pub kind: LexErrorKind,
+}
+
+impl LexLineError {
+    pub fn loc(&self, lno: usize) -> Loc {
+        Loc::new(lno, self.span.start + 1)
+    }
+
+    pub fn locate(self, lno: usize) -> LexError {
+        LexError {
+            loc: self.loc(lno),
+            kind: self.kind,
+        }
+    }
+}
+
+/// Why the source could not be lexed, and where
+#[derive(Debug, Display, Error, Clone, PartialEq, Eq)]
 #[display("{loc}: {kind}")]
 pub struct LexError {
     pub loc: Loc,
@@ -190,9 +212,9 @@ impl PendingStr {
     }
 }
 
-/// What the [Cursor] found at one position in a line
+/// What the [Scanner] found at one position in a line
 #[derive(Debug)]
-enum Lexeme<'a> {
+pub enum LexemeKind<'a> {
     /// Whitespace or a comment
     Trivia,
     /// The body of a string literal, between its quotes. It may be joined with those which
@@ -201,15 +223,39 @@ enum Lexeme<'a> {
     Tok(Tok),
 }
 
+#[derive(Debug)]
+pub struct Lexeme<'a> {
+    pub span: Range<usize>,
+    pub kind: LexemeKind<'a>,
+}
+
 /// A position within one line
 #[derive(Debug)]
-struct Cursor<'a> {
+pub struct Scanner<'a> {
     line: &'a str,
     /// Always on a char boundary
     pos: usize,
 }
 
-impl<'a> Cursor<'a> {
+impl<'a> Scanner<'a> {
+    pub fn lexemes(line: &'a str) -> impl Iterator<Item = Result<Lexeme<'a>, LexLineError>> + 'a {
+        let mut cur = Self::new(line);
+        std::iter::from_fn(move || {
+            let c = cur.peek()?;
+            let start = cur.pos;
+            match cur.lexeme(c) {
+                Ok(kind) => Some(Ok(Lexeme {
+                    span: start..cur.pos,
+                    kind,
+                })),
+                Err(err) => Some(Err(LexLineError {
+                    span: start..cur.pos,
+                    kind: err,
+                })),
+            }
+        })
+    }
+
     fn new(line: &'a str) -> Self {
         Self { line, pos: 0 }
     }
@@ -245,50 +291,50 @@ impl<'a> Cursor<'a> {
         &self.line[start..self.pos]
     }
 
-    /// Lex whatever starts with `c`, which must be the [next](Cursor::peek) char. On error, the
+    /// Lex whatever starts with `c`, which must be the [next](Scanner::peek) char. On error, the
     /// location of the error is where the cursor was.
-    fn lexeme(&mut self, c: char) -> Result<Lexeme<'a>, LexErrorKind> {
+    fn lexeme(&mut self, c: char) -> Result<LexemeKind<'a>, LexErrorKind> {
         let start = self.pos;
         self.pos += c.len_utf8();
 
         Ok(match c {
             c if Self::is_space(c) => {
                 self.eat_while(Self::is_space);
-                Lexeme::Trivia
+                LexemeKind::Trivia
             }
             '#' => {
                 self.eat_while(|c| c != '\n');
-                Lexeme::Trivia
+                LexemeKind::Trivia
             }
             '/' if self.eat('/') => {
                 self.eat_while(|c| c != '\n');
-                Lexeme::Trivia
+                LexemeKind::Trivia
             }
 
-            '(' => Lexeme::Tok(Tok::LParen),
-            ')' => Lexeme::Tok(Tok::RParen),
-            '.' => Lexeme::Tok(Tok::Dot),
-            ':' if self.eat(':') => Lexeme::Tok(Tok::DoubleColon),
-            ':' => Lexeme::Tok(Tok::Colon),
-            ';' => Lexeme::Tok(Tok::SemiColon),
-            '=' => Lexeme::Tok(Tok::Equals),
-            ',' => Lexeme::Tok(Tok::Comma),
-            '/' => Lexeme::Tok(Tok::Slash),
+            '(' => LexemeKind::Tok(Tok::LParen),
+            ')' => LexemeKind::Tok(Tok::RParen),
+            '.' => LexemeKind::Tok(Tok::Dot),
+            ':' if self.eat(':') => LexemeKind::Tok(Tok::DoubleColon),
+            ':' => LexemeKind::Tok(Tok::Colon),
+            ';' => LexemeKind::Tok(Tok::SemiColon),
+            '=' => LexemeKind::Tok(Tok::Equals),
+            ',' => LexemeKind::Tok(Tok::Comma),
+            '/' => LexemeKind::Tok(Tok::Slash),
 
             '"' => {
                 let body = self.eat_while(|c| c != '"' && c != '\n');
                 if !self.eat('"') {
                     return Err(LexErrorKind::UnterminatedString);
                 }
-                Lexeme::Str(body)
+                LexemeKind::Str(body)
             }
 
             'a'..='z' | 'A'..='Z' | '_' => {
                 self.eat_while(Self::is_word);
-                Lexeme::Tok(Tok::word(&self.line[start..self.pos]))
+                LexemeKind::Tok(Tok::word(&self.line[start..self.pos]))
             }
 
-            '0'..='9' => Lexeme::Tok(self.number(start)?),
+            '0'..='9' => LexemeKind::Tok(self.number(start)?),
 
             c => return Err(LexErrorKind::UnexpectedChar(c)),
         })
@@ -351,16 +397,14 @@ impl Lexer {
     ///
     /// After an error the lexer must not be fed any more lines.
     pub fn line(&mut self, line: &str) -> Result<(), LexError> {
-        let mut cur = Cursor::new(line);
-
         self.lno += 1;
 
-        while let Some(c) = cur.peek() {
-            let loc = Loc::new(self.lno, cur.pos + 1);
-
-            match cur.lexeme(c).map_err(|kind| kind.at(loc))? {
-                Lexeme::Trivia => {}
-                Lexeme::Str(body) => {
+        for lexeme in Scanner::lexemes(line) {
+            let lexeme = lexeme.map_err(|err| err.locate(self.lno))?;
+            let loc = Loc::new(self.lno, lexeme.span.start + 1);
+            match lexeme.kind {
+                LexemeKind::Trivia => {}
+                LexemeKind::Str(body) => {
                     let pend = self.pending.get_or_insert_with(|| PendingStr {
                         loc,
                         bytes: Vec::new(),
@@ -372,7 +416,7 @@ impl Lexer {
                         return Err(LexErrorKind::StringLiteral(err.kind).at(loc));
                     }
                 }
-                Lexeme::Tok(tok) => {
+                LexemeKind::Tok(tok) => {
                     self.toks
                         .extend(self.pending.take().map(PendingStr::into_token));
                     self.toks.push_back(Token { loc, tok });

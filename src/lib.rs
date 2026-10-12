@@ -50,7 +50,9 @@ pub mod stdlib;
 #[cfg(test)]
 mod test;
 
-pub use lex::{LexError, LexErrorKind, Lexer, Tok, Token};
+pub use lex::{
+    LexError, LexErrorKind, LexLineError, Lexeme, LexemeKind, Lexer, Scanner, Tok, Token,
+};
 pub use loc::Loc;
 pub use parse::{ParseError, ParseErrorKind};
 pub use program::{Program, RuntimeError, RuntimeErrorKind};
