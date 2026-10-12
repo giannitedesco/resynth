@@ -1,3 +1,4 @@
+use crate::ast::Stmt;
 use crate::lex::Lexer;
 use crate::loc::Loc;
 use crate::parse::parse;
@@ -5,9 +6,10 @@ use crate::program::Program;
 use crate::program::RuntimeError;
 use crate::program::RuntimeErrorKind::{
     ImportError, MultipleAssignError, NameError, NoSuchArg, NotAValue, NotCallable, NotImported,
-    PortOutOfRange, TypeError,
+    PortOutOfRange, TooManyArgs, TypeError,
 };
-use crate::val::ValType;
+use crate::stdlib::toplevel_module;
+use crate::val::{Val, ValType};
 
 type RunResult = Result<(), RuntimeError>;
 
@@ -186,4 +188,68 @@ fn run_let_and_import_errors_at_name() {
         matches!(&err.kind, ImportError(n) if &**n == "nosuch") && err.loc == Loc::new(1, 8),
         "{err:?}"
     );
+}
+
+/// The packets of a program's final statement, which must be an expression
+fn last_packets(src: &str) -> Vec<Vec<u8>> {
+    let mut stmts = parse(Lexer::lex(src.lines()).expect("lex failed")).expect("parse failed");
+    let Some(Stmt::Expr(last)) = stmts.pop() else {
+        panic!("the last statement must be an expression");
+    };
+    let mut prog = Program::dummy();
+    prog.run(stmts).expect("run failed");
+    match prog.eval(last).expect("run failed") {
+        Val::Pkt(pkt) => vec![pkt.to_vec()],
+        Val::PktGen(pkts) => pkts.iter().map(|pkt| pkt.to_vec()).collect(),
+        val => panic!("expected packets, got {val:?}"),
+    }
+}
+
+/// The code in each ```resynth block of a doc comment, joined into one program
+fn doc_program(doc: &str) -> String {
+    let mut prog = String::new();
+    let mut in_block = false;
+
+    for line in doc.lines().map(str::trim_start) {
+        match line {
+            "```resynth" => in_block = true,
+            "```" => in_block = false,
+            code if in_block => {
+                prog.push_str(code);
+                prog.push('\n');
+            }
+            _ => {}
+        }
+    }
+
+    prog
+}
+
+/// The tls module's handshake example runs. It used to load a file that didn't exist.
+#[test]
+fn run_tls_module_doc_example() {
+    let frames = last_packets(&doc_program(toplevel_module("tls").expect("no tls").doc));
+
+    // The server flight holds the Server Key Exchange record: handshake, TLS 1.2, 556 bytes,
+    // then a server_key_exchange message of 552 bytes
+    let ske: &[u8] = &[0x16, 0x03, 0x03, 0x02, 0x2c, 0x0c, 0x00, 0x02, 0x28];
+    assert!(frames[0].windows(ske.len()).any(|w| w == ske));
+}
+
+/// Functions with no use for extra arguments reject them. Passing them used to abort the process.
+#[test]
+fn run_extra_args_rejected() {
+    let err = run_err("import io;\nio::file(\"a\", \"b\");");
+    assert!(matches!(err.kind, TooManyArgs { .. }), "{err}");
+
+    let src = "import ipv4;\n\
+               let pkt = ipv4::frag(10.0.0.1, 10.0.0.2, \"01234567\");\n";
+    for call in [
+        "pkt.fragment(0, 1, false, \"x\");",
+        "pkt.tail(0, false, \"x\");",
+        "pkt.datagram(false, \"x\");",
+    ] {
+        let err = run_err(&format!("{src}{call}"));
+        assert!(matches!(err.kind, TooManyArgs { .. }), "{call}: {err}");
+    }
 }

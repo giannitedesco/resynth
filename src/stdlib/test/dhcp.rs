@@ -1,11 +1,18 @@
-use super::bytes;
+use super::{Call, constant, s};
 
 /// END and PADDING are a lone code byte, but used to get a zero length byte too
 #[test]
 fn option_end_and_padding_have_no_length() {
-    assert_eq!(bytes("import dhcp;\ndhcp::option(dhcp::opt::END);"), [0xff]);
     assert_eq!(
-        bytes("import dhcp;\ndhcp::option(dhcp::opt::PADDING);"),
+        Call::func("dhcp::option")
+            .arg(constant("dhcp::opt::END"))
+            .bytes(),
+        [0xff]
+    );
+    assert_eq!(
+        Call::func("dhcp::option")
+            .arg(constant("dhcp::opt::PADDING"))
+            .bytes(),
         [0x00]
     );
 }
@@ -14,7 +21,10 @@ fn option_end_and_padding_have_no_length() {
 #[test]
 fn option_end_with_data() {
     assert_eq!(
-        bytes("import dhcp;\ndhcp::option(dhcp::opt::END, \"|01|\");"),
+        Call::func("dhcp::option")
+            .arg(constant("dhcp::opt::END"))
+            .extra(s([1u8]))
+            .bytes(),
         [0xff, 1, 1]
     );
 }
@@ -23,7 +33,9 @@ fn option_end_with_data() {
 #[test]
 fn option_empty() {
     assert_eq!(
-        bytes("import dhcp;\ndhcp::option(dhcp::opt::CLIENT_ID);"),
+        Call::func("dhcp::option")
+            .arg(constant("dhcp::opt::CLIENT_ID"))
+            .bytes(),
         [61, 0]
     );
 }

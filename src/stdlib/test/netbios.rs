@@ -1,6 +1,6 @@
 use crate::val::Val;
 
-use super::eval;
+use super::constant;
 
 /// Every suffix in the doc table exists, with the value the table gives. The table used to list
 /// a DOMAIN_NAME constant that didn't exist.
@@ -17,7 +17,7 @@ fn suffix_doc_table() {
         ("RAS_CLIENT", 0x21),
         ("BROWSER_ELECTIONS", 0x1e),
     ] {
-        let val = eval(&format!("import netbios;\nnetbios::name::suffix::{name};")).unwrap();
+        let val = constant(&format!("netbios::name::suffix::{name}"));
         assert!(
             matches!(val, Val::U8(got) if got == want),
             "{name}: {val:?}"
