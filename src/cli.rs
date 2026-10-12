@@ -5,7 +5,6 @@ use resynth::stdlib::{write_docs, write_stdlib_json};
 use resynth::{LexError, Lexer, Loc, ParseError, Program, RuntimeError};
 use resynth::{error, ok, warn};
 
-use std::borrow::Cow;
 use std::io::{BufRead, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -57,12 +56,28 @@ impl FromStr for StartTime {
     }
 }
 
-/// Where each input's pcap file is written
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum OutputMode {
-    /// `-o FILE`: the one and only input is written to `FILE`
+/// A program to compile
+#[derive(Debug, Display, PartialEq, Eq)]
+enum Input {
+    #[display("{}", _0.display())]
     File(PathBuf),
 
+    #[display("<stdin>")]
+    Stdin,
+}
+
+impl Input {
+    fn open(&self) -> io::Result<Box<dyn BufRead>> {
+        Ok(match self {
+            Self::File(p) => Box::new(io::BufReader::new(fs::File::open(p)?)),
+            Self::Stdin => Box::new(io::stdin().lock()),
+        })
+    }
+}
+
+/// Where each input file's pcap file is written, when `-o` doesn't name it
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum OutputMode {
     /// Default: next to each input, as `<input dir>/<input name>.pcap`
     BesideInput,
 
@@ -76,8 +91,15 @@ enum OutputError {
     #[error(ignore)]
     FileWithInputs(usize),
 
-    #[display("input has no file name")]
-    NoFileName,
+    #[display("-o/--output FILE is required when reading from stdin")]
+    StdinRequiresOutput,
+
+    #[display("REPL cannot be output to a file")]
+    ReplCannotOutput,
+
+    #[display("{}: input has no file name", _0.display())]
+    #[error(ignore)]
+    NoFileName(PathBuf),
 }
 
 impl OutputMode {
@@ -85,19 +107,20 @@ impl OutputMode {
 
     /// The pcap path for `input`. Only the last extension of the input's name
     /// is replaced, so `a.b.rsyn` becomes `a.b.pcap`.
-    fn path_for<'a>(&'a self, input: &Path) -> Result<Cow<'a, Path>, OutputError> {
-        let name = input.file_name().ok_or(OutputError::NoFileName)?;
+    fn path_for(&self, input: &Path) -> Result<PathBuf, OutputError> {
+        let name = input
+            .file_name()
+            .ok_or_else(|| OutputError::NoFileName(input.into()))?;
         Ok(match self {
-            Self::File(file) => Cow::Borrowed(file.as_path()),
-            Self::BesideInput => Cow::Owned(input.with_extension(Self::EXTENSION)),
-            Self::Dir(dir) => Cow::Owned(dir.join(name).with_extension(Self::EXTENSION)),
+            Self::BesideInput => input.with_extension(Self::EXTENSION),
+            Self::Dir(dir) => dir.join(name).with_extension(Self::EXTENSION),
         })
     }
 }
 
 #[derive(Args, Debug, Default)]
 struct OutputArgs {
-    /// Output pcap file (only valid with a single input file)
+    /// Output pcap file (only valid with a single input file, or stdin)
     #[arg(short = 'o', long = "output", value_name = "FILE")]
     file: Option<PathBuf>,
 
@@ -107,17 +130,50 @@ struct OutputArgs {
 }
 
 impl OutputArgs {
-    fn into_mode(self, inputs: usize) -> Result<OutputMode, OutputError> {
+    /// What to do with the input `files`. With none, the program is read from stdin, or the REPL
+    /// is started if stdin is a terminal. Every argument error is found here, before anything is
+    /// compiled or written.
+    fn plan(self, files: Vec<PathBuf>, stdin_is_tty: bool) -> Result<Plan, OutputError> {
         let Self { file, dir } = self;
-        match (file, dir) {
+
+        if files.is_empty() {
+            return match (stdin_is_tty, file, dir) {
+                (true, None, None) => Ok(Plan::Repl),
+                (true, ..) => Err(OutputError::ReplCannotOutput),
+                (false, Some(output), None) => Ok(Plan::Compile(vec![Job {
+                    input: Input::Stdin,
+                    output,
+                }])),
+                (false, ..) => Err(OutputError::StdinRequiresOutput),
+            };
+        }
+
+        let mode = match (file, dir) {
             (Some(_), Some(_)) => {
                 unreachable!("clap should prevent file and dir being set at the same time")
             }
-            (Some(file), None) if inputs == 1 => Ok(OutputMode::File(file)),
-            (Some(_), None) => Err(OutputError::FileWithInputs(inputs)),
-            (None, Some(dir)) => Ok(OutputMode::Dir(dir)),
-            (None, None) => Ok(OutputMode::BesideInput),
-        }
+            (Some(output), None) => {
+                let [file] = <[PathBuf; 1]>::try_from(files)
+                    .map_err(|files| OutputError::FileWithInputs(files.len()))?;
+                return Ok(Plan::Compile(vec![Job {
+                    input: Input::File(file),
+                    output,
+                }]));
+            }
+            (None, Some(dir)) => OutputMode::Dir(dir),
+            (None, None) => OutputMode::BesideInput,
+        };
+
+        files
+            .into_iter()
+            .map(|file| {
+                Ok(Job {
+                    output: mode.path_for(&file)?,
+                    input: Input::File(file),
+                })
+            })
+            .collect::<Result<_, _>>()
+            .map(Plan::Compile)
     }
 }
 
@@ -149,7 +205,7 @@ struct Cli {
     #[arg(long, default_value = "1981-08-15T00:00:00Z")]
     start_time: StartTime,
 
-    /// Input .rsyn files
+    /// Input .rsyn files (none: read the program from stdin)
     #[arg(value_name = "FILE")]
     input: Vec<PathBuf>,
 
@@ -209,11 +265,11 @@ impl CompileError {
         }
     }
 
-    fn print(&self, stdout: &mut StandardStream, p: &Path) {
+    fn print(&self, stdout: &mut StandardStream, input: &Input) {
         let loc = self.loc();
         let phase = self.phase();
 
-        print!("{}", p.display());
+        print!("{}", input);
         if let Some(loc) = loc {
             print!(":{}:{}", loc.line(), loc.col());
         }
@@ -229,45 +285,94 @@ impl CompileError {
     }
 }
 
-fn process_file(
-    stdout: &mut StandardStream,
-    inp: &Path,
-    out: &Path,
-    start_time: StartTime,
-    verbose: bool,
-) -> Result<(), CompileError> {
-    let file = fs::File::open(inp)?;
-    let rd = io::BufReader::new(file);
-    let mut lex = Lexer::default();
+#[derive(Debug, PartialEq, Eq)]
+enum Plan {
+    Repl,
+    Compile(Vec<Job>),
+}
 
-    for line in rd.lines() {
-        lex.line(&line?)?;
+/// One compile: an input and the pcap file it's written to
+#[derive(Debug, PartialEq, Eq)]
+struct Job {
+    input: Input,
+    output: PathBuf,
+}
+
+impl Job {
+    fn compile(
+        &self,
+        stdout: &mut StandardStream,
+        start_time: StartTime,
+        verbose: bool,
+    ) -> Result<(), CompileError> {
+        let mut lex = Lexer::default();
+
+        for line in self.input.open()?.lines() {
+            lex.line(&line?)?;
+        }
+
+        let stmts = parse(lex.finish())?;
+
+        let wr = {
+            let wr = PcapWriter::create(&self.output)?;
+            if verbose { wr.debug() } else { wr }
+        };
+        let mut prog = Program::with_pcap_writer(wr);
+        prog.update_time(start_time.as_nanos());
+
+        let mut warning = |loc: Loc, warn: &str| {
+            if loc.is_nil() {
+                print!("{}: ", self.input);
+            } else {
+                print!("{}:{}:{}: ", self.input, loc.line(), loc.col());
+            }
+            warn!(stdout, "warning");
+            println!(": {}", warn);
+        };
+        prog.set_warning(&mut warning);
+
+        prog.run(stmts)?;
+        prog.flush()?;
+
+        Ok(())
     }
 
-    let stmts = parse(lex.finish())?;
+    /// Compiles the job and reports how it went. On failure, the output is deleted unless `keep`.
+    fn run(
+        &self,
+        stdout: &mut StandardStream,
+        start_time: StartTime,
+        verbose: bool,
+        keep: bool,
+    ) -> Result<(), ()> {
+        let Err(error) = self.compile(stdout, start_time, verbose) else {
+            print!("{} -> {} ", self.input, self.output.display());
+            ok!(stdout, "ok");
+            println!();
+            return Ok(());
+        };
 
-    let wr = {
-        let wr = PcapWriter::create(out)?;
-        if verbose { wr.debug() } else { wr }
-    };
-    let mut prog = Program::with_pcap_writer(wr);
-    prog.update_time(start_time.as_nanos());
+        error.print(stdout, &self.input);
 
-    let mut warning = |loc: Loc, warn: &str| {
-        if loc.is_nil() {
-            print!("{}: ", inp.display());
-        } else {
-            print!("{}:{}:{}: ", inp.display(), loc.line(), loc.col());
+        // By default, if the file failed for any reason, regardless of whether we created it or
+        // not, we delete it. This behaviour can be overridden with the `--keep` flag.
+        //
+        // This is basically because we anticipate that we're translating source files to e.g.
+        // test cases, and we want the test cases to fail with "no file", rather than producing
+        // weird or spurious output.
+        //
+        // Maybe we readdress this and only delete things we actually created in future.
+        if !keep
+            && let Err(rm_err) = fs::remove_file(&self.output)
+            && rm_err.kind() != io::ErrorKind::NotFound
+        {
+            print!("{}: ", self.input);
+            error!(stdout, "error");
+            println!(": delete: {}", rm_err);
         }
-        warn!(stdout, "warning");
-        println!(": {}", warn);
-    };
-    prog.set_warning(&mut warning);
 
-    prog.run(stmts)?;
-    prog.flush()?;
-
-    Ok(())
+        Err(())
+    }
 }
 
 fn resynth() -> Result<(), ()> {
@@ -299,8 +404,8 @@ fn resynth() -> Result<(), ()> {
     };
     let mut stdout = StandardStream::stdout(color);
 
-    let mode = match argv.output.into_mode(argv.input.len()) {
-        Ok(mode) => mode,
+    let plan = match argv.output.plan(argv.input, io::stdin().is_terminal()) {
+        Ok(plan) => plan,
         Err(err) => {
             Cli::command()
                 .error(ErrorKind::ArgumentConflict, err)
@@ -308,51 +413,19 @@ fn resynth() -> Result<(), ()> {
         }
     };
 
-    let mut ret = Ok(());
-
-    for p in &argv.input {
-        let out = match mode.path_for(p) {
-            Ok(out) => out,
-            Err(err) => {
-                print!("{}: ", p.display());
-                error!(stdout, "error");
-                println!(": output: {err}");
-                ret = Err(());
-                continue;
-            }
-        };
-
-        let result = process_file(&mut stdout, p, &out, argv.start_time, argv.verbose);
-
-        if let Err(error) = result {
-            error.print(&mut stdout, p);
-
-            // By default, if the file failed for any reason, regardless of whether we created it
-            // or not, we delete it. This behaviour can be overridden with the `--keep` flag.
-            //
-            // This is basically because we anticipate that we're translating source files to e.g.
-            // test cases, and we want the test cases to fail with "no file", rather than producing
-            // weird or spurious output.
-            //
-            // Maybe we readdress this and only delete things we actually created in future.
-            if !argv.keep
-                && let Err(rm_err) = fs::remove_file(out.as_ref())
-                && rm_err.kind() != io::ErrorKind::NotFound
-            {
-                print!("{}: ", p.display());
-                error!(stdout, "error");
-                println!(": delete: {}", rm_err);
-            }
-
-            ret = Err(());
-        } else {
-            print!("{} -> {} ", p.display(), out.display());
-            ok!(stdout, "ok");
-            println!();
+    match plan {
+        Plan::Repl => {
+            Cli::command()
+                .error(ErrorKind::ArgumentConflict, "REPL not implemented yet")
+                .exit();
         }
-    }
 
-    ret
+        // Not short-circuiting: every job runs, even after one fails
+        Plan::Compile(jobs) => jobs
+            .iter()
+            .map(|job| job.run(&mut stdout, argv.start_time, argv.verbose, argv.keep))
+            .fold(Ok(()), Result::and),
+    }
 }
 
 fn main() -> ExitCode {
@@ -408,53 +481,132 @@ mod tests {
         );
     }
 
-    /// `mode`'s output path for `input`, owned for easy comparison
+    /// `mode`'s output path for `input`
     fn out(mode: &OutputMode, input: &str) -> PathBuf {
-        mode.path_for(Path::new(input))
-            .expect("output path")
-            .into_owned()
+        mode.path_for(Path::new(input)).expect("output path")
     }
 
-    /// The [`OutputMode`] for `-o file` and `--out-dir dir` with `inputs` input files
-    fn mode(
+    /// The plan for `-o file` and `--out-dir dir` with input `files`
+    fn plan(
         file: Option<&str>,
         dir: Option<&str>,
-        inputs: usize,
-    ) -> Result<OutputMode, OutputError> {
+        files: &[&str],
+        stdin_is_tty: bool,
+    ) -> Result<Plan, OutputError> {
         OutputArgs {
             file: file.map(PathBuf::from),
             dir: dir.map(PathBuf::from),
         }
-        .into_mode(inputs)
+        .plan(files.iter().map(PathBuf::from).collect(), stdin_is_tty)
+    }
+
+    fn job(input: &str, output: &str) -> Job {
+        Job {
+            input: Input::File(input.into()),
+            output: output.into(),
+        }
     }
 
     #[test]
-    fn into_mode_defaults_to_beside_input() {
-        assert_eq!(mode(None, None, 3).unwrap(), OutputMode::BesideInput);
+    fn plan_starts_repl_on_tty() {
+        assert_eq!(plan(None, None, &[], true).unwrap(), Plan::Repl);
     }
 
     #[test]
-    fn into_mode_selects_dir() {
+    fn plan_rejects_output_for_repl() {
+        for (file, dir) in [(Some("x.pcap"), None), (None, Some("out"))] {
+            assert!(matches!(
+                plan(file, dir, &[], true),
+                Err(OutputError::ReplCannotOutput),
+            ));
+        }
+    }
+
+    /// `resynth -o out.pcap < prog.rsyn`
+    #[test]
+    fn plan_reads_stdin_to_file() {
         assert_eq!(
-            mode(None, Some("out"), 3).unwrap(),
-            OutputMode::Dir("out".into()),
+            plan(Some("out.pcap"), None, &[], false).unwrap(),
+            Plan::Compile(vec![Job {
+                input: Input::Stdin,
+                output: "out.pcap".into(),
+            }]),
         );
     }
 
     #[test]
-    fn into_mode_selects_file_for_one_input() {
+    fn plan_requires_file_for_stdin() {
+        for dir in [None, Some("out")] {
+            assert!(matches!(
+                plan(None, dir, &[], false),
+                Err(OutputError::StdinRequiresOutput),
+            ));
+        }
+    }
+
+    #[test]
+    fn plan_ignores_tty_with_files() {
         assert_eq!(
-            mode(Some("x.pcap"), None, 1).unwrap(),
-            OutputMode::File("x.pcap".into()),
+            plan(None, None, &["a.rsyn"], true).unwrap(),
+            plan(None, None, &["a.rsyn"], false).unwrap(),
         );
     }
 
     #[test]
-    fn into_mode_rejects_file_with_many_inputs() {
+    fn plan_defaults_to_beside_input() {
+        assert_eq!(
+            plan(None, None, &["a.rsyn", "d/b.rsyn"], false).unwrap(),
+            Plan::Compile(vec![job("a.rsyn", "a.pcap"), job("d/b.rsyn", "d/b.pcap")]),
+        );
+    }
+
+    #[test]
+    fn plan_writes_to_dir() {
+        assert_eq!(
+            plan(None, Some("out"), &["x/a.rsyn", "b.rsyn"], false).unwrap(),
+            Plan::Compile(vec![
+                job("x/a.rsyn", "out/a.pcap"),
+                job("b.rsyn", "out/b.pcap")
+            ]),
+        );
+    }
+
+    #[test]
+    fn plan_writes_one_input_to_file() {
+        assert_eq!(
+            plan(Some("x.pcap"), None, &["a.rsyn"], false).unwrap(),
+            Plan::Compile(vec![job("a.rsyn", "x.pcap")]),
+        );
+    }
+
+    #[test]
+    fn plan_file_ignores_input_name() {
+        assert_eq!(
+            plan(Some("x.pcap"), None, &["/"], false).unwrap(),
+            Plan::Compile(vec![job("/", "x.pcap")]),
+        );
+    }
+
+    #[test]
+    fn plan_rejects_file_with_many_inputs() {
         assert!(matches!(
-            mode(Some("x.pcap"), None, 2),
+            plan(Some("x.pcap"), None, &["a.rsyn", "b.rsyn"], false),
             Err(OutputError::FileWithInputs(2)),
         ));
+    }
+
+    #[test]
+    fn plan_rejects_any_input_without_file_name() {
+        assert!(matches!(
+            plan(None, None, &["a.rsyn", ".."], false),
+            Err(OutputError::NoFileName(p)) if p == Path::new(".."),
+        ));
+    }
+
+    #[test]
+    fn input_display() {
+        assert_eq!(Input::File("d/a.rsyn".into()).to_string(), "d/a.rsyn");
+        assert_eq!(Input::Stdin.to_string(), "<stdin>");
     }
 
     #[test]
@@ -489,20 +641,12 @@ mod tests {
     }
 
     #[test]
-    fn file_ignores_input_name() {
-        assert_eq!(
-            out(&OutputMode::File("custom.cap".into()), "x/a.rsyn"),
-            PathBuf::from("custom.cap"),
-        );
-    }
-
-    #[test]
     fn input_without_file_name_is_error() {
         for input in ["..", "/", ""] {
             assert!(
                 matches!(
                     OutputMode::BesideInput.path_for(Path::new(input)),
-                    Err(OutputError::NoFileName),
+                    Err(OutputError::NoFileName(_)),
                 ),
                 "{input:?}",
             );
