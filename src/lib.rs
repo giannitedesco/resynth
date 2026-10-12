@@ -55,4 +55,4 @@ pub use lex::{
 };
 pub use loc::Loc;
 pub use parse::{ParseError, ParseErrorKind};
-pub use program::{Program, RuntimeError, RuntimeErrorKind};
+pub use program::{Effect, Program, RuntimeError, RuntimeErrorKind};

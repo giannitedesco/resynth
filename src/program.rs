@@ -7,8 +7,6 @@ use crate::stdlib::toplevel_module;
 use crate::sym::Symbol;
 use crate::val::{Typed, Val, ValType};
 
-use pkt::PcapWriter;
-
 use derive_more::{Display, Error, From};
 
 use std::borrow::Cow;
@@ -19,7 +17,7 @@ use std::net::SocketAddrV4;
 
 use RuntimeErrorKind::{
     ImportError, MultipleAssignError, NameError, NotAModule, NotAValue, NotCallable, NotImported,
-    PcapWrite, PortOutOfRange, TypeError,
+    PortOutOfRange, TypeError,
 };
 
 /// Why the program could not be run, and where
@@ -139,69 +137,48 @@ impl RuntimeErrorKind {
     }
 }
 
-type WarningCallback<'a> = &'a mut dyn FnMut(Loc, &str);
+#[derive(Debug, Copy, Clone, Display)]
+pub enum Warning {
+    #[display("multiple imports of {:?}", _0)]
+    MultipleImports(&'static str),
+}
+
+#[derive(Debug)]
+pub enum Effect<'a> {
+    Discard(Val),
+    Packet { time: u64, pkt: &'a pkt::Packet },
+    TimeJump(u64),
+    Warning(Warning),
+}
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 
 /// The interpreter and program-state
-pub struct Program<'a> {
+#[derive(Default)]
+pub struct Program {
     now: Cell<u64>,
     regs: HashMap<String, Val>,
     imports: HashMap<String, &'static Module>,
-    wr: Option<PcapWriter>,
-    warning: Option<WarningCallback<'a>>,
 }
 
-impl<'a> Program<'a> {
-    pub fn dummy() -> Self {
-        Program {
-            now: Cell::new(0),
-            regs: HashMap::new(),
-            imports: HashMap::new(),
-            wr: None,
-            warning: None,
-        }
+impl Program {
+    pub fn run<F>(&mut self, mut emit: F, stmts: impl IntoIterator<Item = Stmt>) -> Result<()>
+    where
+        F: FnMut(Loc, Effect<'_>) -> std::result::Result<(), RuntimeErrorKind>,
+    {
+        stmts
+            .into_iter()
+            .try_for_each(|stmt| self.exec_stmt(&mut emit, stmt))
     }
 
-    pub fn with_pcap_writer(wr: PcapWriter) -> Self {
-        Program {
-            now: Cell::new(0),
-            regs: HashMap::new(),
-            imports: HashMap::new(),
-            wr: Some(wr),
-            warning: None,
-        }
-    }
-
-    pub fn set_warning(&mut self, warning: WarningCallback<'a>) {
-        self.warning = Some(warning);
-    }
-
-    fn warn(&mut self, loc: Loc, msg: &str) {
-        if let Some(ref mut func) = self.warning {
-            (func)(loc, msg);
-        }
-    }
-
-    /// Run each statement in turn, stopping at the first error
-    pub fn run(&mut self, stmts: impl IntoIterator<Item = Stmt>) -> Result<()> {
-        for stmt in stmts {
-            match stmt {
-                Stmt::Import(module) => self.add_import(module)?,
-                Stmt::Let { target, value } => self.add_let(target, value)?,
-                Stmt::Expr(expr) => self.add_expr(expr)?,
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Flush the pcap writer, if there is one, and report any error. Dropping the program
-    /// flushes too, but ignores any error.
-    pub fn flush(self) -> io::Result<()> {
-        match self.wr {
-            Some(wr) => wr.flush(),
-            None => Ok(()),
+    fn exec_stmt<F>(&mut self, emit: &mut F, stmt: Stmt) -> Result<()>
+    where
+        F: FnMut(Loc, Effect<'_>) -> std::result::Result<(), RuntimeErrorKind>,
+    {
+        match stmt {
+            Stmt::Import(module) => self.exec_import(emit, module),
+            Stmt::Let { target, value } => self.exec_let(target, value),
+            Stmt::Expr(expr) => self.exec_expr(emit, expr),
         }
     }
 
@@ -318,12 +295,15 @@ impl<'a> Program<'a> {
         })
     }
 
-    fn add_import(&mut self, module: Ident) -> Result<()> {
+    fn exec_import<F>(&mut self, emit: &mut F, module: Ident) -> Result<()>
+    where
+        F: FnMut(Loc, Effect<'_>) -> std::result::Result<(), RuntimeErrorKind>,
+    {
         let Ident { loc, name } = module;
 
-        if self.imports.contains_key(&*name) {
-            self.warn(loc, &format!("multiple imports of {:?}", name));
-            return Ok(());
+        if let Some(module) = self.imports.get(name.as_ref()) {
+            emit(loc, Effect::Warning(Warning::MultipleImports(module.name)))
+                .map_err(|kind| kind.at(loc))?;
         }
 
         match toplevel_module(&name) {
@@ -335,7 +315,7 @@ impl<'a> Program<'a> {
         }
     }
 
-    fn add_let(&mut self, target: Ident, value: Expr) -> Result<()> {
+    fn exec_let(&mut self, target: Ident, value: Expr) -> Result<()> {
         let Ident { loc, name } = target;
 
         if self.regs.contains_key(&*name) {
@@ -357,7 +337,10 @@ impl<'a> Program<'a> {
         self.now.get()
     }
 
-    fn add_expr(&mut self, expr: Expr) -> Result<()> {
+    fn exec_expr<F>(&mut self, emit: &mut F, expr: Expr) -> Result<()>
+    where
+        F: FnMut(Loc, Effect<'_>) -> std::result::Result<(), RuntimeErrorKind>,
+    {
         let loc = expr.loc;
         let val = self.eval(expr)?;
         match val {
@@ -365,22 +348,32 @@ impl<'a> Program<'a> {
             Val::Pkt(pkt) => {
                 self.update_time(pkt.bit_time());
 
-                if let Some(ref mut wr) = self.wr {
-                    wr.write_packet(self.now.get(), &pkt)
-                        .map_err(|err| PcapWrite(err).at(loc))?;
-                };
+                emit(
+                    loc,
+                    Effect::Packet {
+                        time: self.now.get(),
+                        pkt: &pkt,
+                    },
+                )
+                .map_err(|kind| kind.at(loc))?;
             }
             Val::PktGen(it) => {
                 for pkt in it.iter() {
                     self.update_time(pkt.bit_time());
-                    if let Some(ref mut wr) = self.wr {
-                        wr.write_packet(self.now.get(), pkt)
-                            .map_err(|err| PcapWrite(err).at(loc))?;
-                    }
+                    emit(
+                        loc,
+                        Effect::Packet {
+                            time: self.now.get(),
+                            pkt,
+                        },
+                    )
+                    .map_err(|kind| kind.at(loc))?;
                 }
             }
             Val::TimeJump(ns) => self.update_time(ns),
-            _ => self.warn(loc, &format!("discarded value {:?}", val)),
+            _ => {
+                emit(loc, Effect::Discard(val)).map_err(|kind| kind.at(loc))?;
+            }
         };
         Ok(())
     }

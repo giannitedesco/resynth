@@ -2,7 +2,7 @@ use pkt::PcapWriter;
 
 use resynth::parse::parse;
 use resynth::stdlib::{write_docs, write_stdlib_json};
-use resynth::{LexError, Lexer, Loc, ParseError, Program, RuntimeError};
+use resynth::{Effect, LexError, Lexer, Loc, ParseError, Program, RuntimeError, RuntimeErrorKind};
 use resynth::{error, ok, warn};
 
 use std::io::{BufRead, IsTerminal};
@@ -299,6 +299,16 @@ struct Job {
 }
 
 impl Job {
+    fn warning<T: std::fmt::Display>(&self, stdout: &mut StandardStream, loc: Loc, msg: T) {
+        if loc.is_nil() {
+            print!("{}: ", self.input);
+        } else {
+            print!("{}:{}:{}: ", self.input, loc.line(), loc.col());
+        }
+        warn!(stdout, "warning");
+        println!(": {}", msg);
+    }
+
     fn compile(
         &self,
         stdout: &mut StandardStream,
@@ -313,26 +323,37 @@ impl Job {
 
         let stmts = parse(lex.finish())?;
 
-        let wr = {
+        let mut wr = {
             let wr = PcapWriter::create(&self.output)?;
             if verbose { wr.debug() } else { wr }
         };
-        let mut prog = Program::with_pcap_writer(wr);
+        let mut prog = Program::default();
         prog.update_time(start_time.as_nanos());
 
-        let mut warning = |loc: Loc, warn: &str| {
-            if loc.is_nil() {
-                print!("{}: ", self.input);
-            } else {
-                print!("{}:{}:{}: ", self.input, loc.line(), loc.col());
-            }
-            warn!(stdout, "warning");
-            println!(": {}", warn);
-        };
-        prog.set_warning(&mut warning);
-
-        prog.run(stmts)?;
-        prog.flush()?;
+        prog.run(
+            |loc, eff| {
+                match eff {
+                    Effect::Discard(val) => {
+                        // warning(loc, &format!("discarded value: {:?}", val));
+                        self.warning(stdout, loc, format!("discarded value: {:?}", val));
+                    }
+                    Effect::Packet { time, pkt } => {
+                        wr.write_packet(time, pkt)
+                            .map_err(RuntimeErrorKind::PcapWrite)?;
+                    }
+                    Effect::TimeJump(_ns) => {
+                        // Time jumps are handled by the program's internal clock, so we don't need
+                        // to do anything here.
+                    }
+                    Effect::Warning(warn) => {
+                        self.warning(stdout, loc, warn);
+                    }
+                }
+                Ok(())
+            },
+            stmts,
+        )?;
+        wr.flush()?;
 
         Ok(())
     }

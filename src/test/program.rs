@@ -2,41 +2,49 @@ use crate::ast::Stmt;
 use crate::lex::Lexer;
 use crate::loc::Loc;
 use crate::parse::parse;
-use crate::program::Program;
-use crate::program::RuntimeError;
 use crate::program::RuntimeErrorKind::{
     ImportError, MultipleAssignError, NameError, NoSuchArg, NotAValue, NotCallable, NotImported,
     PortOutOfRange, TooManyArgs, TypeError,
 };
+use crate::program::{Effect, Program, RuntimeError, Warning};
 use crate::stdlib::toplevel_module;
 use crate::val::{Val, ValType};
 
 type RunResult = Result<(), RuntimeError>;
 
 /// Run a program without a pcap, returning its result and every warning it gave
-fn run(src: &str) -> (RunResult, Vec<(Loc, String)>) {
+fn run(src: &str) -> (RunResult, Vec<(Loc, Warning)>, Vec<(Loc, Val)>) {
     let stmts = parse(Lexer::lex(src.lines()).expect("lex failed")).expect("parse failed");
 
     let mut warnings = Vec::new();
-    let mut warn = |loc: Loc, msg: &str| warnings.push((loc, msg.to_owned()));
-    let res = {
-        let mut prog = Program::dummy();
-        prog.set_warning(&mut warn);
-        prog.run(stmts)
-    };
+    let mut discards = Vec::new();
 
-    (res, warnings)
+    let mut prog = Program::default();
+    let res = prog.run(
+        |loc, eff| {
+            match eff {
+                Effect::Discard(val) => discards.push((loc, val)),
+                Effect::Packet { .. } => {}
+                Effect::TimeJump(_) => {}
+                Effect::Warning(warn) => warnings.push((loc, warn)),
+            }
+            Ok(())
+        },
+        stmts,
+    );
+
+    (res, warnings, discards)
 }
 
 fn run_err(src: &str) -> RuntimeError {
     run(src).0.unwrap_err()
 }
 
-/// Where each warning was given
-fn warning_locs(src: &str) -> Vec<Loc> {
-    let (res, warnings) = run(src);
+/// Where each discard happened
+fn discard_locs(src: &str) -> Vec<Loc> {
+    let (res, _, discards) = run(src);
     res.expect("run failed");
-    warnings.into_iter().map(|(loc, _)| loc).collect()
+    discards.into_iter().map(|(loc, _)| loc).collect()
 }
 
 const FLOW: &str = "import ipv4;\nlet f = ipv4::tcp::flow(1.1.1.1:1, 2.2.2.2:2);\n";
@@ -159,19 +167,19 @@ fn run_slash_port_range() {
 
 #[test]
 fn run_discarded_value_at_stmt_start() {
-    assert_eq!(warning_locs("let x = 1.2.3.4;\nx / 80;"), [Loc::new(2, 1)]);
+    assert_eq!(discard_locs("let x = 1.2.3.4;\nx / 80;"), [Loc::new(2, 1)]);
     assert_eq!(
-        warning_locs(&format!("{FLOW}f.client_hdr();")),
+        discard_locs(&format!("{FLOW}f.client_hdr();")),
         [Loc::new(3, 1)]
     );
-    assert_eq!(warning_locs("\"abc\";"), [Loc::new(1, 1)]);
+    assert_eq!(discard_locs("\"abc\";"), [Loc::new(1, 1)]);
 }
 
 #[test]
 fn run_locals_and_modules_are_separate() {
     // As in examples/tls.rsyn
     assert_eq!(
-        warning_locs("import dns;\nlet dns = 1.2.3.4;\ndns::name(\"x\");\ndns;"),
+        discard_locs("import dns;\nlet dns = 1.2.3.4;\ndns::name(\"x\");\ndns;"),
         [Loc::new(3, 1), Loc::new(4, 1)]
     );
 }
@@ -196,8 +204,8 @@ fn last_packets(src: &str) -> Vec<Vec<u8>> {
     let Some(Stmt::Expr(last)) = stmts.pop() else {
         panic!("the last statement must be an expression");
     };
-    let mut prog = Program::dummy();
-    prog.run(stmts).expect("run failed");
+    let mut prog = Program::default();
+    prog.run(|_, _| Ok(()), stmts).expect("run failed");
     match prog.eval(last).expect("run failed") {
         Val::Pkt(pkt) => vec![pkt.to_vec()],
         Val::PktGen(pkts) => pkts.iter().map(|pkt| pkt.to_vec()).collect(),
