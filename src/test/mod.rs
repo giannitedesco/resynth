@@ -1,5 +1,7 @@
 mod args;
 mod ast;
+mod bind;
+mod check;
 mod lex;
 mod object;
 mod parse;

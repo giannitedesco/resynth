@@ -1,4 +1,4 @@
-use crate::libapi::{Class, ClassDef};
+use crate::libapi::{Class, ClassDef, FuncDef, Module};
 use crate::object::ObjRef;
 use crate::program::RuntimeErrorKind::{NameError, TypeError};
 use crate::sym::Symbol;
@@ -10,7 +10,7 @@ struct Tcp {
     pub sv_seq: u32,
 }
 
-const TCP: ClassDef = class!(
+static TCP: ClassDef = class!(
     /// TCP Session
     resynth class Tcp {
         client_message => Symbol::Val(ValDef::U64(1)),
@@ -30,10 +30,39 @@ impl Tcp {
     }
 }
 
+static TCP_NEW: FuncDef = func!(
+    /// A TCP session
+    resynth fn tcp(
+        =>
+        =>
+        Void
+    ) -> Class(&TCP)
+    |_args| {
+        Ok(Val::from(Tcp::new(0, 0)))
+    }
+);
+
+/// A root module to check programs against, for a class with constant properties.
+/// `import obj;` finds the test classes.
+pub(super) static ROOT: Module = module!(
+    /// Test root
+    resynth mod root {
+        obj => Symbol::Module(&OBJ),
+    }
+);
+
+const OBJ: Module = module!(
+    /// Test objects
+    resynth mod obj {
+        Tcp => Symbol::Class(&TCP),
+        tcp => Symbol::Func(&TCP_NEW),
+    }
+);
+
 #[derive(Debug, PartialEq, Eq)]
 struct Udp {}
 
-const UDP: ClassDef = class!(
+static UDP: ClassDef = class!(
     /// UDP Session
     resynth class Udp {
         client_dgram => Symbol::Val(ValDef::U64(1)),

@@ -1,6 +1,6 @@
 //! The high-level intermediate representation: a checked program, ready to run.
 //!
-//! The checker lowers the AST into a [Program]. In the HIR:
+//! [check](crate::check()) lowers the AST into a [Program]. In the HIR:
 //! - Names are resolved. A local is a [slot](SlotId), and a module path is a [constant](Const).
 //! - Calls are bound. Each argument is tagged with its parameter's slot, and each parameter that
 //!   wasn't given holds its default.
@@ -20,6 +20,7 @@ use crate::ast::Lit;
 use crate::libapi::FuncDef;
 use crate::loc::Loc;
 use crate::str::{Buf, Literal};
+use crate::val::ValDef;
 
 /// A checked program: its statements, and the layout of the one frame they run in. It displays
 /// one statement per line.
@@ -145,6 +146,10 @@ pub enum Const {
 struct Spaced<'a>(&'a [Expr]);
 
 impl Program {
+    pub(crate) fn new(stmts: Box<[Stmt]>, slots: Box<[Box<str>]>) -> Self {
+        Self { stmts, slots }
+    }
+
     pub fn stmts(&self) -> &[Stmt] {
         &self.stmts
     }
@@ -259,6 +264,35 @@ impl From<Lit> for Const {
             Lit::Ip4(addr) => Self::Ip4(addr),
             Lit::Sock4(sa) => Self::Sock4(sa),
             Lit::Str(buf) => Self::Bytes(buf),
+        }
+    }
+}
+
+impl Const {
+    /// A module constant, a property, or a parameter's default. A static string is copied once,
+    /// here.
+    pub(crate) fn from_def(def: ValDef) -> Self {
+        match def {
+            ValDef::Bool(b) => Self::Bool(b),
+            ValDef::U8(n) => Self::U8(n),
+            ValDef::U16(n) => Self::U16(n),
+            ValDef::U32(n) => Self::U32(n),
+            ValDef::U64(n) => Self::U64(n),
+            ValDef::Ip4(addr) => Self::Ip4(addr),
+            ValDef::Sock4(sa) => Self::Sock4(sa),
+            ValDef::Str(s) => Self::Bytes(Buf::from(s)),
+            ValDef::Nil | ValDef::Type(_) => {
+                unreachable!("{def:?} declares a nullable parameter and is never a value")
+            }
+        }
+    }
+
+    /// The value a parameter takes when no argument is given: its default, or [Const::Absent]
+    /// if it's nullable
+    pub(crate) fn default_of(def: ValDef) -> Self {
+        match def {
+            ValDef::Type(_) => Self::Absent,
+            def => Self::from_def(def),
         }
     }
 }

@@ -28,6 +28,16 @@ pub enum ArgDecl {
     Optional(ValDef),
 }
 
+impl ArgDecl {
+    /// The type of value the parameter takes. A nullable parameter takes the type it declares.
+    pub fn param_type(&self) -> ValType {
+        match self {
+            Self::Positional(t) | Self::Optional(ValDef::Type(t)) => *t,
+            Self::Optional(def) => def.val_type(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 #[display("{}: {}", name, typ)]
 pub struct ArgDesc {

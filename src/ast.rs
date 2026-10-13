@@ -60,7 +60,7 @@ pub enum ExprKind {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinOp {
     Slash,
 }
@@ -151,7 +151,7 @@ impl fmt::Display for ExprSexpr<'_> {
                 write!(f, "(call {}", callee.sexpr())?;
                 for arg in args {
                     match &arg.name {
-                        Some(name) => write!(f, " (= {} {})", name.name, arg.value.sexpr())?,
+                        Some(name) => write!(f, " (: {} {})", name.name, arg.value.sexpr())?,
                         None => write!(f, " {}", arg.value.sexpr())?,
                     }
                 }

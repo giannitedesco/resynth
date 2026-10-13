@@ -18,9 +18,6 @@ impl Symbol {
     pub const fn u64(val: u64) -> Self {
         Self::Val(ValDef::U64(val))
     }
-    pub const fn u32(val: u32) -> Self {
-        Self::Val(ValDef::U32(val))
-    }
     pub const fn u16(val: u16) -> Self {
         Self::Val(ValDef::U16(val))
     }

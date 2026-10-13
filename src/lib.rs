@@ -34,6 +34,7 @@
 mod macros;
 mod args;
 pub mod ast;
+pub mod check;
 pub mod hir;
 mod lex;
 mod libapi;
@@ -51,6 +52,9 @@ pub mod stdlib;
 #[cfg(test)]
 mod test;
 
+pub use check::{
+    Diagnostic, DiagnosticKind, ErrorSummary, SemanticError, SemanticErrorKind, WarningKind, check,
+};
 pub use lex::{
     LexError, LexErrorKind, LexLineError, Lexeme, LexemeKind, Lexer, Scanner, Tok, Token,
 };
