@@ -20,7 +20,7 @@ use crate::ast::Lit;
 use crate::libapi::FuncDef;
 use crate::loc::Loc;
 use crate::str::{Buf, Literal};
-use crate::val::ValDef;
+use crate::val::{Val, ValDef};
 
 /// A checked program: its statements, and the layout of the one frame they run in. It displays
 /// one statement per line.
@@ -293,6 +293,23 @@ impl Const {
         match def {
             ValDef::Type(_) => Self::Absent,
             def => Self::from_def(def),
+        }
+    }
+
+    /// The constant as a run-time value. [Const::Absent] becomes [Val::Nil] at the native
+    /// boundary.
+    pub(crate) fn into_val(self) -> Val {
+        match self {
+            Self::Bool(b) => Val::Bool(b),
+            Self::U8(n) => Val::U8(n),
+            Self::U16(n) => Val::U16(n),
+            Self::U32(n) => Val::U32(n),
+            Self::U64(n) => Val::U64(n),
+            Self::Ip4(addr) => Val::Ip4(addr),
+            Self::Sock4(sa) => Val::Sock4(sa),
+            Self::Bytes(buf) => Val::Str(buf),
+            Self::Func(func) => Val::Func(func),
+            Self::Absent => Val::Nil,
         }
     }
 }

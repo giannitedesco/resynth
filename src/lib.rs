@@ -36,6 +36,7 @@ mod args;
 pub mod ast;
 pub mod check;
 pub mod hir;
+pub mod interp;
 mod lex;
 mod libapi;
 mod loc;
