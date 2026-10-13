@@ -2,9 +2,9 @@
 #![allow(clippy::upper_case_acronyms)]
 
 use crate::args::Args;
+use crate::interp::RuntimeErrorKind;
+use crate::interp::RuntimeErrorKind::LibTodo;
 use crate::libapi::{ArgDecl, ClassDef, ClassMap, Documented, FuncDef, Module, SymDesc};
-use crate::program::RuntimeErrorKind;
-use crate::program::RuntimeErrorKind::LibTodo;
 use crate::sym::Symbol;
 use crate::val::{Typed, Val, ValDef, ValType};
 

@@ -3,10 +3,11 @@ use pkt::eth::{eth_hdr, ethertype};
 use pkt::ipv4::ip_hdr;
 
 use crate::args::Args;
+use crate::hir::Const;
 
+use crate::interp::RuntimeErrorKind;
 use crate::libapi::{ArgDecl, FuncDef};
 use crate::object::ObjRef;
-use crate::program::RuntimeErrorKind;
 use crate::stdlib::toplevel_module;
 use crate::sym::Symbol;
 use crate::val::Val;
@@ -38,7 +39,7 @@ fn sym(path: &str) -> Symbol {
 /// The constant at `path`, as a value
 fn constant(path: &str) -> Val {
     match sym(path) {
-        Symbol::Val(def) => def.into(),
+        Symbol::Val(def) => Const::from_def(def).into_val(),
         sym => panic!("{path} is not a constant: {sym:?}"),
     }
 }
@@ -119,7 +120,7 @@ impl Call {
             .zip(func.args)
             .map(|(val, desc)| match (val, desc.typ) {
                 (Some(val), _) => val,
-                (None, ArgDecl::Optional(def)) => def.into(),
+                (None, ArgDecl::Optional(def)) => Const::default_of(def).into_val(),
                 (None, ArgDecl::Positional(_)) => {
                     panic!("{}: missing argument {}", func.name, desc.name)
                 }

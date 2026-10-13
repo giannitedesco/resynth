@@ -1,4 +1,3 @@
-mod args;
 mod ast;
 mod bind;
 mod check;
@@ -6,6 +5,5 @@ mod interp;
 mod lex;
 mod object;
 mod parse;
-mod program;
 mod str;
 mod val;

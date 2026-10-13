@@ -131,8 +131,8 @@ fn parse_arg_lists() {
 
 #[test]
 fn parse_named_args() {
-    assert_eq!(sexpr("f(a: 1.2.3.4:80);"), "(call f (= a 1.2.3.4:80))");
-    assert_eq!(sexpr("f(a: b);"), "(call f (= a b))");
+    assert_eq!(sexpr("f(a: 1.2.3.4:80);"), "(call f (: a 1.2.3.4:80))");
+    assert_eq!(sexpr("f(a: b);"), "(call f (: a b))");
     assert_eq!(sexpr("f(a::b);"), "(call f a::b)");
     assert_eq!(
         parse_err("f(a:);"),
@@ -157,7 +157,7 @@ fn parse_paths() {
 fn parse_postfix_chains() {
     assert_eq!(
         sexpr("a.b().c(1, x: 2);"),
-        "(call (. (call (. a b)) c) 0x1 (= x 0x2))"
+        "(call (. (call (. a b)) c) 0x1 (: x 0x2))"
     );
     assert_eq!(
         sexpr("ipv4::tcp::flow(a, b).open();"),
@@ -171,7 +171,7 @@ fn parse_postfix_chains() {
 fn parse_postfix_in_args() {
     assert_eq!(
         sexpr("f(a.b(c).d, e: g());"),
-        "(call f (. (call (. a b) c) d) (= e (call g)))"
+        "(call f (. (call (. a b) c) d) (: e (call g)))"
     );
 }
 

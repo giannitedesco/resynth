@@ -1,7 +1,7 @@
 //! Type-coercion in resynth is facilitated by two separate pieces of code that must agree:
 //!
-//! - `Typed::compatible_with` (and `ValDef::arg_compatible`) decides whether `libapi` accepts an
-//!   argument for a parameter type.
+//! - `Ty::fits` decides whether the checker accepts an argument for a parameter type. A nullable
+//!   parameter also accepts no argument, which reaches the function as `Val::Nil`.
 //! - `From<Val> for T` is what the stdlib function then calls on the accepted value.
 //!
 //! If the first accepts something the second doesn't handle, we hit an `unreachable!()` at run
@@ -14,8 +14,9 @@ use std::rc::Rc;
 
 use pkt::Packet;
 
+use crate::check::Ty;
 use crate::str::Buf;
-use crate::val::{Typed, Val, ValDef, ValType};
+use crate::val::{Val, ValType};
 
 fn pkt(bytes: &[u8]) -> Packet {
     let pkt = Packet::default();
@@ -33,8 +34,7 @@ fn samples() -> Vec<Val> {
         Val::U8(0),
         Val::U16(0xabcd),
         Val::U32(0x0102_0304),
-        // Low bits are all zero: truncating gives 0, but as a bool it's still true. Silent
-        // truncation is today's behaviour, not a decision.
+        // Low bits are all zero: truncating gives 0, but as a bool it's still true.
         Val::U64(0x1_0000_0000),
         Val::Ip4(Ipv4Addr::new(1, 2, 3, 4)),
         Val::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 80)),
@@ -42,6 +42,24 @@ fn samples() -> Vec<Val> {
         Val::from(pkt(&[0xde, 0xad])),
         Val::from(vec![pkt(b"a"), pkt(b"b")]),
     ]
+}
+
+/// The checker's type of an argument with this value, or `None` for no argument
+fn ty(val: &Val) -> Option<Ty> {
+    Some(match val {
+        Val::Nil => return None,
+        Val::Bool(_) => Ty::Bool,
+        Val::U8(_) => Ty::U8,
+        Val::U16(_) => Ty::U16,
+        Val::U32(_) => Ty::U32,
+        Val::U64(_) => Ty::U64,
+        Val::Ip4(_) => Ty::Ip4,
+        Val::Sock4(_) => Ty::Sock4,
+        Val::Str(_) => Ty::Bytes,
+        Val::Pkt(_) => Ty::Pkt,
+        Val::PktGen(_) => Ty::PktGen,
+        val => unreachable!("no sample {val:?}"),
+    })
 }
 
 /// `accepted` says yes to exactly the values in `accepts`, and each one converts to `T`
@@ -65,7 +83,11 @@ fn check<T>(param: ValType, accepts: &[(Val, T)])
 where
     T: From<Val> + PartialEq + Debug,
 {
-    check_with(&param.to_string(), |v| param.compatible_with(v), accepts)
+    check_with(
+        &param.to_string(),
+        |v| ty(v).is_some_and(|ty| ty.fits(param)),
+        accepts,
+    )
 }
 
 /// A nullable `param` parameter, `name: Type = ValType::X`, accepts exactly the values in
@@ -76,7 +98,7 @@ where
 {
     check_with(
         &format!("Option<{param}>"),
-        |v| ValDef::Type(param).arg_compatible(v),
+        |v| ty(v).is_none_or(|ty| ty.fits(param)),
         accepts,
     )
 }

@@ -4,9 +4,9 @@ use pkt::dns::dns_hdr;
 use pkt::ipv4::udp_hdr;
 
 use crate::args::Args;
-use crate::program::RuntimeErrorKind;
+use crate::interp::RuntimeErrorKind;
 use crate::stdlib::dns::DNS_NAME;
-use crate::val::{Val, ValDef};
+use crate::val::Val;
 
 use super::{Call, s};
 
@@ -40,7 +40,7 @@ fn test_name_parse() -> Result<(), RuntimeErrorKind> {
     let ret = (DNS_NAME.exec)(Args::new(
         None,
         vec![Val::from(true)],
-        vec![Val::from(ValDef::Str(b"www.google.com"))],
+        vec![Val::str(b"www.google.com")],
     ))?;
 
     let buf: &[u8] = ret.as_ref();
@@ -56,7 +56,7 @@ fn test_single_label() -> Result<(), RuntimeErrorKind> {
     let ret = (DNS_NAME.exec)(Args::new(
         None,
         vec![Val::from(false)],
-        vec![Val::from(ValDef::Str(b"com"))],
+        vec![Val::str(b"com")],
     ))?;
 
     let buf: &[u8] = ret.as_ref();

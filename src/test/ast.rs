@@ -64,7 +64,7 @@ fn sexpr_call_with_named_arg() {
             },
         ],
     );
-    assert_eq!(e.sexpr().to_string(), r#"(call a::b::c 0x1 (= x "|00|"))"#);
+    assert_eq!(e.sexpr().to_string(), r#"(call a::b::c 0x1 (: x "|00|"))"#);
 }
 
 #[test]

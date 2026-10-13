@@ -1,5 +1,6 @@
 use std::io;
 use std::mem::{offset_of, size_of};
+use std::net::{Ipv4Addr, SocketAddrV4};
 
 use bytemuck::{Pod, pod_read_unaligned};
 use pkt::dhcp::dhcp_hdr;
@@ -8,7 +9,7 @@ use pkt::ipv4::{ip_hdr, tcp_hdr};
 
 use crate::check::{Diagnostic, DiagnosticKind, check};
 use crate::hir::{Call, Const, Expr, ExprKind, Program, Stmt, StmtKind};
-use crate::interp::RuntimeErrorKind::{IoError, PcapWrite, PortOutOfRange};
+use crate::interp::RuntimeErrorKind::{IoError, PcapWrite};
 use crate::interp::{Effect, RuntimeError, TreeInterp};
 use crate::lex::Lexer;
 use crate::loc::Loc;
@@ -79,8 +80,11 @@ fn packets(src: &str) -> Vec<Vec<u8>> {
     sent.into_iter().map(|(_, pkt)| pkt).collect()
 }
 
-fn run_err(src: &str) -> RuntimeError {
-    run(src).res.expect_err("run succeeded")
+/// The values a program discards
+fn discards(src: &str) -> Vec<(Loc, Val)> {
+    let Run { res, discards, .. } = run(src);
+    res.expect("run failed");
+    discards
 }
 
 /// A header of type `T` at `off` in `bytes`
@@ -95,17 +99,23 @@ const FLOW: &str = "import ipv4;\nlet c = ipv4::tcp::flow(1.2.3.4:1, 5.6.7.8:2);
 
 #[test]
 fn run_slash_port_range() {
-    run("let x = 1.2.3.4 / 65535;").res.expect("run failed");
-
-    let err = run_err("let x = 1.2.3.4 / 65536;");
-    assert!(
-        matches!(&err.kind, PortOutOfRange(65536)) && err.loc == Loc::new(1, 19),
-        "{err:?}"
+    let vals = discards("let x = 1.2.3.4 / 65535; x;");
+    assert_eq!(
+        vals,
+        [(
+            Loc::new(1, 26),
+            Val::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 65535))
+        )]
     );
-    let err = run_err("let p = 18446744073709551615;\nlet x = 1.2.3.4 / p;");
-    assert!(
-        matches!(&err.kind, PortOutOfRange(u64::MAX)) && err.loc == Loc::new(2, 19),
-        "{err:?}"
+
+    // should succeed with silent overflow
+    let vals = discards("let x = 1.2.3.4 / 65536; x;");
+    assert_eq!(
+        vals,
+        [(
+            Loc::new(1, 26),
+            Val::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 0))
+        )]
     );
 }
 

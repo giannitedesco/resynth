@@ -6,13 +6,9 @@ use derive_more::Display;
 
 use pkt::Packet;
 
-use crate::ast::Lit;
 use crate::libapi::{ClassDef, FuncDef};
 use crate::object::{Obj, ObjRef};
-use crate::program::RuntimeErrorKind::{self, NameError, TypeError};
 use crate::str::{Buf, Literal};
-use crate::sym::Symbol;
-use crate::traits::Dispatchable;
 
 /// All resynth values must be one of the following types
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Display)]
@@ -69,53 +65,9 @@ pub trait Typed {
         self.val_type() == typ
     }
 
-    fn type_matches<T: Typed>(&self, other: &T) -> bool {
-        self.is_type(other.val_type())
-    }
-
     // Check if the value is nil, by testing if it is of type [ValType::Void]
     fn is_nil(&self) -> bool {
         self.is_type(ValType::Void)
-    }
-
-    fn is_str(&self) -> bool {
-        self.is_type(ValType::Str)
-    }
-
-    fn is_pktgen(&self) -> bool {
-        self.is_type(ValType::PktGen)
-    }
-
-    fn is_integral(&self) -> bool {
-        matches!(self.val_type(), |ValType::Bool| ValType::U8
-            | ValType::U16
-            | ValType::U32
-            | ValType::U64)
-    }
-
-    fn is_string_coercible(&self) -> bool {
-        matches!(
-            self.val_type(),
-            ValType::Pkt
-                | ValType::Str
-                | ValType::Bool
-                | ValType::U8
-                | ValType::U16
-                | ValType::U32
-                | ValType::U64
-                | ValType::Ip4
-        )
-    }
-
-    fn is_pktgen_coercible(&self) -> bool {
-        matches!(self.val_type(), ValType::PktGen | ValType::Pkt)
-    }
-
-    fn compatible_with<T: Typed>(&self, other: &T) -> bool {
-        self.type_matches(other)
-            || self.is_integral() && other.is_integral()
-            || (self.is_str() && other.is_string_coercible())
-            || (self.is_pktgen() && other.is_pktgen_coercible())
     }
 }
 
@@ -139,15 +91,6 @@ pub enum ValDef {
     Sock4(SocketAddrV4),
     Str(&'static [u8]),
     Type(ValType),
-}
-
-impl ValDef {
-    pub fn arg_compatible<T: Typed>(&self, other: &T) -> bool {
-        match self {
-            ValDef::Type(t) => other.is_nil() || t.compatible_with(other),
-            _ => self.compatible_with(other),
-        }
-    }
 }
 
 impl Typed for ValDef {
@@ -258,37 +201,6 @@ pub enum Val {
     Pkt(Rc<Packet>),
     PktGen(Rc<Box<[Packet]>>),
     TimeJump(u64),
-}
-
-impl From<ValDef> for Val {
-    fn from(valdef: ValDef) -> Self {
-        use ValDef::*;
-
-        match valdef {
-            Nil => Val::Nil,
-            Bool(b) => Val::Bool(b),
-            U8(uint) => Val::U8(uint),
-            U16(uint) => Val::U16(uint),
-            U32(uint) => Val::U32(uint),
-            U64(uint) => Val::U64(uint),
-            Ip4(ip) => Val::Ip4(ip),
-            Sock4(sock) => Val::Sock4(sock),
-            Str(s) => Val::str(s),
-            Type(_) => Val::Nil,
-        }
-    }
-}
-
-impl From<Lit> for Val {
-    fn from(lit: Lit) -> Self {
-        match lit {
-            Lit::Bool(b) => Self::Bool(b),
-            Lit::Int(i) => Self::U64(i),
-            Lit::Ip4(addr) => Self::Ip4(addr),
-            Lit::Sock4(sa) => Self::Sock4(sa),
-            Lit::Str(buf) => Self::Str(buf),
-        }
-    }
 }
 
 impl From<&'static FuncDef> for Val {
@@ -418,7 +330,7 @@ impl From<Val> for Ipv4Addr {
 
 impl From<Val> for Buf {
     fn from(v: Val) -> Self {
-        /* Must be implemented for all types which are Typed::is_string_coercible() */
+        /* Must be implemented for every type the checker lets fit a bytes parameter (Ty::fits) */
         match v {
             Val::Bool(b) => Buf::from(if b { &[1] } else { &[0] }),
             Val::Pkt(s) => Buf::from(s.to_vec()),
@@ -500,7 +412,7 @@ impl From<Val> for Option<u8> {
 
 impl From<Val> for Option<Buf> {
     fn from(v: Val) -> Self {
-        /* Must be implemented for all types which are Typed::is_string_coercible() */
+        /* Must be implemented for every type the checker lets fit a bytes parameter (Ty::fits) */
         Some(match v {
             Val::Nil => {
                 return None;
@@ -562,42 +474,6 @@ impl Val {
         Buf: From<T>,
     {
         Val::Str(Buf::from(v))
-    }
-
-    /// Convert a literal token in to a value. Integer literals are lexed as `i128` and become
-    /// [Val::U64] here.
-    pub fn method_lookup(&self, name: &str) -> Result<Self, RuntimeErrorKind> {
-        let obj = match self {
-            Val::Obj(obj) => obj,
-            _ => {
-                println!("no methods for non-object: {:?}", self.val_type());
-                return Err(TypeError);
-            }
-        };
-
-        let sym = obj
-            .lookup_symbol(name)
-            .ok_or_else(|| NameError(name.into()))?;
-
-        match sym {
-            Symbol::Func(fndef) => Ok(Val::Method(obj.clone(), fndef)),
-            _ => {
-                println!("calling non-func symbol: {}: {:?}", name, sym);
-                Err(TypeError)
-            }
-        }
-    }
-
-    pub fn lookup_symbol(&self, name: &str) -> Result<Symbol, RuntimeErrorKind> {
-        match self {
-            Val::Obj(obj) => obj
-                .lookup_symbol(name)
-                .ok_or_else(|| NameError(name.into())),
-            _ => {
-                println!("no symbols for non-object: {:?}", self.val_type());
-                Err(TypeError)
-            }
-        }
     }
 }
 

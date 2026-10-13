@@ -1,8 +1,12 @@
 use pkt::PcapWriter;
 
+use resynth::ast::Stmt;
 use resynth::parse::parse;
 use resynth::stdlib::{write_docs, write_stdlib_json};
-use resynth::{Effect, LexError, Lexer, Loc, ParseError, Program, RuntimeError, RuntimeErrorKind};
+use resynth::{
+    Diagnostic, DiagnosticKind, Effect, ErrorSummary, LexError, Lexer, Loc, ParseError, Program,
+    RuntimeError, RuntimeErrorKind, TreeInterp, check,
+};
 use resynth::{error, ok, warn};
 
 use std::io::{BufRead, IsTerminal};
@@ -240,16 +244,22 @@ enum CompileError {
     #[error(ignore)]
     Parse(ParseError),
 
+    /// Every semantic error has already been printed, as a diagnostic
+    #[from]
+    #[error(ignore)]
+    Semantic(ErrorSummary),
+
     #[from]
     #[error(ignore)]
     Runtime(RuntimeError),
 }
 
 impl CompileError {
-    /// Where in the input the error is. An I/O error has no location.
+    /// Where in the input the error is. An I/O error and a semantic error summary have no
+    /// location.
     const fn loc(&self) -> Option<Loc> {
         match self {
-            Self::Io(_) => None,
+            Self::Io(_) | Self::Semantic(_) => None,
             Self::Lex(err) => Some(err.loc),
             Self::Parse(err) => Some(err.loc),
             Self::Runtime(err) => Some(err.loc),
@@ -261,6 +271,7 @@ impl CompileError {
             Self::Io(_) => "io",
             Self::Lex(_) => "lex",
             Self::Parse(_) => "parse",
+            Self::Semantic(_) => "semantic",
             Self::Runtime(_) => "runtime",
         }
     }
@@ -280,6 +291,7 @@ impl CompileError {
             Self::Io(err) => println!("{}", err),
             Self::Lex(err) => println!("{}", err.kind),
             Self::Parse(err) => println!("{}", err.kind),
+            Self::Semantic(summary) => println!("{}", summary),
             Self::Runtime(err) => println!("{}", err.kind),
         }
     }
@@ -299,63 +311,74 @@ struct Job {
 }
 
 impl Job {
-    fn warning<T: std::fmt::Display>(&self, stdout: &mut StandardStream, loc: Loc, msg: T) {
+    fn diagnostic(&self, stdout: &mut StandardStream, diag: Diagnostic) {
+        let Diagnostic { loc, kind } = diag;
+
         if loc.is_nil() {
             print!("{}: ", self.input);
         } else {
             print!("{}:{}:{}: ", self.input, loc.line(), loc.col());
         }
-        warn!(stdout, "warning");
-        println!(": {}", msg);
+        match kind {
+            DiagnosticKind::Error(err) => {
+                error!(stdout, "semantic error");
+                println!(": {}", err);
+            }
+            DiagnosticKind::Warning(warn) => {
+                warn!(stdout, "warning");
+                println!(": {}", warn);
+            }
+        }
     }
 
-    fn compile(
-        &self,
-        stdout: &mut StandardStream,
-        start_time: StartTime,
-        verbose: bool,
-    ) -> Result<(), CompileError> {
+    /// Lex and parse the input
+    fn parse(&self) -> Result<Vec<Stmt>, CompileError> {
         let mut lex = Lexer::default();
 
         for line in self.input.open()?.lines() {
             lex.line(&line?)?;
         }
 
-        let stmts = parse(lex.finish())?;
+        Ok(parse(lex.finish())?)
+    }
 
-        let mut wr = {
-            let wr = PcapWriter::create(&self.output)?;
-            if verbose { wr.debug() } else { wr }
-        };
-        let mut prog = Program::default();
-        prog.update_time(start_time.as_nanos());
+    /// Run a checked program, writing each packet it sends to the output pcap file
+    fn write_pcap(
+        &self,
+        prog: Program,
+        start_time: StartTime,
+        verbose: bool,
+    ) -> Result<(), CompileError> {
+        let mut wr = PcapWriter::create(&self.output)?;
+        if verbose {
+            wr = wr.debug();
+        }
 
-        prog.run(
-            |loc, eff| {
-                match eff {
-                    Effect::Discard(val) => {
-                        // warning(loc, &format!("discarded value: {:?}", val));
-                        self.warning(stdout, loc, format!("discarded value: {:?}", val));
-                    }
-                    Effect::Packet { time, pkt } => {
-                        wr.write_packet(time, pkt)
-                            .map_err(RuntimeErrorKind::PcapWrite)?;
-                    }
-                    Effect::TimeJump(_ns) => {
-                        // Time jumps are handled by the program's internal clock, so we don't need
-                        // to do anything here.
-                    }
-                    Effect::Warning(warn) => {
-                        self.warning(stdout, loc, warn);
-                    }
-                }
-                Ok(())
-            },
-            stmts,
-        )?;
+        TreeInterp::new(prog, start_time.as_nanos()).run(|_loc, effect| match effect {
+            Effect::Packet { time, pkt } => wr
+                .write_packet(time, pkt)
+                .map_err(RuntimeErrorKind::PcapWrite),
+            // The checker already warned about the discarded value, and the interpreter stamps
+            // each packet with the time
+            Effect::Discard(_) | Effect::TimeJump(_) => Ok(()),
+        })?;
         wr.flush()?;
 
         Ok(())
+    }
+
+    /// Compile the input to a pcap. The program is checked before the pcap file is created, so a
+    /// program that doesn't check never touches it. Each error and warning from the checker is
+    /// printed as it is found.
+    fn compile(
+        &self,
+        stdout: &mut StandardStream,
+        start_time: StartTime,
+        verbose: bool,
+    ) -> Result<(), CompileError> {
+        let stmts = self.parse()?;
+        let prog = check(stmts, |diag| self.diagnostic(stdout, diag))?;
+        self.write_pcap(prog, start_time, verbose)
     }
 
     /// Compiles the job and reports how it went. On failure, the output is deleted unless `keep`.
@@ -461,9 +484,11 @@ fn main() -> ExitCode {
 mod tests {
     use super::*;
 
+    use std::num::NonZeroUsize;
+
     use resynth::{LexErrorKind, ParseErrorKind, RuntimeErrorKind};
 
-    fn compile_errors() -> [CompileError; 4] {
+    fn compile_errors() -> [CompileError; 5] {
         [
             CompileError::Io(io::ErrorKind::NotFound.into()),
             CompileError::Lex(LexError {
@@ -474,9 +499,13 @@ mod tests {
                 loc: Loc::new(3, 4),
                 kind: ParseErrorKind::IntOutOfRange,
             }),
+            CompileError::Semantic(ErrorSummary {
+                errors: NonZeroUsize::MIN,
+                warnings: 0,
+            }),
             CompileError::Runtime(RuntimeError {
-                loc: Loc::new(5, 6),
-                kind: RuntimeErrorKind::TypeError,
+                loc: Loc::new(7, 8),
+                kind: RuntimeErrorKind::LibTodo,
             }),
         ]
     }
@@ -489,7 +518,8 @@ mod tests {
                 None,
                 Some(Loc::new(1, 2)),
                 Some(Loc::new(3, 4)),
-                Some(Loc::new(5, 6))
+                None,
+                Some(Loc::new(7, 8)),
             ]
         );
     }
@@ -498,7 +528,7 @@ mod tests {
     fn compile_error_phase() {
         assert_eq!(
             compile_errors().map(|err| err.phase()),
-            ["io", "lex", "parse", "runtime"]
+            ["io", "lex", "parse", "semantic", "runtime"]
         );
     }
 

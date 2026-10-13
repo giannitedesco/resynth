@@ -23,12 +23,16 @@
 //! 2. [parse::parse] is a recursive descent parser, using Pratt parsing for expressions. It turns
 //!    the whole queue of tokens in to a list of [statements](ast::Stmt) before anything runs. It
 //!    fails with a [ParseError]
-//! 3. [Program] maintains the execution state of any given program. It [runs](Program::run) one
-//!    statement at a time, and updates the program state based on that. If the program has a
-//!    [pkt::PcapWriter] attached to it, then any generated packets will be written in to the
-//!    corresponding pcap file as they are generated. It fails with a [RuntimeError]
+//! 3. [check()] resolves names, binds call arguments and checks types, lowering the statements to
+//!    a [HIR](hir) [Program] before anything runs. It gives each error, at most one per statement,
+//!    and each warning to its caller as a [Diagnostic] as it goes. It fails with an
+//!    [ErrorSummary]
+//! 4. [TreeInterp] runs a [Program] one statement at a time. Each packet it sends, each wait
+//!    and each discarded value is an [Effect], which the caller handles, for example by writing
+//!    packets to a pcap file. It fails with a [RuntimeError]
 //!
-//! Each phase's error carries the [location](Loc) in the source where it happened.
+//! Each lex, parse and runtime error, and each diagnostic, carries the [location](Loc) in the
+//! source where it happened.
 
 #[macro_use]
 mod macros;
@@ -42,10 +46,8 @@ mod libapi;
 mod loc;
 mod object;
 pub mod parse;
-mod program;
 mod str;
 mod sym;
-mod traits;
 mod val;
 
 pub mod stdlib;
@@ -56,9 +58,10 @@ mod test;
 pub use check::{
     Diagnostic, DiagnosticKind, ErrorSummary, SemanticError, SemanticErrorKind, WarningKind, check,
 };
+pub use hir::Program;
+pub use interp::{Effect, RuntimeError, RuntimeErrorKind, TreeInterp};
 pub use lex::{
     LexError, LexErrorKind, LexLineError, Lexeme, LexemeKind, Lexer, Scanner, Tok, Token,
 };
 pub use loc::Loc;
 pub use parse::{ParseError, ParseErrorKind};
-pub use program::{Effect, Program, RuntimeError, RuntimeErrorKind};

@@ -1,35 +1,15 @@
 use crate::object::ObjRef;
 use crate::str::Buf;
-use crate::val::{Val, ValDef};
+use crate::val::Val;
 
 use std::ops::Drop;
 use std::vec;
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct ArgVec {
-    this: Option<ObjRef>,
-    args: Vec<Val>,
-    extra: Vec<Val>,
-}
-
-impl ArgVec {
-    pub fn new(this: Option<ObjRef>, args: Vec<Val>, extra: Vec<Val>) -> Self {
-        Self { this, args, extra }
-    }
-}
 
 #[derive(Debug)]
 pub struct Args {
     this: Option<ObjRef>,
     it: vec::IntoIter<Val>,
     extra_args: Vec<Val>,
-}
-
-impl From<ArgVec> for Args {
-    fn from(v: ArgVec) -> Self {
-        let ArgVec { this, args, extra } = v;
-        Self::new(this, args, extra)
-    }
 }
 
 impl Args {
@@ -113,84 +93,5 @@ impl Drop for Args {
             self.extra_args.is_empty(),
             "Function didn't consume extra args"
         );
-    }
-}
-
-#[derive(Debug)]
-pub struct ArgSpec {
-    pub name: Option<String>,
-    pub val: Val,
-}
-
-impl ArgSpec {
-    pub fn new(name: Option<String>, val: Val) -> Self {
-        Self { name, val }
-    }
-
-    pub fn is_anon(&self) -> bool {
-        self.name.is_none()
-    }
-
-    pub fn is_named(&self) -> bool {
-        self.name.is_some()
-    }
-}
-
-impl From<ValDef> for ArgSpec {
-    fn from(val: ValDef) -> Self {
-        Self {
-            name: None,
-            val: Val::from(val),
-        }
-    }
-}
-
-impl From<bool> for ArgSpec {
-    fn from(val: bool) -> Self {
-        Self {
-            name: None,
-            val: Val::Bool(val),
-        }
-    }
-}
-
-impl From<u64> for ArgSpec {
-    fn from(val: u64) -> Self {
-        Self {
-            name: None,
-            val: Val::U64(val),
-        }
-    }
-}
-
-// Must take ref because otherwise AsRef<[u8]> can be implemented by stdlib from any other type we
-// convert from in the future and then this would be ambiguous
-impl<T> From<&T> for ArgSpec
-where
-    T: AsRef<[u8]> + ?Sized,
-{
-    fn from(s: &T) -> Self {
-        Self {
-            name: None,
-            val: Val::str(s),
-        }
-    }
-}
-
-impl From<(&str, ValDef)> for ArgSpec {
-    fn from((name, val): (&str, ValDef)) -> Self {
-        Self {
-            name: Some(name.to_owned()),
-            val: Val::from(val),
-        }
-    }
-}
-
-impl From<(&str, bool)> for ArgSpec {
-    fn from((name, val): (&str, bool)) -> Self {
-        Self {
-            name: Some(name.to_owned()),
-            val: Val::from(val),
-        }
     }
 }

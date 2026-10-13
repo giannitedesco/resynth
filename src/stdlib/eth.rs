@@ -3,8 +3,8 @@ use std::net::Ipv4Addr;
 use pkt::Packet;
 use pkt::eth::{BROADCAST, eth_addr, eth_hdr, ethertype};
 
+use crate::interp::RuntimeErrorKind;
 use crate::libapi::{FuncDef, Module};
-use crate::program::RuntimeErrorKind;
 use crate::str::Buf;
 use crate::sym::Symbol;
 use crate::val::{Val, ValDef};

@@ -1,8 +1,8 @@
 use pkt::dns::{DnsFlags, rcode};
 use pkt::netbios::{name, ns};
 
+use crate::interp::RuntimeErrorKind;
 use crate::libapi::{FuncDef, Module};
-use crate::program::RuntimeErrorKind;
 use crate::str::Buf;
 use crate::sym::Symbol;
 use crate::val::{Val, ValDef};

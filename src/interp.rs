@@ -4,7 +4,11 @@
 //! only errors left are the ones that depend on running: a stdlib function failing, and an effect
 //! failing. Paths the checker rules out are `unreachable!`
 
+use std::borrow::Cow;
+use std::io;
 use std::net::SocketAddrV4;
+
+use derive_more::{Display, Error, From};
 
 use pkt::Packet;
 
@@ -13,9 +17,42 @@ use crate::hir::{Call, Expr, ExprKind, Program, Stmt, StmtKind};
 use crate::loc::Loc;
 use crate::val::{Typed, Val};
 
-use RuntimeErrorKind::PortOutOfRange;
+/// Why the program stopped, and where
+#[derive(Debug, Display, Error)]
+#[display("{loc}: {kind}")]
+pub struct RuntimeError {
+    /// The call or expression which failed, or the statement whose effect failed
+    pub loc: Loc,
+    pub kind: RuntimeErrorKind,
+}
 
-pub use crate::program::{RuntimeError, RuntimeErrorKind};
+/// What went wrong while running the program
+#[derive(Debug, Display, Error, From)]
+pub enum RuntimeErrorKind {
+    /// An I/O error in the stdlib, such as `io::file` failing to read its file
+    #[display("{}", _0)]
+    #[from]
+    IoError(io::Error),
+
+    /// Writing a packet failed
+    #[display("{}", _0)]
+    #[from(ignore)]
+    PcapWrite(io::Error),
+
+    #[display("unimplemented stdlib call")]
+    LibTodo,
+
+    #[display("{}", _0)]
+    #[error(ignore)]
+    LibError(Cow<'static, str>),
+}
+
+impl RuntimeErrorKind {
+    /// This error, at `loc`
+    pub(crate) fn at(self, loc: Loc) -> RuntimeError {
+        RuntimeError { loc, kind: self }
+    }
+}
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 
@@ -153,10 +190,9 @@ impl TreeInterp {
                     Val::Ip4(ip) => ip,
                     val => unreachable!("{val:?} / port: the left of / is an Ip4"),
                 };
-                let port_loc = port.loc;
                 let port = u64::from(self.eval(*port)?);
-                let port = u16::try_from(port).map_err(|_| PortOutOfRange(port).at(port_loc))?;
-                Val::Sock4(SocketAddrV4::new(ip, port))
+                // TODO: check will narrow this down to a u16
+                Val::Sock4(SocketAddrV4::new(ip, port as u16))
             }
         })
     }
