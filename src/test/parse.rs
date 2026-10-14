@@ -13,7 +13,7 @@ fn sexpr(src: &str) -> String {
     parse_src(src)
         .expect("parse failed")
         .iter()
-        .map(|stmt| stmt.sexpr().to_string())
+        .map(|stmt| stmt.to_string())
         .collect::<Vec<_>>()
         .join("\n")
 }

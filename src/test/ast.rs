@@ -64,7 +64,7 @@ fn sexpr_call_with_named_arg() {
             },
         ],
     );
-    assert_eq!(e.sexpr().to_string(), r#"(call a::b::c 0x1 (: x "|00|"))"#);
+    assert_eq!(e.to_string(), r#"(call a::b::c 0x1 (: x "|00|"))"#);
 }
 
 #[test]
@@ -79,10 +79,7 @@ fn sexpr_method_on_call_result() {
         ),
         [],
     );
-    assert_eq!(
-        e.sexpr().to_string(),
-        "(call (. (call ipv4::tcp::flow a b) open))"
-    );
+    assert_eq!(e.to_string(), "(call (. (call ipv4::tcp::flow a b) open))");
 }
 
 #[test]
@@ -92,7 +89,7 @@ fn sexpr_binary() {
         lhs: Box::new(local("x")),
         rhs: Box::new(int(80)),
     });
-    assert_eq!(e.sexpr().to_string(), "(/ x 0x50)");
+    assert_eq!(e.to_string(), "(/ x 0x50)");
 }
 
 #[test]
@@ -107,7 +104,7 @@ fn sexpr_stmts() {
         Stmt::Expr(call(local("f"), [])),
         Stmt::Expr(expr(ExprKind::Literal(Lit::Str(Buf::from(b"abc"))))),
     ];
-    let out: Vec<String> = stmts.iter().map(|s| s.sexpr().to_string()).collect();
+    let out: Vec<String> = stmts.iter().map(|s| s.to_string()).collect();
     assert_eq!(
         out,
         [
