@@ -97,26 +97,72 @@ const TCP_PAYLOAD: usize = size_of::<eth_hdr>() + size_of::<ip_hdr>() + size_of:
 
 const FLOW: &str = "import ipv4;\nlet c = ipv4::tcp::flow(1.2.3.4:1, 5.6.7.8:2);\n";
 
+/// a port wider than `u16` keeps its low bits when it runs. The checker folds every constant port,
+/// so the HIR is built by hand.
 #[test]
 fn run_slash_port_range() {
-    let vals = discards("let x = 1.2.3.4 / 65535; x;");
-    assert_eq!(
-        vals,
-        [(
-            Loc::new(1, 26),
-            Val::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 65535))
-        )]
+    let at = |col| Loc::new(1, col);
+    let sock = |port| {
+        Expr::new(
+            at(1),
+            ExprKind::SockAddr {
+                ip: Box::new(Expr::new(
+                    at(1),
+                    ExprKind::Const(Const::Ip4(Ipv4Addr::new(1, 2, 3, 4))),
+                )),
+                port: Box::new(Expr::new(at(11), ExprKind::Const(Const::U64(port)))),
+            },
+        )
+    };
+    let prog = Program::new(
+        Box::new([
+            Stmt::new(at(1), StmtKind::Discard(sock(65535))),
+            Stmt::new(at(1), StmtKind::Discard(sock(65536))),
+        ]),
+        Box::new([]),
     );
 
-    // should succeed with silent overflow
-    let vals = discards("let x = 1.2.3.4 / 65536; x;");
+    let mut vals = Vec::new();
+    TreeInterp::new(prog, 0)
+        .run(|_, effect| {
+            if let Effect::Discard(val) = effect {
+                vals.push(val);
+            }
+            Ok(())
+        })
+        .expect("run failed");
     assert_eq!(
         vals,
+        [
+            Val::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 65535)),
+            Val::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 0)),
+        ]
+    );
+}
+
+/// a port whose type is wider than `u16` runs with its value
+#[test]
+fn run_slash_port_from_call() {
+    assert_eq!(
+        discards("import text;\nlet s = 1.2.3.4 / text::len(\"ab\");\ns;"),
         [(
-            Loc::new(1, 26),
-            Val::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 0))
+            Loc::new(3, 1),
+            Val::Sock4(SocketAddrV4::new(Ipv4Addr::new(1, 2, 3, 4), 2))
         )]
     );
+}
+
+/// an untyped integer passed as bytes is written at the narrowest width that holds it, big-endian
+#[test]
+fn run_untyped_int_as_bytes() {
+    for (n, bytes) in [("5", &b"a\x05"[..]), ("300", b"a\x01\x2c")] {
+        assert_eq!(
+            discards(&format!(
+                "import text;\nlet x = text::concat(\"a\", {n});\nx;"
+            )),
+            [(Loc::new(3, 1), Val::str(bytes))]
+        );
+    }
 }
 
 /// The code in each ```resynth block of a doc comment, joined into one program
@@ -368,7 +414,7 @@ fn run_warning_before_runtime_error() {
     for (src, warning) in [
         (
             "import io;\nlet x = io::file(\"no-such-file.der\");\n1;",
-            (Loc::new(3, 1), "discarded value of type u64"),
+            (Loc::new(3, 1), "discarded value of type u8"),
         ),
         (
             "import io;\nlet x = io::file(\"no-such-file.der\");\nimport io;",

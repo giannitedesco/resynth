@@ -195,6 +195,14 @@ impl Expr {
         }
     }
 
+    /// The value of an integer or `bool` constant
+    pub fn const_int(&self) -> Option<i128> {
+        match &self.kind {
+            ExprKind::Const(c) => c.int(),
+            _ => None,
+        }
+    }
+
     /// Returns true if evaluating this expression has side effects, or calls a function that may
     /// have side effects.
     ///
@@ -231,6 +239,14 @@ impl Expr {
         }
     }
 
+    /// The expression which gives this one's value: a sequence's value, or itself
+    pub fn value(&self) -> &Expr {
+        match &self.kind {
+            ExprKind::Seq { value, .. } => value,
+            _ => self,
+        }
+    }
+
     /// Split out side-effects from the value of a sequence
     pub fn split(self) -> (Box<[Expr]>, Expr) {
         match self.kind {
@@ -256,19 +272,35 @@ impl Call {
     }
 }
 
-impl From<Lit> for Const {
-    fn from(lit: Lit) -> Self {
-        match lit {
+impl TryFrom<Lit> for Const {
+    type Error = ();
+
+    fn try_from(lit: Lit) -> Result<Self, Self::Error> {
+        Ok(match lit {
             Lit::Bool(b) => Self::Bool(b),
-            Lit::Int(n) => Self::U64(n),
             Lit::Ip4(addr) => Self::Ip4(addr),
             Lit::Sock4(sa) => Self::Sock4(sa),
             Lit::Str(buf) => Self::Bytes(buf),
-        }
+
+            // Int literals are handled separately and are narrowed at the point of use
+            Lit::Int(_) => return Err(()),
+        })
     }
 }
 
 impl Const {
+    /// The value of an integer or `bool` constant. `true` is 1.
+    pub(crate) fn int(&self) -> Option<i128> {
+        Some(match *self {
+            Self::Bool(b) => b.into(),
+            Self::U8(n) => n.into(),
+            Self::U16(n) => n.into(),
+            Self::U32(n) => n.into(),
+            Self::U64(n) => n.into(),
+            _ => return None,
+        })
+    }
+
     /// A module constant, a property, or a parameter's default. A static string is copied once,
     /// here.
     pub(crate) fn from_def(def: ValDef) -> Self {

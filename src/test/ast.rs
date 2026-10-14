@@ -22,7 +22,7 @@ fn local(name: &str) -> Expr {
     expr(ExprKind::LocalRef(ident(name)))
 }
 
-fn int(i: u64) -> Expr {
+fn int(i: i128) -> Expr {
     expr(ExprKind::Literal(Lit::Int(i)))
 }
 

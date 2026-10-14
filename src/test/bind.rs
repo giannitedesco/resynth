@@ -4,8 +4,8 @@ use crate::check::SemanticErrorKind::{
     ArgType, CollectArgType, DuplicateArg, MissingArg, TooFewArgs, TooManyArgs,
     UnexpectedCollectArgs, UnexpectedNamedArg, UnknownArg,
 };
-use crate::check::Ty;
 use crate::check::bind::{ArgIn, Bound};
+use crate::check::{Found, Ty, TypedValue, Value};
 use crate::hir::{Const, Expr, ExprKind};
 use crate::libapi::FuncDef;
 use crate::loc::Loc;
@@ -21,8 +21,10 @@ fn anon(n: usize, ty: Ty) -> ArgIn {
     ArgIn {
         name: None,
         loc,
-        hir: Expr::new(loc, ExprKind::Const(Const::U64(n as u64))),
-        ty,
+        value: Value::Typed(TypedValue {
+            expr: Expr::new(loc, ExprKind::Const(Const::U64(n as u64))),
+            ty,
+        }),
     }
 }
 
@@ -41,7 +43,8 @@ fn named(n: usize, name: &str, ty: Ty) -> ArgIn {
 /// `args` bound to `func`, as `param=value` in the order the binding holds them, then `|` and
 /// the collect arguments
 fn bound(func: &'static FuncDef, args: Vec<ArgIn>) -> String {
-    let Bound { args, collect } = Bound::bind(func, CALL, args).expect("bind failed");
+    let Bound { args, collect } =
+        Bound::bind(func, CALL, args, &mut |_, _| {}).expect("bind failed");
     let mut out: Vec<String> = args
         .iter()
         .map(|(arg, slot)| format!("{}={arg}", func.args[*slot].name))
@@ -54,7 +57,7 @@ fn bound(func: &'static FuncDef, args: Vec<ArgIn>) -> String {
 }
 
 fn bind_err(func: &'static FuncDef, args: Vec<ArgIn>) -> SemanticError {
-    match Bound::bind(func, CALL, args) {
+    match Bound::bind(func, CALL, args, &mut |_, _| {}) {
         Ok(_) => panic!("bind succeeded"),
         Err(err) => err,
     }
@@ -119,7 +122,7 @@ fn bind_type_mismatch_positional() {
                 func: "PLAIN",
                 arg: "b",
                 expected: ValType::Str,
-                found: Ty::Sock4
+                found: Found::Ty(Ty::Sock4)
             }
         ) && err.loc == Loc::new(2, 1),
         "{err:?}"
@@ -392,7 +395,7 @@ fn bind_collect_bad_type() {
             CollectArgType {
                 func: "COLLECT",
                 expected: ValType::Str,
-                found: Ty::Sock4
+                found: Found::Ty(Ty::Sock4)
             }
         ) && err.loc == Loc::new(2, 3),
         "{err:?}"
@@ -573,7 +576,7 @@ fn bind_optional_collect_u64() {
             CollectArgType {
                 func: "OPTIONAL_COLLECT_U64",
                 expected: ValType::U64,
-                found: Ty::Bytes
+                found: Found::Ty(Ty::Bytes)
             }
         ) && err.loc == Loc::new(2, 1),
         "{err:?}"

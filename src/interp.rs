@@ -190,9 +190,9 @@ impl TreeInterp {
                     Val::Ip4(ip) => ip,
                     val => unreachable!("{val:?} / port: the left of / is an Ip4"),
                 };
-                let port = u64::from(self.eval(*port)?);
-                // TODO: check will narrow this down to a u16
-                Val::Sock4(SocketAddrV4::new(ip, port as u16))
+                // A port wider than u16 keeps its low bits. The checker warns when it might.
+                let port = u16::from(self.eval(*port)?);
+                Val::Sock4(SocketAddrV4::new(ip, port))
             }
         })
     }

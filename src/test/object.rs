@@ -1,3 +1,5 @@
+use std::net::Ipv4Addr;
+
 use crate::libapi::{Class, ClassDef, FuncDef, Module};
 use crate::object::ObjRef;
 use crate::sym::Symbol;
@@ -50,11 +52,40 @@ pub(super) static ROOT: Module = module!(
     }
 );
 
+static IP: FuncDef = func!(
+    /// An address that comes from a call
+    resynth fn ip(
+        =>
+        =>
+        Void
+    ) -> Ip4
+    |_args| {
+        Ok(Val::Ip4(Ipv4Addr::new(1, 2, 3, 4)))
+    }
+);
+
+static U8: FuncDef = func!(
+    /// Takes a `u8`
+    resynth fn u8(
+        /// Any byte
+        val: U8,
+        =>
+        =>
+        Void
+    ) -> Void
+    |mut args| {
+        let _: u8 = args.next().into();
+        Ok(Val::Nil)
+    }
+);
+
 const OBJ: Module = module!(
     /// Test objects
     resynth mod obj {
         Tcp => Symbol::Class(&TCP),
         tcp => Symbol::Func(&TCP_NEW),
+        ip => Symbol::Func(&IP),
+        u8 => Symbol::Func(&U8),
     }
 );
 

@@ -28,7 +28,7 @@ pub struct ModulePath {
 #[derive(Debug)]
 pub enum Lit {
     Bool(bool),
-    Int(u64),
+    Int(i128),
     Ip4(Ipv4Addr),
     Sock4(SocketAddrV4),
     Str(Buf),

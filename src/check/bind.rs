@@ -13,12 +13,11 @@ use crate::hir::{Const, Expr, ExprKind};
 use crate::libapi::{ArgDecl, FuncDef};
 use crate::loc::Loc;
 
-use super::SemanticError;
 use super::SemanticErrorKind::{
     ArgType, CollectArgType, DuplicateArg, MissingArg, TooFewArgs, TooManyArgs,
     UnexpectedCollectArgs, UnexpectedNamedArg, UnknownArg,
 };
-use super::Ty;
+use super::{SemanticError, Value, WarningKind};
 
 /// A checked argument, as written in the source
 pub(crate) struct ArgIn {
@@ -26,8 +25,7 @@ pub(crate) struct ArgIn {
     pub(crate) name: Option<Ident>,
     /// Where its value starts
     pub(crate) loc: Loc,
-    pub(crate) hir: Expr,
-    pub(crate) ty: Ty,
+    pub(crate) value: Value,
 }
 
 /// A call's arguments, bound to its callee's parameters
@@ -57,12 +55,14 @@ impl ArgIn {
 }
 
 impl Bound {
-    /// Bind `args`, in source order, to `func`'s parameters. Errors about one argument point at
-    /// it. Errors about a missing argument point at the call, `call_loc`.
+    /// Bind `args`, in source order, to `func`'s parameters, narrowing each to its parameter's
+    /// type and giving any warning about that to `warn`. Errors about one argument point at it.
+    /// Errors about a missing argument point at the call, `call_loc`.
     pub(crate) fn bind(
         func: &'static FuncDef,
         call_loc: Loc,
         args: Vec<ArgIn>,
+        warn: &mut impl FnMut(Loc, WarningKind),
     ) -> Result<Self, SemanticError> {
         // A named argument that isn't a parameter at all is reported before any rule about
         // where it was written. Each named argument is paired with its parameter's slot.
@@ -150,28 +150,29 @@ impl Bound {
             match slot {
                 Some(slot) => {
                     let expected = func.args[slot].typ.param_type();
-                    if !arg.ty.fits(expected) {
-                        return Err(ArgType {
+                    let err_loc = arg.err_loc();
+                    let hir = arg.value.fit(arg.loc, expected, warn, |found| {
+                        ArgType {
                             func: func.name,
                             arg: func.args[slot].name,
                             expected,
-                            found: arg.ty,
+                            found,
                         }
-                        .at(arg.err_loc()));
-                    }
+                        .at(err_loc)
+                    })?;
                     filled[slot] = true;
-                    out.push((arg.hir, slot));
+                    out.push((hir, slot));
                 }
                 None => {
-                    if !arg.ty.fits(func.collect_type) {
-                        return Err(CollectArgType {
+                    let hir = arg.value.fit(arg.loc, func.collect_type, warn, |found| {
+                        CollectArgType {
                             func: func.name,
                             expected: func.collect_type,
-                            found: arg.ty,
+                            found,
                         }
-                        .at(arg.loc));
-                    }
-                    collect.push(arg.hir);
+                        .at(arg.loc)
+                    })?;
+                    collect.push(hir);
                 }
             }
         }

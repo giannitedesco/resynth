@@ -82,11 +82,12 @@ fn parse_int_literal_u64_max() {
     );
 }
 
+/// An integer literal is an `i128`, as lexed. The checker narrows it.
 #[test]
 fn parse_int_literal_wider_than_u64() {
     assert_eq!(
-        parse_err("let x = 0x10000000000000000;"),
-        IntOutOfRange.at(Loc::new(1, 9))
+        sexpr("let x = 0x10000000000000000;"),
+        "(let x 0x10000000000000000)"
     );
 }
 

@@ -23,8 +23,8 @@ use crate::val::ValType;
 pub(crate) mod bind;
 
 use SemanticErrorKind::{
-    AlreadyBound, NoMembers, NotAModule, NotAValue, NotCallable, NotImported, OperandType,
-    UnknownItem, UnknownMember, UnknownModule, UnknownName, VoidValue,
+    AlreadyBound, IntegralTooLarge, NoMembers, NotAModule, NotAValue, NotCallable, NotImported,
+    OperandType, UnknownItem, UnknownMember, UnknownModule, UnknownName, VoidValue,
 };
 use bind::{ArgIn, Bound};
 
@@ -85,6 +85,16 @@ pub enum WarningKind {
     /// An expression statement whose value isn't packets, a time jump or `void`
     #[display("discarded value of type {}", _0)]
     DiscardedValue(Ty),
+
+    /// An integer constant that doesn't fit the integer type it is used as. It keeps its low
+    /// bits.
+    #[display("integer {value} truncated to {ty}")]
+    Truncated { value: i128, ty: Ty },
+
+    /// A value whose integer type is wider than the type it is used as. It keeps its low bits
+    /// when it runs.
+    #[display("value of type {found} may be truncated to {ty}")]
+    Overflow { found: Ty, ty: Ty },
 }
 
 impl WarningKind {
@@ -167,19 +177,19 @@ pub enum SemanticErrorKind {
     /// Member access on a value that isn't an object
     #[display("value of type {} has no members", _0)]
     #[error(ignore)]
-    NoMembers(Ty),
+    NoMembers(Found),
 
     #[display("{side} operand of {} must be {expected}, found {found}", op.symbol())]
     OperandType {
         op: BinOp,
         side: Side,
         expected: Ty,
-        found: Ty,
+        found: Found,
     },
 
     #[display("value of type {} is not callable", _0)]
     #[error(ignore)]
-    NotCallable(Ty),
+    NotCallable(Found),
 
     #[display("{func}: too many arguments: {got} > {want}")]
     TooManyArgs {
@@ -219,19 +229,33 @@ pub enum SemanticErrorKind {
         func: &'static str,
         arg: &'static str,
         expected: ValType,
-        found: Ty,
+        found: Found,
     },
 
     #[display("{func}: collect argument must be {expected}, found {found}")]
     CollectArgType {
         func: &'static str,
         expected: ValType,
-        found: Ty,
+        found: Found,
     },
 
     /// A `void` expression where a value is needed
     #[display("void value used as a value")]
     VoidValue,
+
+    /// An integer literal that doesn't fit in any integral type
+    #[display("integer literal is too large for any integral type")]
+    IntegralTooLarge(),
+}
+
+/// The type an error found. An untyped integer has none until it is used.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+pub enum Found {
+    #[display("{_0}")]
+    Ty(Ty),
+    /// An untyped integer
+    #[display("integer")]
+    Int,
 }
 
 /// Which operand of a binary operator
@@ -302,19 +326,48 @@ impl Ty {
             Const::Bool(_) => Self::Bool,
             Const::U8(_) => Self::U8,
             Const::U16(_) => Self::U16,
+            Const::U32(_) => Self::U32,
             Const::U64(_) => Self::U64,
             Const::Ip4(_) => Self::Ip4,
             Const::Sock4(_) => Self::Sock4,
             Const::Bytes(_) => Self::Bytes,
             Const::Func(func) => Self::Func(func),
-            Const::U32(_) | Const::Absent => {
+            Const::Absent => {
                 unreachable!("no literal, module constant or property is {c:?}")
             }
         }
     }
 
+    /// How many bits an integer or `bool` of this type holds
+    fn bits(self) -> Option<u32> {
+        match self {
+            Self::Bool => Some(1),
+            Self::U8 => Some(8),
+            Self::U16 => Some(16),
+            Self::U32 => Some(32),
+            Self::U64 => Some(64),
+            _ => None,
+        }
+    }
+
     fn is_integral(self) -> bool {
-        matches!(self, Self::Bool | Self::U8 | Self::U16 | Self::U64)
+        self.bits().is_some()
+    }
+
+    /// A constant of this integer type, holding the low bits of `n`
+    fn truncate(self, n: i128) -> Const {
+        match self {
+            Self::U8 => Const::U8(n as u8),
+            Self::U16 => Const::U16(n as u16),
+            Self::U32 => Const::U32(n as u32),
+            Self::U64 => Const::U64(n as u64),
+            ty => unreachable!("{ty} isn't an integer type"),
+        }
+    }
+
+    /// Whether this integer type holds `n` without truncating it
+    fn holds(self, n: i128) -> bool {
+        self.truncate(n).int() == Some(n)
     }
 
     /// Whether a value of this type can be passed for a parameter declared `param`: any integer
@@ -339,7 +392,7 @@ impl Ty {
     }
 }
 
-/// A run-time type the checker has a type for. `U32`, `Type` and `Obj` are never the type of an
+/// A run-time type the checker has a type for. `Type` and `Obj` are never the type of an
 /// expression, and a bare `Func` or `Method` doesn't say which function.
 impl TryFrom<ValType> for Ty {
     type Error = ValType;
@@ -350,6 +403,7 @@ impl TryFrom<ValType> for Ty {
             ValType::Bool => Self::Bool,
             ValType::U8 => Self::U8,
             ValType::U16 => Self::U16,
+            ValType::U32 => Self::U32,
             ValType::U64 => Self::U64,
             ValType::Ip4 => Self::Ip4,
             ValType::Sock4 => Self::Sock4,
@@ -358,7 +412,7 @@ impl TryFrom<ValType> for Ty {
             ValType::PktGen => Self::PktGen,
             ValType::TimeJump => Self::TimeJump,
             ValType::Class(cls) => Self::Class(cls),
-            ValType::U32 | ValType::Type | ValType::Obj | ValType::Func | ValType::Method => {
+            ValType::Type | ValType::Obj | ValType::Func | ValType::Method => {
                 return Err(t);
             }
         })
@@ -393,6 +447,123 @@ impl From<SemanticError> for Stop {
 
 type Checked<T> = Result<T, Stop>;
 
+pub(crate) struct TypedValue {
+    pub(crate) expr: Expr,
+    pub(crate) ty: Ty,
+}
+
+/// What an expression lowers to. An untyped integer never reaches HIR: each context it is used
+/// in narrows it.
+pub(crate) enum Value {
+    Typed(TypedValue),
+    /// An untyped integer, and where it is
+    Int(Loc, i128),
+}
+
+impl Value {
+    /// For an integer literal, narrow to the narrowest type that can hold it. For a typed value,
+    /// return it unchanged.
+    fn narrow(self) -> Result<TypedValue, SemanticErrorKind> {
+        Ok(match self {
+            Self::Typed(tv) => tv,
+            Self::Int(loc, n) => {
+                let ty = [Ty::U8, Ty::U16, Ty::U32, Ty::U64]
+                    .into_iter()
+                    .find(|ty| ty.holds(n))
+                    .ok_or(IntegralTooLarge())?;
+                let expr = Expr::new(loc, ExprKind::Const(ty.truncate(n)));
+                TypedValue { expr, ty }
+            }
+        })
+    }
+
+    /// Where an error about this value points
+    fn loc(&self) -> Loc {
+        match self {
+            Self::Typed(TypedValue { expr, .. }) => expr.loc,
+            Self::Int(loc, _) => *loc,
+        }
+    }
+
+    /// What an error says it found
+    fn found(&self) -> Found {
+        match self {
+            Self::Typed(TypedValue { ty, .. }) => Found::Ty(*ty),
+            Self::Int(..) => Found::Int,
+        }
+    }
+
+    /// Narrow to the integer type `ty`, where only an integer will do. An untyped integer, or an
+    /// integer constant, becomes a constant of type `ty`, and so does a sequence's constant value,
+    /// keeping its effects. Any other integer is converted when it runs. Either way it keeps its
+    /// low bits, with a warning at `loc` if it truncates, or might. If it isn't an integer, fails
+    /// with what was found.
+    fn narrow_to(
+        self,
+        loc: Loc,
+        ty: Ty,
+        warn: &mut impl FnMut(Loc, WarningKind),
+    ) -> Result<Expr, Found> {
+        let (seq_loc, effects, const_loc, n) = match self {
+            Self::Int(int_loc, n) => (int_loc, Box::default(), int_loc, n),
+            Self::Typed(TypedValue { expr, ty: found }) => {
+                if !found.is_integral() {
+                    return Err(Found::Ty(found));
+                }
+                let Some(n) = expr.value().const_int() else {
+                    if found.bits() > ty.bits() {
+                        warn(loc, WarningKind::Overflow { found, ty });
+                    }
+                    return Ok(expr);
+                };
+                let seq_loc = expr.loc;
+                let (effects, value) = expr.split();
+                (seq_loc, effects, value.loc, n)
+            }
+        };
+
+        if !ty.holds(n) {
+            warn(loc, WarningKind::Truncated { value: n, ty });
+        }
+        let value = Expr::new(const_loc, ExprKind::Const(ty.truncate(n)));
+        Ok(Expr::seq(seq_loc, effects, value))
+    }
+
+    /// Convert for a parameter of type `param`, written at `loc`. An integer parameter narrows
+    /// as [narrow_to](Self::narrow_to) does. An untyped integer is `true` for a `bool` if
+    /// it's non-zero, and narrows to the narrowest type that holds it for bytes. If it doesn't
+    /// fit, fails with the error `err` makes from what was found.
+    fn fit(
+        self,
+        loc: Loc,
+        param: ValType,
+        warn: &mut impl FnMut(Loc, WarningKind),
+        err: impl FnOnce(Found) -> SemanticError,
+    ) -> Result<Expr, SemanticError> {
+        use ValType as V;
+        match (param, self) {
+            (V::U8 | V::U16 | V::U32 | V::U64, value) => {
+                let ty = Ty::try_from(param).expect("an integer parameter has a Ty");
+                value.narrow_to(loc, ty, warn).map_err(err)
+            }
+            (V::Bool, Self::Int(loc, n)) => {
+                Ok(Expr::new(loc, ExprKind::Const(Const::Bool(n != 0))))
+            }
+            (V::Str, value @ Self::Int(..)) => match value.narrow() {
+                Ok(TypedValue { expr, .. }) => Ok(expr),
+                Err(kind) => Err(kind.at(loc)),
+            },
+            (_, Self::Int(..)) => Err(err(Found::Int)),
+            (param, Self::Typed(TypedValue { expr, ty })) => {
+                if !ty.fits(param) {
+                    return Err(err(Found::Ty(ty)));
+                }
+                Ok(expr)
+            }
+        }
+    }
+}
+
 /// What the checker knows about one slot of the frame
 struct Binding {
     /// Where it was bound, for [AlreadyBound]
@@ -407,6 +578,8 @@ enum BindState {
     Slot(SlotId, Ty),
     /// A value known at compile time
     Const(Const),
+    /// An untyped integer, narrowed at each use
+    Int(i128),
     /// Its `let` didn't check
     Failed,
 }
@@ -542,7 +715,7 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
             .into());
         }
 
-        let (value, ty) = match self.value(value) {
+        let value = match self.value(value) {
             Err(stop) => {
                 self.bindings.insert(
                     name,
@@ -554,6 +727,15 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
                 return Err(stop);
             }
             Ok(ret) => ret,
+        };
+
+        let TypedValue { ty, expr: value } = match value {
+            Value::Typed(tv) => tv,
+            Value::Int(_, n) => {
+                let state = BindState::Int(n);
+                self.bindings.insert(name, Binding { loc, state });
+                return Ok((Box::default(), None));
+            }
         };
 
         let (effs, value) = value.split();
@@ -584,7 +766,7 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
     /// An expression statement's kind comes from its type. Any value other than packets, a time
     /// jump or `void` is discarded, with a warning at the statement.
     fn expr_stmt(&mut self, loc: Loc, expr: ast::Expr) -> Checked<StmtKind> {
-        let (expr, ty) = self.expr(expr)?;
+        let TypedValue { expr, ty } = self.expr(expr)?.narrow().map_err(|kind| kind.at(loc))?;
         Ok(match ty {
             Ty::Pkt | Ty::PktGen => StmtKind::Emit(expr),
             Ty::TimeJump => StmtKind::Wait(expr),
@@ -598,50 +780,93 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
 
     /// An expression whose value is used. Only an expression statement may be `void`. Only a
     /// call can be `void`, so the error points at its called name.
-    fn value(&mut self, expr: ast::Expr) -> Checked<(Expr, Ty)> {
-        let (expr, ty) = self.expr(expr)?;
-        if ty == Ty::Void {
+    fn value(&mut self, expr: ast::Expr) -> Checked<Value> {
+        let value = self.expr(expr)?;
+
+        if let Value::Typed(TypedValue { expr, ty: Ty::Void }) = &value {
             return Err(VoidValue.at(expr.loc).into());
         }
-        Ok((expr, ty))
+
+        Ok(value)
     }
 
-    fn expr(&mut self, expr: ast::Expr) -> Checked<(Expr, Ty)> {
+    /// A value which must have type `expected`
+    fn typed_value(
+        &mut self,
+        expr: ast::Expr,
+        expected: Ty,
+        err: impl FnOnce(Found) -> SemanticErrorKind,
+    ) -> Checked<Expr> {
+        let value = self.value(expr)?;
+
+        match value {
+            Value::Typed(TypedValue { expr, ty }) if ty == expected => Ok(expr),
+            value => Err(err(value.found()).at(value.loc()).into()),
+        }
+    }
+
+    /// A value which must be an integer, narrowed to `expected`. A constant that truncates, or a
+    /// value whose type is wider than `expected`, gives a warning.
+    fn integral(
+        &mut self,
+        expr: ast::Expr,
+        expected: Ty,
+        err: impl FnOnce(Found) -> SemanticErrorKind,
+    ) -> Checked<Expr> {
+        let loc = expr.loc;
+        let value = self.value(expr)?;
+        let err_loc = value.loc();
+
+        value
+            .narrow_to(loc, expected, &mut |loc, warn| self.warn(loc, warn))
+            .map_err(|found| err(found).at(err_loc).into())
+    }
+
+    fn expr(&mut self, expr: ast::Expr) -> Checked<Value> {
         let ast::Expr { loc, kind } = expr;
-        match kind {
-            ast::ExprKind::Literal(lit) => Ok(Self::constant(loc, Const::from(lit))),
-            ast::ExprKind::LocalRef(ident) => self.local(ident),
-            ast::ExprKind::ModulePath(path) => self.path(loc, *path),
-            ast::ExprKind::Member { obj, name } => self.member(loc, *obj, name),
-            ast::ExprKind::Call { callee, args } => self.call(*callee, args),
+        let typed = match kind {
+            ast::ExprKind::Literal(ast::Lit::Int(n)) => return Ok(Value::Int(loc, n)),
+            ast::ExprKind::Literal(lit) => Self::constant(loc, Const::try_from(lit).unwrap()),
+            ast::ExprKind::LocalRef(ident) => return self.local(ident),
+            ast::ExprKind::ModulePath(path) => self.path(loc, *path)?,
+            ast::ExprKind::Member { obj, name } => self.member(loc, *obj, name)?,
+            ast::ExprKind::Call { callee, args } => self.call(*callee, args)?,
             ast::ExprKind::Binary {
                 op: BinOp::Slash,
                 lhs,
                 rhs,
-            } => self.slash(loc, *lhs, *rhs),
+            } => self.slash(loc, *lhs, *rhs)?,
+        };
+        Ok(Value::Typed(typed))
+    }
+
+    fn constant(loc: Loc, c: Const) -> TypedValue {
+        let ty = Ty::of_const(&c);
+        TypedValue {
+            expr: Expr::new(loc, ExprKind::Const(c)),
+            ty,
         }
     }
 
-    fn constant(loc: Loc, c: Const) -> (Expr, Ty) {
-        let ty = Ty::of_const(&c);
-        (Expr::new(loc, ExprKind::Const(c)), ty)
-    }
-
-    fn local(&mut self, ident: Ident) -> Checked<(Expr, Ty)> {
+    fn local(&mut self, ident: Ident) -> Checked<Value> {
         let Ident { loc, name } = ident;
         let Some(binding) = self.bindings.get(&name) else {
             return Err(UnknownName(name).at(loc).into());
         };
         match binding.state {
-            BindState::Slot(slot, ty) => Ok((Expr::new(loc, ExprKind::Local(slot)), ty)),
-            BindState::Const(ref c) => Ok(Self::constant(loc, c.clone())),
+            BindState::Slot(slot, ty) => Ok(Value::Typed(TypedValue {
+                expr: Expr::new(loc, ExprKind::Local(slot)),
+                ty,
+            })),
+            BindState::Const(ref c) => Ok(Value::Typed(Self::constant(loc, c.clone()))),
+            BindState::Int(n) => Ok(Value::Int(loc, n)),
             BindState::Failed => Err(Stop::Poisoned),
         }
     }
 
     /// `module::inner*::item`, through the imports table. Errors point at the segment which
     /// failed.
-    fn path(&mut self, loc: Loc, path: ModulePath) -> Checked<(Expr, Ty)> {
+    fn path(&mut self, loc: Loc, path: ModulePath) -> Checked<TypedValue> {
         let ModulePath {
             module,
             inner,
@@ -682,17 +907,23 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
 
     /// `obj.name`, through the object's class. A method is bound to the object. A property is
     /// its class's value, read once the object has been evaluated.
-    fn member(&mut self, loc: Loc, obj: ast::Expr, name: Ident) -> Checked<(Expr, Ty)> {
-        let (obj, ty) = self.value(obj)?;
-        let Ty::Class(cls) = ty else {
-            return Err(NoMembers(ty).at(name.loc).into());
+    fn member(&mut self, loc: Loc, obj: ast::Expr, name: Ident) -> Checked<TypedValue> {
+        let (obj, cls) = match self.value(obj)? {
+            Value::Typed(TypedValue {
+                expr,
+                ty: Ty::Class(cls),
+            }) => (expr, cls),
+            value => return Err(NoMembers(value.found()).at(name.loc).into()),
         };
 
         match cls.get(&name.name) {
             Some(Symbol::Func(func)) => {
                 let obj = Box::new(obj);
                 let expr = Expr::new(loc, ExprKind::Method { obj, func });
-                Ok((expr, Ty::Method(cls, func)))
+                Ok(TypedValue {
+                    expr,
+                    ty: Ty::Method(cls, func),
+                })
             }
             Some(Symbol::Val(def)) => {
                 // A Symbol::Val is a const property of the object. We can just const propagate it
@@ -702,9 +933,10 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
                 // TODO: once functions are marked as having side effects or not, lower a property
                 // of an object with no side effects to the constant alone. Reading a local has
                 // none already.
-                let (value, ty) = Self::constant(name.loc, Const::from_def(*def));
-                Ok((
-                    if obj.impure() {
+                let TypedValue { expr: value, ty } =
+                    Self::constant(name.loc, Const::from_def(*def));
+                Ok(TypedValue {
+                    expr: if obj.impure() {
                         let effects = Box::new([obj]);
                         let value = Box::new(value);
                         Expr::new(loc, ExprKind::Seq { effects, value })
@@ -712,7 +944,7 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
                         value
                     },
                     ty,
-                ))
+                })
             }
             Some(Symbol::Module(_) | Symbol::Class(_)) => {
                 Err(NotAValue(name.name).at(name.loc).into())
@@ -728,68 +960,75 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
 
     /// A call is located at its called name. Its arguments are checked in source order, then
     /// bound to the callee's parameters.
-    fn call(&mut self, callee: ast::Expr, args: Box<[ast::Arg]>) -> Checked<(Expr, Ty)> {
+    fn call(&mut self, callee: ast::Expr, args: Box<[ast::Arg]>) -> Checked<TypedValue> {
         let loc = callee.name_loc();
-        let (callee, ty) = self.value(callee)?;
-        let func = match ty {
-            Ty::Func(func) | Ty::Method(_, func) => func,
-            ty => return Err(NotCallable(ty).at(loc).into()),
+        let (callee, func) = match self.value(callee)? {
+            Value::Typed(TypedValue {
+                expr,
+                ty: Ty::Func(func) | Ty::Method(_, func),
+            }) => (expr, func),
+            value => return Err(NotCallable(value.found()).at(loc).into()),
         };
 
         let args = args
             .into_iter()
             .map(|ast::Arg { name, value }| {
                 let value_loc = value.loc;
-                let (hir, ty) = self.value(value)?;
+                let value = self.value(value)?;
                 Ok(ArgIn {
                     name,
                     loc: value_loc,
-                    hir,
-                    ty,
+                    value,
                 })
             })
             .collect::<Checked<Vec<_>>>()?;
 
-        let Bound { args, collect } = Bound::bind(func, loc, args)?;
+        let Bound { args, collect } =
+            Bound::bind(func, loc, args, &mut |loc, warn| self.warn(loc, warn))?;
         let call = Call::new(callee, func, args, collect);
-        Ok((
-            Expr::new(loc, ExprKind::Call(Box::new(call))),
-            Ty::of_return(func),
-        ))
+        Ok(TypedValue {
+            expr: Expr::new(loc, ExprKind::Call(Box::new(call))),
+            ty: Ty::of_return(func),
+        })
     }
 
-    /// `ip / port`. The port's range is checked when it runs.
-    fn slash(&mut self, loc: Loc, lhs: ast::Expr, rhs: ast::Expr) -> Checked<(Expr, Ty)> {
-        let operand = |side, expected, found| OperandType {
+    /// `ip / port`. A port wider than `u16` keeps its low bits, with a warning. If both operands'
+    /// values are constants, it folds, keeping the operands' effects in source order.
+    fn slash(&mut self, loc: Loc, lhs: ast::Expr, rhs: ast::Expr) -> Checked<TypedValue> {
+        let ip = self.typed_value(lhs, Ty::Ip4, |found| OperandType {
             op: BinOp::Slash,
-            side,
-            expected,
+            side: Side::Left,
+            expected: Ty::Ip4,
             found,
-        };
+        })?;
 
-        let lhs_loc = lhs.loc;
-        let (ip, ty) = self.value(lhs)?;
-        if ty != Ty::Ip4 {
-            return Err(operand(Side::Left, Ty::Ip4, ty).at(lhs_loc).into());
-        }
+        let port = self.integral(rhs, Ty::U16, |found| OperandType {
+            op: BinOp::Slash,
+            side: Side::Right,
+            expected: Ty::U16,
+            found,
+        })?;
 
-        let rhs_loc = rhs.loc;
-        let (port, ty) = self.value(rhs)?;
-        if !ty.is_integral() {
-            return Err(operand(Side::Right, Ty::U16, ty).at(rhs_loc).into());
-        }
-
-        if let Some(ip) = ip.const_ip4()
-            && let Some(port) = port.const_u16()
+        // Only when every operand's value is a constant: an effect hoisted out of an operand would
+        // otherwise run before the operands to its left
+        if let Some(addr) = ip.value().const_ip4()
+            && let Some(num) = port.value().const_u16()
         {
-            let val = SocketAddrV4::new(ip, port);
-            return Ok((Expr::new(loc, ExprKind::Const(val.into())), Ty::Sock4));
+            let val = Const::Sock4(SocketAddrV4::new(addr, num));
+            let effects = [ip, port].into_iter().flat_map(|e| e.split().0).collect();
+            return Ok(TypedValue {
+                expr: Expr::seq(loc, effects, Expr::new(loc, ExprKind::Const(val))),
+                ty: Ty::Sock4,
+            });
         }
 
         let kind = ExprKind::SockAddr {
             ip: Box::new(ip),
             port: Box::new(port),
         };
-        Ok((Expr::new(loc, kind), Ty::Sock4))
+        Ok(TypedValue {
+            expr: Expr::new(loc, kind),
+            ty: Ty::Sock4,
+        })
     }
 }

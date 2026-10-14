@@ -1,13 +1,13 @@
 use crate::check::SemanticErrorKind::{
-    AlreadyBound, ArgType, CollectArgType, DuplicateArg, MissingArg, NoMembers, NotAModule,
-    NotAValue, NotCallable, NotImported, OperandType, TooFewArgs, TooManyArgs,
+    AlreadyBound, ArgType, CollectArgType, DuplicateArg, IntegralTooLarge, MissingArg, NoMembers,
+    NotAModule, NotAValue, NotCallable, NotImported, OperandType, TooFewArgs, TooManyArgs,
     UnexpectedCollectArgs, UnexpectedNamedArg, UnknownArg, UnknownItem, UnknownMember,
     UnknownModule, UnknownName, VoidValue,
 };
 use std::num::NonZeroUsize;
 
 use crate::check::{
-    Diagnostic, DiagnosticKind, ErrorSummary, SemanticError, Side, Ty, WarningKind, check_in,
+    Diagnostic, DiagnosticKind, ErrorSummary, Found, SemanticError, Side, Ty, WarningKind, check_in,
 };
 use crate::hir::{Const, Expr, ExprKind, Program, StmtKind};
 use crate::lex::Lexer;
@@ -274,18 +274,18 @@ fn check_unknown_member() {
 fn check_no_members() {
     let err = error("import std;\n\"abc\".len;");
     assert!(
-        matches!(&err.kind, NoMembers(Ty::Bytes)) && err.loc == Loc::new(2, 7),
+        matches!(&err.kind, NoMembers(Found::Ty(Ty::Bytes))) && err.loc == Loc::new(2, 7),
         "{err:?}"
     );
     let err = error("import ipv4;\nipv4::tcp::flow.new;");
     assert!(
-        matches!(&err.kind, NoMembers(Ty::Func(f)) if f.name == "flow")
+        matches!(&err.kind, NoMembers(Found::Ty(Ty::Func(f))) if f.name == "flow")
             && err.loc == Loc::new(2, 17),
         "{err:?}"
     );
     let err = error(&format!("{FLOW}c.client_message.b;"));
     assert!(
-        matches!(&err.kind, NoMembers(Ty::Method(_, f)) if f.name == "client_message")
+        matches!(&err.kind, NoMembers(Found::Ty(Ty::Method(_, f))) if f.name == "client_message")
             && err.loc == Loc::new(3, 18),
         "{err:?}"
     );
@@ -298,18 +298,18 @@ fn check_no_members() {
 fn check_not_callable() {
     let err = error("import std;\n1();");
     assert!(
-        matches!(&err.kind, NotCallable(Ty::U64)) && err.loc == Loc::new(2, 1),
+        matches!(&err.kind, NotCallable(Found::Int)) && err.loc == Loc::new(2, 1),
         "{err:?}"
     );
     let err = error("let x = 1.2.3.4;\nx();");
     assert!(
-        matches!(&err.kind, NotCallable(Ty::Ip4)) && err.loc == Loc::new(2, 1),
+        matches!(&err.kind, NotCallable(Found::Ty(Ty::Ip4))) && err.loc == Loc::new(2, 1),
         "{err:?}"
     );
     // The outer call of `f()()` points at the start of the callee
     let err = error("import dns;\ndns::name(\"x\")();");
     assert!(
-        matches!(&err.kind, NotCallable(Ty::Bytes)) && err.loc == Loc::new(2, 1),
+        matches!(&err.kind, NotCallable(Found::Ty(Ty::Bytes))) && err.loc == Loc::new(2, 1),
         "{err:?}"
     );
 }
@@ -354,7 +354,7 @@ fn check_arg_type() {
                 func: "hdr",
                 arg: "id",
                 expected: ValType::U16,
-                found: Ty::Bytes
+                found: Found::Ty(Ty::Bytes)
             }
         ) && err.loc == Loc::new(2, 10),
         "{err:?}"
@@ -435,7 +435,7 @@ fn check_binding_errors() {
             CollectArgType {
                 func: "ciphers",
                 expected: ValType::U16,
-                found: Ty::Bytes
+                found: Found::Ty(Ty::Bytes)
             }
         ) && err.loc == Loc::new(2, 14),
         "{err:?}"
@@ -506,7 +506,7 @@ fn check_slash_operand_types() {
             OperandType {
                 side: Side::Left,
                 expected: Ty::Ip4,
-                found: Ty::Bytes,
+                found: Found::Ty(Ty::Bytes),
                 ..
             }
         ) && err.loc == Loc::new(2, 1),
@@ -519,7 +519,7 @@ fn check_slash_operand_types() {
             OperandType {
                 side: Side::Left,
                 expected: Ty::Ip4,
-                found: Ty::U64,
+                found: Found::Int,
                 ..
             }
         ) && err.loc == Loc::new(1, 9),
@@ -532,7 +532,7 @@ fn check_slash_operand_types() {
             OperandType {
                 side: Side::Right,
                 expected: Ty::U16,
-                found: Ty::Ip4,
+                found: Found::Ty(Ty::Ip4),
                 ..
             }
         ) && err.loc == Loc::new(1, 19),
@@ -540,12 +540,165 @@ fn check_slash_operand_types() {
     );
 }
 
-/// `bool` and any integer are accepted as a port. Its range is checked when it runs.
+/// the right of `/` narrows to `u16`, so a constant port folds. So does an untyped integer bound
+/// by a `let`, and a `bool`.
 #[test]
-fn check_slash_port_types() {
+fn check_slash_folds_constant_port() {
+    assert_eq!(lower("1.2.3.4 / 80;"), "(discard 1.2.3.4:80)");
     assert_eq!(
-        lower("let x = 1.2.3.4 / true;\nlet y = 1.2.3.4 / 65536;"),
-        "(let $0 (/ 1.2.3.4 true))\n(let $1 (/ 1.2.3.4 u64:0x10000))"
+        lower("let p = 80;\nlet s = 1.2.3.4 / p;\ns;"),
+        "(discard 1.2.3.4:80)"
+    );
+    assert_eq!(lower("1.2.3.4 / true;"), "(discard 1.2.3.4:1)");
+    assert_eq!(lower("let x = 1.2.3.4;\nx / 80;"), "(discard 1.2.3.4:80)");
+    assert_eq!(
+        lower("import dns;\nlet s = 1.2.3.4 / dns::rtype::A;\ns;"),
+        "(discard 1.2.3.4:1)"
+    );
+}
+
+/// a constant port that doesn't fit `u16` keeps its low bits, with a warning
+#[test]
+fn check_slash_port_truncated() {
+    let (prog, warnings) = checked("let p = 65536;\nlet s = 1.2.3.4 / p;\ns;");
+    assert_eq!(prog.to_string(), "(discard 1.2.3.4:0)");
+    assert_eq!(
+        warnings,
+        [
+            (Loc::new(2, 19), "integer 65536 truncated to u16".to_owned()),
+            (Loc::new(3, 1), "discarded value of type Sock4".to_owned()),
+        ]
+    );
+    assert_eq!(warning_locs("let s = 1.2.3.4 / 65535;"), []);
+    assert_eq!(warning_locs("let s = 1.2.3.4 / true;"), []);
+}
+
+/// A port whose type is wider than `u16` may be truncated when it runs
+#[test]
+fn check_slash_port_overflow() {
+    let (prog, warnings) = checked("import text;\nlet s = 1.2.3.4 / text::len(\"ab\");");
+    assert_eq!(
+        prog.to_string(),
+        "(let $0 (/ 1.2.3.4 (call func:len (* \"ab\"))))"
+    );
+    assert_eq!(
+        warnings,
+        [(
+            Loc::new(2, 19),
+            "value of type u64 may be truncated to u16".to_owned()
+        )]
+    );
+}
+
+// Untyped integers
+
+/// An untyped integer with no context narrows to the narrowest type that holds it
+#[test]
+fn check_untyped_int_no_context() {
+    for (src, ty) in [("5;", "u8"), ("300;", "u16"), ("70000;", "u32")] {
+        assert_eq!(
+            checked(src).1,
+            [(Loc::new(1, 1), format!("discarded value of type {ty}"))]
+        );
+    }
+    assert_eq!(lower("300;"), "(discard u16:0x12c)");
+}
+
+/// An untyped integer that no type holds, with no context
+#[test]
+fn check_untyped_int_too_large() {
+    let err = error("18446744073709551616;");
+    assert!(
+        matches!(err.kind, IntegralTooLarge()) && err.loc == Loc::new(1, 1),
+        "{err:?}"
+    );
+}
+
+/// An untyped integer has no members
+#[test]
+fn check_untyped_int_no_members() {
+    let err = error("5.foo;");
+    assert!(
+        matches!(err.kind, NoMembers(Found::Int)) && err.loc == Loc::new(1, 3),
+        "{err:?}"
+    );
+}
+
+/// An untyped integer argument narrows to its parameter's type, keeping its low bits, with a
+/// warning at the argument if that truncates it
+#[test]
+fn check_untyped_arg_truncated() {
+    let (prog, warnings) = checked("import std;\nstd::u8(300);");
+    assert_eq!(prog.to_string(), "(discard (call func:u8 (: val u8:0x2c)))");
+    assert_eq!(
+        warnings,
+        [
+            (Loc::new(2, 9), "integer 300 truncated to u8".to_owned()),
+            (Loc::new(2, 1), "discarded value of type bytes".to_owned()),
+        ]
+    );
+
+    // one wider than `u64`, too
+    let (prog, warnings) = checked("import std;\nstd::be64(18446744073709551616);");
+    assert_eq!(
+        prog.to_string(),
+        "(discard (call func:be64 (: val u64:0x0)))"
+    );
+    assert_eq!(
+        warnings[0],
+        (
+            Loc::new(2, 11),
+            "integer 18446744073709551616 truncated to u64".to_owned()
+        )
+    );
+}
+
+/// a `let` bound to an untyped integer is narrowed at each use, so it may be used at two types
+#[test]
+fn check_untyped_let_used_at_two_types() {
+    let (prog, warnings) = checked("import std;\nlet p = 80;\nstd::u8(p);\n1.2.3.4 / p;");
+    assert_eq!(
+        prog.to_string(),
+        "(discard (call func:u8 (: val u8:0x50)))\n(discard 1.2.3.4:80)"
+    );
+    assert_eq!(
+        warnings,
+        [
+            (Loc::new(3, 1), "discarded value of type bytes".to_owned()),
+            (Loc::new(4, 1), "discarded value of type Sock4".to_owned()),
+        ]
+    );
+}
+
+/// an untyped integer passed as a `bool` is `true` if it's non-zero
+#[test]
+fn check_untyped_arg_as_bool() {
+    for (n, b) in [(0, "false"), (2, "true")] {
+        let prog = lower(&format!("{FLOW}c.client_message(send_ack: {n}, \"x\");"));
+        assert!(prog.contains(&format!("(: send_ack {b})")), "{prog}");
+    }
+}
+
+/// an untyped integer passed as bytes narrows to the narrowest type that holds it
+#[test]
+fn check_untyped_arg_as_bytes() {
+    assert_eq!(
+        lower("import text;\nlet x = text::concat(\"a\", 5, 300);"),
+        "(let $0 (call func:concat (* \"a\" u8:0x5 u16:0x12c)))"
+    );
+}
+
+/// An argument whose type is wider than its parameter's may be truncated when it runs
+#[test]
+fn check_arg_overflow() {
+    let (_, warnings) =
+        checked("import dns;\nimport text;\ndns::hdr(id: text::len(\"x\"), flags: 0);");
+    assert_eq!(
+        warnings[0],
+        (
+            Loc::new(3, 14),
+            "value of type u64 may be truncated to u16".to_owned()
+        )
     );
 }
 
@@ -746,11 +899,11 @@ fn lower_bound_method_in_slot() {
 fn lower_stmt_kinds() {
     assert_eq!(
         lower("import time;\ntime::jump_seconds(1);\n\"abc\";"),
-        "(wait (call func:jump_seconds (: seconds u64:0x1)))\n(discard \"abc\")"
+        "(wait (call func:jump_seconds (: seconds u32:0x1)))\n(discard \"abc\")"
     );
     assert_eq!(
         lower(&format!("{FLOW}c.client_hole(1);")).lines().last(),
-        Some("(eval (call (. $0 client_hole) (: bytes u64:0x1)))")
+        Some("(eval (call (. $0 client_hole) (: bytes u32:0x1)))")
     );
 }
 
@@ -763,7 +916,7 @@ fn lower_call_layout() {
             .lines()
             .last(),
         Some(
-            "(emit (call (. $0 client_message) (: seq u64:0x5) (: send_ack true) (: ack nil) \
+            "(emit (call (. $0 client_message) (: seq u32:0x5) (: send_ack true) (: ack nil) \
              (: frag_off u16:0x0) (* \"x\" \"y\")))"
         )
     );
@@ -805,8 +958,8 @@ fn lower_args_in_source_order() {
     let hdr = |first: &str, second: &str| {
         format!(
             "(let $1 (call func:hdr \
-             (: {first} (call (. $0 client_hdr) (: bytes u64:0x1) (: csum u16:0x0))) \
-             (: {second} (call (. $0 client_hdr) (: bytes u64:0x1) (: csum u16:0x0))) "
+             (: {first} (call (. $0 client_hdr) (: bytes u32:0x1) (: csum u16:0x0))) \
+             (: {second} (call (. $0 client_hdr) (: bytes u32:0x1) (: csum u16:0x0))) "
         )
     };
 
@@ -816,8 +969,7 @@ fn lower_args_in_source_order() {
     assert!(g02.contains(&hdr("sname", "file")), "{g02}");
 }
 
-/// Every stdlib constant, default and return type has a checker type or constant: there is no
-/// `u32` constant and no `u32` return type, which `Ty` doesn't have
+/// Every stdlib constant, default and return type has a checker type or constant
 #[test]
 fn stdlib_types_lower() {
     fn func(func: &FuncDef) {
@@ -840,7 +992,7 @@ fn stdlib_types_lower() {
     }
     fn constant(name: &str, def: ValDef) {
         assert!(
-            !matches!(def, ValDef::U32(_) | ValDef::Nil | ValDef::Type(_)),
+            !matches!(def, ValDef::Nil | ValDef::Type(_)),
             "{name}: {def:?}"
         );
     }
@@ -884,4 +1036,59 @@ fn lower_property_of_call() {
         lower_in(&object::ROOT, "import obj;\nobj::tcp().client_message;"),
         "(discard (seq (call func:tcp) u64:0x1))"
     );
+}
+
+/// A property of a local is a constant, so a port from one folds
+#[test]
+fn lower_slash_port_property_of_local() {
+    assert_eq!(
+        lower_in(
+            &object::ROOT,
+            "import obj;\nlet t = obj::tcp();\nlet s = 1.2.3.4 / t.client_message;\ns;"
+        ),
+        "(let $0 (call func:tcp))\n(discard 1.2.3.4:1)"
+    );
+}
+
+/// A property of a call is a constant after the call, so a port from one folds, keeping the call
+/// for its effects. The `let` hoists it, and binds a constant.
+#[test]
+fn lower_slash_port_property_of_call() {
+    let (res, diags) = diagnostics_in(
+        &object::ROOT,
+        "import obj;\nlet s = 1.2.3.4 / obj::tcp().client_message;\ns;",
+    );
+    assert_eq!(
+        res.expect("check failed").to_string(),
+        "(eval (call func:tcp))\n(discard 1.2.3.4:1)"
+    );
+    assert_eq!(diags.len(), 1, "only the discard warns: {diags:?}");
+}
+
+/// `/` folds only when every operand's value is a constant. Here the left is a call, so the
+/// right's call stays where it is and runs after it. The port still narrows through its sequence.
+#[test]
+fn lower_slash_keeps_effect_order() {
+    assert_eq!(
+        lower_in(
+            &object::ROOT,
+            "import obj;\nlet s = obj::ip() / obj::tcp().client_message;"
+        ),
+        "(let $0 (/ (call func:ip) (seq (call func:tcp) u16:0x1)))"
+    );
+}
+
+/// An argument that is a property of a call narrows its constant value, in place, so it doesn't
+/// warn `Overflow`
+#[test]
+fn lower_arg_property_of_call() {
+    let (res, diags) = diagnostics_in(
+        &object::ROOT,
+        "import obj;\nobj::u8(obj::tcp().client_message);",
+    );
+    assert_eq!(
+        res.expect("check failed").to_string(),
+        "(eval (call func:u8 (: val (seq (call func:tcp) u8:0x1))))"
+    );
+    assert!(diags.is_empty(), "{diags:?}");
 }

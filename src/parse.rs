@@ -309,10 +309,7 @@ impl Parser {
         let kind = match tok {
             Tok::BooleanLiteral(b) => ExprKind::Literal(Lit::Bool(b)),
             Tok::StringLiteral(buf) => ExprKind::Literal(Lit::Str(buf)),
-            Tok::HexLiteral(i) | Tok::DecLiteral(i) => {
-                let i = u64::try_from(i).map_err(|_| ParseErrorKind::IntOutOfRange.at(loc))?;
-                ExprKind::Literal(Lit::Int(i))
-            }
+            Tok::HexLiteral(i) | Tok::DecLiteral(i) => ExprKind::Literal(Lit::Int(i)),
             Tok::IPv4Literal(addr) if self.eat(&Tok::Colon, "`:`") => {
                 ExprKind::Literal(Lit::Sock4(SocketAddrV4::new(addr, self.port()?)))
             }
