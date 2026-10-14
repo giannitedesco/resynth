@@ -37,7 +37,7 @@ mod time;
 mod tls;
 mod vxlan;
 
-const STDLIB: Module = module! {
+static STDLIB: Module = module! {
     /// # Resynth Standard Library
     ///
     /// Resynth is a packet synthesis language for building precise, readable network captures.

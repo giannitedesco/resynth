@@ -836,7 +836,7 @@ const CIPHER: Module = module! {
     }
 };
 
-const TLS_MESSAGE: FuncDef = func! (
+static TLS_MESSAGE: FuncDef = func! (
     /// Construct a TLS record
     ///
     /// Length fields wrap around if the content is too long for them.
@@ -877,7 +877,7 @@ const TLS_MESSAGE: FuncDef = func! (
     }
 );
 
-const TLS_EXTENSION: FuncDef = func! (
+static TLS_EXTENSION: FuncDef = func! (
     /// Construct a TLS extension
     ///
     /// Length fields wrap around if the content is too long for them.
@@ -917,7 +917,7 @@ fn len24(len: usize) -> [u8; 3] {
     [b[1], b[2], b[3]]
 }
 
-const TLS_CIPHERS: FuncDef = func! (
+static TLS_CIPHERS: FuncDef = func! (
     /// Build a TLS cipher suites list
     ///
     /// Length fields wrap around if the content is too long for them.
@@ -946,7 +946,7 @@ const TLS_CIPHERS: FuncDef = func! (
     }
 );
 
-const TLS_CLIENT_HELLO: FuncDef = func! (
+static TLS_CLIENT_HELLO: FuncDef = func! (
     /// Construct a TLS ClientHello handshake message
     ///
     /// Length fields wrap around if the content is too long for them.
@@ -1003,7 +1003,7 @@ const TLS_CLIENT_HELLO: FuncDef = func! (
     }
 );
 
-const TLS_SERVER_HELLO: FuncDef = func! (
+static TLS_SERVER_HELLO: FuncDef = func! (
     /// Construct a TLS ServerHello handshake message
     ///
     /// Length fields wrap around if the content is too long for them.
@@ -1061,7 +1061,7 @@ const TLS_SERVER_HELLO: FuncDef = func! (
     }
 );
 
-const TLS_SNI: FuncDef = func! (
+static TLS_SNI: FuncDef = func! (
     /// Construct a TLS Server Name Indication (SNI) extension
     ///
     /// Length fields wrap around if the content is too long for them.
@@ -1096,7 +1096,7 @@ const TLS_SNI: FuncDef = func! (
     }
 );
 
-const TLS_CERTIFICATES: FuncDef = func! (
+static TLS_CERTIFICATES: FuncDef = func! (
     /// Returns a chain of X.509 certificates
     ///
     /// Length fields wrap around if the content is too long for them.

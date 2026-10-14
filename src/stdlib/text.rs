@@ -3,7 +3,7 @@ use crate::str::Buf;
 use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 
-const CONCAT: FuncDef = func!(
+static CONCAT: FuncDef = func!(
     /// Concatenate strings
     resynth fn concat(
         =>
@@ -15,7 +15,7 @@ const CONCAT: FuncDef = func!(
     }
 );
 
-const CRLFLINES: FuncDef = func!(
+static CRLFLINES: FuncDef = func!(
     /// join strings with CRLF line-endings
     resynth fn crlflines(
         =>
@@ -27,7 +27,7 @@ const CRLFLINES: FuncDef = func!(
     }
 );
 
-const LEN: FuncDef = func!(
+static LEN: FuncDef = func!(
     /// Return the length of a string (or strings)
     resynth fn len(
         =>

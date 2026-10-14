@@ -10,7 +10,7 @@ use crate::str::Buf;
 use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 
-const BROADCAST: FuncDef = func!(
+static BROADCAST: FuncDef = func!(
     /// Send a broadcast datagram
     resynth fn broadcast(
         /// Source socket address
@@ -47,7 +47,7 @@ const BROADCAST: FuncDef = func!(
     }
 );
 
-const UNICAST: FuncDef = func!(
+static UNICAST: FuncDef = func!(
     /// Send a unicast datagram
     resynth fn unicast(
         /// Source socket address
@@ -74,7 +74,7 @@ const UNICAST: FuncDef = func!(
     }
 );
 
-const HDR: FuncDef = func!(
+static HDR: FuncDef = func!(
     /// Returns a UDP header (with no IP header)
     ///
     /// The length field wraps around if `len` is too big for it.
@@ -108,7 +108,7 @@ const HDR: FuncDef = func!(
     }
 );
 
-const CL_DGRAM: FuncDef = func!(
+static CL_DGRAM: FuncDef = func!(
     /// Send a datagram from client to server
     resynth fn client_dgram(
         =>
@@ -138,7 +138,7 @@ const CL_DGRAM: FuncDef = func!(
     }
 );
 
-const SV_DGRAM: FuncDef = func!(
+static SV_DGRAM: FuncDef = func!(
     /// Send a datagram from server to client
     resynth fn server_dgram(
         =>
@@ -168,7 +168,7 @@ const SV_DGRAM: FuncDef = func!(
     }
 );
 
-const CL_RAW_DGRAM: FuncDef = func!(
+static CL_RAW_DGRAM: FuncDef = func!(
     /// Return a datagram from client to server (minus IP header)
     resynth fn client_raw_dgram(
         =>
@@ -195,7 +195,7 @@ const CL_RAW_DGRAM: FuncDef = func!(
     }
 );
 
-const SV_RAW_DGRAM: FuncDef = func!(
+static SV_RAW_DGRAM: FuncDef = func!(
     /// Return a datagram from server to client (minus IP header)
     resynth fn server_raw_dgram(
         =>
@@ -238,7 +238,7 @@ impl Class for UdpFlow {
     }
 }
 
-const FLOW: FuncDef = func!(
+static FLOW: FuncDef = func!(
     /// Create a UDP flow context, from which other packets can be created
     resynth fn flow(
         /// Client socket address

@@ -36,7 +36,8 @@ pub struct ArgDesc {
     pub doc: &'static str,
 }
 
-/// Defines a function or method for the resynth stdlib
+/// Defines a function or method for the resynth stdlib. A function is its address, so define each
+/// one as a `static`: each mention of a `const` can be a copy with an address of its own.
 #[derive(Debug)]
 pub struct FuncDef {
     pub name: &'static str,
@@ -232,7 +233,8 @@ impl Module {
     }
 }
 
-/// Defines a module for the resynth stdlib
+/// Defines a class for the resynth stdlib. A class is its address, so define each one as a
+/// `static`, as for a [FuncDef].
 #[derive(Debug)]
 pub struct ClassDef {
     pub name: &'static str,

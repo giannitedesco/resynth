@@ -9,7 +9,7 @@ use crate::str::Buf;
 use crate::sym::Symbol;
 use crate::val::Val;
 
-const IO_FILE: FuncDef = func!(
+static IO_FILE: FuncDef = func!(
     /// Load the contents of a file into a string
     resynth fn file(
         /// Path to the file to load
@@ -69,7 +69,7 @@ where
     }
 }
 
-const BUFIO_READ: FuncDef = func!(
+static BUFIO_READ: FuncDef = func!(
     /// Read the next `bytes` bytes from the buffer, advancing the read position.
     /// If fewer than `bytes` bytes remain, returns what is left.
     resynth fn read(
@@ -88,7 +88,7 @@ const BUFIO_READ: FuncDef = func!(
     }
 );
 
-const BUFIO_READ_ALL: FuncDef = func!(
+static BUFIO_READ_ALL: FuncDef = func!(
     /// Read all remaining bytes from the buffer, advancing the read position to the end.
     resynth fn read_all(
         =>
@@ -124,7 +124,7 @@ impl Class for BufIo {
     }
 }
 
-const BUFIO: FuncDef = func!(
+static BUFIO: FuncDef = func!(
     /// Create a `BufIO` buffer from one or more byte strings, from which bytes
     /// can be consumed in sequential chunks using `read(n)` and `read_all()`.
     /// This is useful for splitting a pre-assembled payload across multiple

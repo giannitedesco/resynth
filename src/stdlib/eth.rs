@@ -26,7 +26,7 @@ fn ether<T: AsRef<[u8]>>(val: T) -> Result<eth_addr, RuntimeErrorKind> {
     Ok(eth_addr::new(octets))
 }
 
-const FRAME: FuncDef = func!(
+static FRAME: FuncDef = func!(
     /// Construct an Ethernet frame
     ///
     /// Wraps the payload bytes in an Ethernet II frame header.
@@ -61,7 +61,7 @@ const FRAME: FuncDef = func!(
     }
 );
 
-const FROM_IP: FuncDef = func!(
+static FROM_IP: FuncDef = func!(
     /// Map an IPv4 address to a locally-administered Ethernet address
     ///
     /// Produces a locally-administered unicast MAC address with the IPv4 address

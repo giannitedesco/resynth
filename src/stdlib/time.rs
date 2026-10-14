@@ -6,7 +6,7 @@ const HZ: u64 = 1_000_000_000;
 const KHZ: u64 = HZ / 1000;
 const MHZ: u64 = KHZ / 1000;
 
-const JUMP_SECS: FuncDef = func!(
+static JUMP_SECS: FuncDef = func!(
     /// Advance the pcap timestamp clock by some number of seconds
     resynth fn jump_seconds(
         /// Number of seconds to advance the clock
@@ -22,7 +22,7 @@ const JUMP_SECS: FuncDef = func!(
     }
 );
 
-const JUMP_MILLIS: FuncDef = func!(
+static JUMP_MILLIS: FuncDef = func!(
     /// Advance the pcap timestamp clock by some number of milliseconds
     resynth fn jump_millis(
         /// Number of milliseconds to advance the clock
@@ -38,7 +38,7 @@ const JUMP_MILLIS: FuncDef = func!(
     }
 );
 
-const JUMP_MICROS: FuncDef = func!(
+static JUMP_MICROS: FuncDef = func!(
     /// Advance the pcap timestamp clock by some number of microseconds
     resynth fn jump_micros(
         /// Number of microseconds to advance the clock
@@ -54,7 +54,7 @@ const JUMP_MICROS: FuncDef = func!(
     }
 );
 
-const JUMP_NANOS: FuncDef = func!(
+static JUMP_NANOS: FuncDef = func!(
     /// Advance the pcap timestamp clock by some number of nanoseconds
     resynth fn jump_nanos(
         /// Number of nanoseconds to advance the clock

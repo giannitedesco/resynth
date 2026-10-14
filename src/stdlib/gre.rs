@@ -8,7 +8,7 @@ use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 use ezpkt::GreFlow;
 
-const ENCAP: FuncDef = func!(
+static ENCAP: FuncDef = func!(
     /// Encapsulate packets in GRETAP
     resynth fn encap(
         /// Sequence of packets to encapsulate
@@ -46,7 +46,7 @@ impl Class for GreFlow {
     }
 }
 
-const SESSION: FuncDef = func!(
+static SESSION: FuncDef = func!(
     /// Create a GRETAP session
     resynth fn session(
         /// Source IP address

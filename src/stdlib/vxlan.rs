@@ -7,7 +7,7 @@ use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 use ezpkt::VxlanFlow;
 
-const ENCAP: FuncDef = func!(
+static ENCAP: FuncDef = func!(
     /// Encapsulate a series of packets
     resynth fn encap(
         /// Sequence of packets to encapsulate
@@ -32,7 +32,7 @@ const ENCAP: FuncDef = func!(
     }
 );
 
-const DGRAM: FuncDef = func!(
+static DGRAM: FuncDef = func!(
     /// Encapsulate a single packet
     resynth fn dgram(
         /// Single packet to encapsulate
@@ -64,7 +64,7 @@ impl Class for VxlanFlow {
     }
 }
 
-const SESSION: FuncDef = func!(
+static SESSION: FuncDef = func!(
     /// Create a VXLAN session
     resynth fn session(
         /// Client (sender) socket address

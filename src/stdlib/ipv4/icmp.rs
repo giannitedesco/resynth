@@ -4,7 +4,7 @@ use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 use ezpkt::IcmpFlow;
 
-const ICMP_ECHO: FuncDef = func!(
+static ICMP_ECHO: FuncDef = func!(
     /// ICMP Ping
     resynth fn echo(
         /// Payload bytes for the ICMP echo request
@@ -22,7 +22,7 @@ const ICMP_ECHO: FuncDef = func!(
     }
 );
 
-const ICMP_ECHO_REPLY: FuncDef = func!(
+static ICMP_ECHO_REPLY: FuncDef = func!(
     /// ICMP Ping reply
     resynth fn echo_reply(
         /// Payload bytes for the ICMP echo reply
@@ -54,7 +54,7 @@ impl Class for IcmpFlow {
     }
 }
 
-const ICMP_FLOW: FuncDef = func!(
+static ICMP_FLOW: FuncDef = func!(
     /// Create an ICMP flow
     resynth fn flow(
         /// Client (sender) IP address

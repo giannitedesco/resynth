@@ -7,7 +7,7 @@ use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 use ezpkt::Erspan1Flow;
 
-const ENCAP: FuncDef = func!(
+static ENCAP: FuncDef = func!(
     /// Encapsulate a sequence of packets
     resynth fn encap(
         /// Sequence of packets to encapsulate
@@ -45,7 +45,7 @@ impl Class for Erspan1Flow {
     }
 }
 
-const SESSION: FuncDef = func!(
+static SESSION: FuncDef = func!(
     /// Create an ERSPAN session
     resynth fn session(
         /// Source IP address, of the switch mirroring the traffic

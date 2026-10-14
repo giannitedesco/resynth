@@ -125,7 +125,7 @@ const CLASS: Module = module! {
     }
 };
 
-pub(crate) const DNS_NAME: FuncDef = func! (
+pub(crate) static DNS_NAME: FuncDef = func! (
     /// A DNS name encoded with DNS label format (length-prefixed labels, null-terminated).
     ///
     /// With one argument, the name is dotted, and split into labels at each `.`, so
@@ -168,7 +168,7 @@ pub(crate) const DNS_NAME: FuncDef = func! (
     }
 );
 
-const DNS_POINTER: FuncDef = func! (
+static DNS_POINTER: FuncDef = func! (
     /// A DNS compression pointer
     resynth fn pointer(
         =>
@@ -186,7 +186,7 @@ const DNS_POINTER: FuncDef = func! (
     }
 );
 
-const DNS_FLAGS: FuncDef = func!(
+static DNS_FLAGS: FuncDef = func!(
     /// a DNS flags field
     resynth fn flags(
         /// DNS opcode for this message
@@ -242,7 +242,7 @@ const DNS_FLAGS: FuncDef = func!(
     }
 );
 
-const DNS_HDR: FuncDef = func!(
+static DNS_HDR: FuncDef = func!(
     /// A DNS header
     resynth fn hdr(
         /// DNS message transaction ID
@@ -282,7 +282,7 @@ const DNS_HDR: FuncDef = func!(
     }
 );
 
-const DNS_QUESTION: FuncDef = func!(
+static DNS_QUESTION: FuncDef = func!(
     /// A DNS question
     resynth fn question(
         /// Encoded DNS name being queried
@@ -310,7 +310,7 @@ const DNS_QUESTION: FuncDef = func!(
     }
 );
 
-const DNS_ANSWER: FuncDef = func!(
+static DNS_ANSWER: FuncDef = func!(
     /// A DNS answer (RR)
     ///
     /// Length fields wrap around if the content is too long for them.
@@ -347,7 +347,7 @@ const DNS_ANSWER: FuncDef = func!(
     }
 );
 
-const DNS_HOST: FuncDef = func!(
+static DNS_HOST: FuncDef = func!(
     /// Perform a DNS lookup, with response
     resynth fn host(
         /// Client IP address sending the DNS query

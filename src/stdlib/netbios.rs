@@ -37,7 +37,7 @@ const RCODE: Module = module! {
     }
 };
 
-const NBNS_FLAGS: FuncDef = func!(
+static NBNS_FLAGS: FuncDef = func!(
     /// Returns netbios-ns flags
     resynth fn flags(
         /// NetBIOS name service opcode
@@ -93,7 +93,7 @@ const NBNS_FLAGS: FuncDef = func!(
     }
 );
 
-const NB_FLAGS: FuncDef = func!(
+static NB_FLAGS: FuncDef = func!(
     /// Build the NB_FLAGS field for an NB resource record RDATA (RFC 1002 §4.2.1.1).
     ///
     /// Flags layout (MSB first): G(1) ONT(2) reserved(13)
@@ -127,7 +127,7 @@ const NB_FLAGS: FuncDef = func!(
     }
 );
 
-const NAME_FLAGS: FuncDef = func!(
+static NAME_FLAGS: FuncDef = func!(
     /// Build a name flags field for an NBSTAT name table entry (RFC 1002 §4.2.18).
     ///
     /// Flags layout (MSB first): G(1) ONT(2) DRG(1) CNF(1) ACT(1) PRM(1) reserved(9)
@@ -177,7 +177,7 @@ const NAME_FLAGS: FuncDef = func!(
     }
 );
 
-const NAME_ENTRY: FuncDef = func!(
+static NAME_ENTRY: FuncDef = func!(
     /// Build a single name table entry for an NBSTAT RDATA block.
     ///
     /// Pads the name to 15 bytes (space-filled), appends the one-byte suffix and
@@ -215,7 +215,7 @@ const NAME_ENTRY: FuncDef = func!(
     }
 );
 
-const STATISTICS: FuncDef = func!(
+static STATISTICS: FuncDef = func!(
     /// Build the 64-byte statistics block appended to every NBSTAT RDATA section.
     ///
     /// The block contains a 6-byte unit ID (MAC address) followed by 58 bytes of
@@ -237,7 +237,7 @@ const STATISTICS: FuncDef = func!(
     }
 );
 
-const NBSTAT_RDATA: FuncDef = func!(
+static NBSTAT_RDATA: FuncDef = func!(
     /// Build the complete RDATA section for an NBSTAT resource record.
     ///
     /// Accepts `netbios::ns::name_entry()` values as collect arguments, prepends
@@ -282,7 +282,7 @@ pub const NS: Module = module! {
     }
 };
 
-const NAME_ENCODE: FuncDef = func! (
+static NAME_ENCODE: FuncDef = func! (
     /// First-level encode a NetBIOS name, including padding and the one-byte suffix field.
     ///
     /// Returns the raw 32 encoded bytes only — no DNS label length prefix or

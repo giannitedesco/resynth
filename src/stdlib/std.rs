@@ -3,7 +3,7 @@ use crate::str::Buf;
 use crate::sym::Symbol;
 use crate::val::{Val, ValDef};
 
-const BE16: FuncDef = func!(
+static BE16: FuncDef = func!(
     /// Encode a 16bit integer into 2 big-endian bytes
     resynth fn be16(
         /// Integer value to encode
@@ -18,7 +18,7 @@ const BE16: FuncDef = func!(
     }
 );
 
-const BE32: FuncDef = func!(
+static BE32: FuncDef = func!(
     /// Encode a 32bit integer into 4 big-endian bytes
     resynth fn be32(
         /// Integer value to encode
@@ -33,7 +33,7 @@ const BE32: FuncDef = func!(
     }
 );
 
-const BE64: FuncDef = func!(
+static BE64: FuncDef = func!(
     /// Encode a 64bit integer into 8 big-endian bytes
     resynth fn be64(
         /// Integer value to encode
@@ -48,7 +48,7 @@ const BE64: FuncDef = func!(
     }
 );
 
-const LE16: FuncDef = func!(
+static LE16: FuncDef = func!(
     /// Encode a 16bit integer into 2 little-endian bytes
     resynth fn le16(
         /// Integer value to encode
@@ -63,7 +63,7 @@ const LE16: FuncDef = func!(
     }
 );
 
-const LE32: FuncDef = func!(
+static LE32: FuncDef = func!(
     /// Encode a 32bit integer into 4 little-endian bytes
     resynth fn le32(
         /// Integer value to encode
@@ -78,7 +78,7 @@ const LE32: FuncDef = func!(
     }
 );
 
-const LE64: FuncDef = func!(
+static LE64: FuncDef = func!(
     /// Encode a 64bit integer into 8 little-endian bytes
     resynth fn le64(
         /// Integer value to encode
@@ -93,7 +93,7 @@ const LE64: FuncDef = func!(
     }
 );
 
-const U8: FuncDef = func!(
+static U8: FuncDef = func!(
     /// Convert an integer into a one-byte string
     resynth fn u8(
         /// Integer value to encode as a single byte
@@ -108,7 +108,7 @@ const U8: FuncDef = func!(
     }
 );
 
-const LEN_BE64: FuncDef = func! (
+static LEN_BE64: FuncDef = func! (
     /// Prefix a buffer with a 64-bit big-endian length field
     ///
     /// Prepends an 8-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
@@ -134,7 +134,7 @@ const LEN_BE64: FuncDef = func! (
     }
 );
 
-const LEN_BE32: FuncDef = func! (
+static LEN_BE32: FuncDef = func! (
     /// Prefix a buffer with a 32-bit big-endian length field
     ///
     /// Prepends a 4-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
@@ -160,7 +160,7 @@ const LEN_BE32: FuncDef = func! (
     }
 );
 
-const LEN_BE16: FuncDef = func! (
+static LEN_BE16: FuncDef = func! (
     /// Prefix a buffer with a 16-bit big-endian length field
     ///
     /// Prepends a 2-byte big-endian encoding of `len(payload) + adjust` to the payload bytes.
@@ -186,7 +186,7 @@ const LEN_BE16: FuncDef = func! (
     }
 );
 
-const LEN_LE64: FuncDef = func! (
+static LEN_LE64: FuncDef = func! (
     /// Prefix a buffer with a 64-bit little-endian length field
     ///
     /// Prepends an 8-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
@@ -211,7 +211,7 @@ const LEN_LE64: FuncDef = func! (
     }
 );
 
-const LEN_LE32: FuncDef = func! (
+static LEN_LE32: FuncDef = func! (
     /// Prefix a buffer with a 32-bit little-endian length field
     ///
     /// Prepends a 4-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
@@ -236,7 +236,7 @@ const LEN_LE32: FuncDef = func! (
     }
 );
 
-const LEN_LE16: FuncDef = func! (
+static LEN_LE16: FuncDef = func! (
     /// Prefix a buffer with a 16-bit little-endian length field
     ///
     /// Prepends a 2-byte little-endian encoding of `len(payload) + adjust` to the payload bytes.
@@ -261,7 +261,7 @@ const LEN_LE16: FuncDef = func! (
     }
 );
 
-const LEN_U8: FuncDef = func! (
+static LEN_U8: FuncDef = func! (
     /// Prefix a buffer with an 8-bit byte length field
     ///
     /// Prepends a single byte encoding of `len(payload) + adjust` to the payload bytes.

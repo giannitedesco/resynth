@@ -6,7 +6,7 @@ use crate::val::{Val, ValDef};
 use ezpkt::TcpFlow;
 use pkt::Packet;
 
-const TCP_OPEN: FuncDef = func!(
+static TCP_OPEN: FuncDef = func!(
     /// Performs a TCP 3-way handshake
     resynth fn open(
         =>
@@ -21,7 +21,7 @@ const TCP_OPEN: FuncDef = func!(
     }
 );
 
-const TCP_CL_MSG: FuncDef = func!(
+static TCP_CL_MSG: FuncDef = func!(
     /// Sends a message from client to server, advancing the sequence number.
     /// By default also emits an ACK from the server in response (`send_ack: true`).
     /// Use `send_ack: false` to suppress the ACK, for example when building
@@ -58,7 +58,7 @@ const TCP_CL_MSG: FuncDef = func!(
     }
 );
 
-const TCP_SV_MSG: FuncDef = func!(
+static TCP_SV_MSG: FuncDef = func!(
     /// Sends a message from server to client, advancing the sequence number.
     /// By default also emits an ACK from the client in response (`send_ack: true`).
     /// Use `send_ack: false` to suppress the ACK, for example when building
@@ -96,7 +96,7 @@ const TCP_SV_MSG: FuncDef = func!(
     }
 );
 
-const TCP_CL_SEG: FuncDef = func!(
+static TCP_CL_SEG: FuncDef = func!(
     /// Returns a single data segment from client to server, advancing the
     /// sequence number. Does not emit an ACK. Returns a `Pkt` (complete
     /// Ethernet+IP+TCP packet) rather than a `PktGen`.
@@ -126,7 +126,7 @@ const TCP_CL_SEG: FuncDef = func!(
     }
 );
 
-const TCP_SV_SEG: FuncDef = func!(
+static TCP_SV_SEG: FuncDef = func!(
     /// Returns a single data segment from server to client, advancing the
     /// sequence number. Does not emit an ACK. Returns a `Pkt` (complete
     /// Ethernet+IP+TCP packet) rather than a `PktGen`.
@@ -157,7 +157,7 @@ const TCP_SV_SEG: FuncDef = func!(
     }
 );
 
-const TCP_CL_RAW_SEG: FuncDef = func!(
+static TCP_CL_RAW_SEG: FuncDef = func!(
     /// Returns TCP header + payload bytes only (no Ethernet or IP header) for
     /// a client-to-server segment, advancing the sequence number. Returns
     /// `bytes` rather than `Pkt`. Use this with `ipv4::frag` to build
@@ -188,7 +188,7 @@ const TCP_CL_RAW_SEG: FuncDef = func!(
     }
 );
 
-const TCP_SV_RAW_SEG: FuncDef = func!(
+static TCP_SV_RAW_SEG: FuncDef = func!(
     /// Returns TCP header + payload bytes only (no Ethernet or IP header) for
     /// a server-to-client segment, advancing the sequence number. Returns
     /// `bytes` rather than `Pkt`. Use this with `ipv4::frag` to build
@@ -220,7 +220,7 @@ const TCP_SV_RAW_SEG: FuncDef = func!(
     }
 );
 
-const TCP_CL_HDR: FuncDef = func!(
+static TCP_CL_HDR: FuncDef = func!(
     /// Returns a TCP header only (no payload, no IP header) for a
     /// client-to-server segment, as `bytes`. The optional `bytes` argument
     /// declares how many payload bytes the header should account for in the
@@ -251,7 +251,7 @@ const TCP_CL_HDR: FuncDef = func!(
     }
 );
 
-const TCP_SV_HDR: FuncDef = func!(
+static TCP_SV_HDR: FuncDef = func!(
     /// Returns a TCP header only (no payload, no IP header) for a
     /// server-to-client segment, as `bytes`. The optional `bytes` argument
     /// declares how many payload bytes the header should account for in the
@@ -282,7 +282,7 @@ const TCP_SV_HDR: FuncDef = func!(
     }
 );
 
-const TCP_CL_ACK: FuncDef = func!(
+static TCP_CL_ACK: FuncDef = func!(
     /// Sends an ACK from the client
     resynth fn client_ack(
         =>
@@ -308,7 +308,7 @@ const TCP_CL_ACK: FuncDef = func!(
     }
 );
 
-const TCP_SV_ACK: FuncDef = func!(
+static TCP_SV_ACK: FuncDef = func!(
     /// Sends an ACK from the server
     resynth fn server_ack(
         =>
@@ -335,7 +335,7 @@ const TCP_SV_ACK: FuncDef = func!(
     }
 );
 
-const TCP_CL_HOLE: FuncDef = func!(
+static TCP_CL_HOLE: FuncDef = func!(
     /// Creates a hole in the client's Tx sequence space, making it look like we missed a packet
     /// from the client
     resynth fn client_hole(
@@ -356,7 +356,7 @@ const TCP_CL_HOLE: FuncDef = func!(
     }
 );
 
-const TCP_SV_HOLE: FuncDef = func!(
+static TCP_SV_HOLE: FuncDef = func!(
     /// Creates a hole in the server's Tx sequence space, making it look like we missed a packet
     /// from the server
     resynth fn server_hole(
@@ -377,7 +377,7 @@ const TCP_SV_HOLE: FuncDef = func!(
     }
 );
 
-const TCP_CL_CLOSE: FuncDef = func!(
+static TCP_CL_CLOSE: FuncDef = func!(
     /// Shutdown both sides of the TCP connection, with the client sending the first FIN
     resynth fn client_close(
         =>
@@ -392,7 +392,7 @@ const TCP_CL_CLOSE: FuncDef = func!(
     }
 );
 
-const TCP_SV_CLOSE: FuncDef = func!(
+static TCP_SV_CLOSE: FuncDef = func!(
     /// Shutdown both sides of the TCP connection, with the server sending the first FIN
     resynth fn server_close(
         =>
@@ -407,7 +407,7 @@ const TCP_SV_CLOSE: FuncDef = func!(
     }
 );
 
-const TCP_CL_RESET: FuncDef = func!(
+static TCP_CL_RESET: FuncDef = func!(
     /// Send a RST packet from the client
     resynth fn client_reset(
         =>
@@ -422,7 +422,7 @@ const TCP_CL_RESET: FuncDef = func!(
     }
 );
 
-const TCP_SV_RESET: FuncDef = func!(
+static TCP_SV_RESET: FuncDef = func!(
     /// Send a RST packet from the server
     resynth fn server_reset(
         =>
@@ -490,7 +490,7 @@ impl Class for TcpFlow {
     }
 }
 
-const FLOW: FuncDef = func!(
+static FLOW: FuncDef = func!(
     /// Create a [TCP flow context](TcpFlow.md), from which packets can be created
     resynth fn flow(
         /// Client socket address

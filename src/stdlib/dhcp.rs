@@ -65,7 +65,7 @@ const OPT: Module = module! {
     }
 };
 
-const HDR: FuncDef = func!(
+static HDR: FuncDef = func!(
     /// DHCP header
     resynth fn hdr(
         =>
@@ -149,7 +149,7 @@ const HDR: FuncDef = func!(
     }
 );
 
-const OPTION: FuncDef = func!(
+static OPTION: FuncDef = func!(
     /// DHCP Option
     ///
     /// Encodes the option code, a one-byte length, and the data. The length wraps around if

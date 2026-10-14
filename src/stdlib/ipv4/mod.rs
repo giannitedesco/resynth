@@ -31,7 +31,7 @@ const PROTO: Module = module! {
 
 const IPV4_DGRAM_OVERHEAD: usize = std::mem::size_of::<eth_hdr>() + std::mem::size_of::<ip_hdr>();
 
-const DGRAM: FuncDef = func!(
+static DGRAM: FuncDef = func!(
     /// Create an IPv4 datagram, in an ethernet frame
     ///
     /// The payload follows the IPv4 header as is, so it must include any transport header,
@@ -104,7 +104,7 @@ const DGRAM: FuncDef = func!(
     }
 );
 
-const FRAG_FRAGMENT: FuncDef = func!(
+static FRAG_FRAGMENT: FuncDef = func!(
     /// Return an IPv4 packet fragment
     ///
     /// Slices the stored datagram at the given offset and length and wraps it in
@@ -136,7 +136,7 @@ const FRAG_FRAGMENT: FuncDef = func!(
     }
 );
 
-const FRAG_TAIL: FuncDef = func!(
+static FRAG_TAIL: FuncDef = func!(
     /// Return the final IPv4 fragment with MF=0
     ///
     /// Convenience wrapper around [fragment](#fragment) for the last fragment in a
@@ -162,7 +162,7 @@ const FRAG_TAIL: FuncDef = func!(
     }
 );
 
-const FRAG_DATAGRAM: FuncDef = func!(
+static FRAG_DATAGRAM: FuncDef = func!(
     /// Return the entire datagram as a single unfragmented packet
     ///
     /// Emits the full payload as one IPv4 packet with no fragmentation headers.
@@ -211,7 +211,7 @@ impl Class for IpFrag {
     }
 }
 
-const FRAG: FuncDef = func!(
+static FRAG: FuncDef = func!(
     /// Create a context for a packet which can be arbitrarily fragmented
     resynth fn frag(
         /// Source IPv4 address
