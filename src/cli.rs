@@ -20,6 +20,9 @@ use clap::{Args, CommandFactory, Parser as ClapParser, Subcommand, error::ErrorK
 use derive_more::{Display, Error, From};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
+#[cfg(feature = "repl")]
+mod repl;
+
 #[derive(Debug, Display, Error)]
 enum StartTimeError {
     #[display("{}: expected unix seconds, RFC 3339: YYYY-MM-DDTHH:MM:SSZ", _0)]
@@ -458,9 +461,21 @@ fn resynth() -> Result<(), ()> {
     };
 
     match plan {
+        #[cfg(feature = "repl")]
+        Plan::Repl => repl::Repl::new(color != ColorChoice::Never)
+            .run(&mut stdout)
+            .map_err(|err| {
+                error!(stdout, "error");
+                println!(": repl: {}", err);
+            }),
+
+        #[cfg(not(feature = "repl"))]
         Plan::Repl => {
             Cli::command()
-                .error(ErrorKind::ArgumentConflict, "REPL not implemented yet")
+                .error(
+                    ErrorKind::ArgumentConflict,
+                    "REPL not available: built without the `repl` feature",
+                )
                 .exit();
         }
 
