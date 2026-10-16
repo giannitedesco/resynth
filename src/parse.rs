@@ -1,20 +1,6 @@
 //! A recursive descent parser, using Pratt parsing for expressions.
 //!
-//! ```ebnf
-//! program  = { stmt } EOF ;
-//! stmt     = "import" IDENT ";"
-//!          | "let" IDENT "=" expr ";"
-//!          | expr ";" ;
-//! expr     = postfix { "/" postfix } ;
-//! postfix  = primary { "." IDENT | "(" [ args ] ")" } ;
-//! primary  = literal
-//!          | IPV4 [ ":" DEC ]
-//!          | IDENT "::" IDENT { "::" IDENT }
-//!          | IDENT ;
-//! literal  = STRING | BOOL | HEX | DEC ;
-//! args     = arg { "," arg } [ "," ] ;
-//! arg      = [ IDENT ":" ] expr ;
-//! ```
+//! The grammar it parses is in `docs/grammar.md`, §4.
 
 use std::collections::VecDeque;
 use std::fmt;

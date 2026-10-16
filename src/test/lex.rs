@@ -51,6 +51,12 @@ fn lex_comments_only() {
     assert_eq!(lex("# hash\n// cpp"), vec![tok(3, 1, Tok::Eof)]);
 }
 
+/// `//` always starts a comment, even where a `/` could follow
+#[test]
+fn lex_double_slash_is_comment() {
+    assert_eq!(lex("ip //80"), vec![ident(1, 1, "ip"), tok(2, 1, Tok::Eof)]);
+}
+
 #[test]
 fn lex_punctuation() {
     assert_eq!(
@@ -220,6 +226,8 @@ fn lex_integer_suffix_is_error() {
     assert_eq!(lex_err("0x1fg"), err(1, 1, IntInvalidSuffix));
     assert_eq!(lex_err("1_000"), err(1, 1, IntInvalidSuffix));
     assert_eq!(lex_err("0x"), err(1, 1, IntInvalidSuffix));
+    // the `x` of `0x` is lower case
+    assert_eq!(lex_err("0XFF"), err(1, 1, IntInvalidSuffix));
     assert_eq!(lex_err("x = 0x1f_"), err(1, 5, IntInvalidSuffix));
 }
 

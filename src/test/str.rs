@@ -60,6 +60,20 @@ fn str_hex_separators() {
 }
 
 #[test]
+fn str_hex_separator_within_byte() {
+    let s = Buf::from_str("|d e|").expect("parse failed");
+
+    assert_eq!(s.as_ref(), b"\xde")
+}
+
+#[test]
+fn str_empty_hex() {
+    let s = Buf::from_str("||").expect("parse failed");
+
+    assert_eq!(s.as_ref(), b"")
+}
+
+#[test]
 fn str_non_ascii_is_error() {
     assert_eq!(Buf::from_str("aé"), Err(BadChar('é').at(1)));
 

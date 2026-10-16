@@ -155,7 +155,11 @@ fn run_slash_port_from_call() {
 /// an untyped integer passed as bytes is written at the narrowest width that holds it, big-endian
 #[test]
 fn run_untyped_int_as_bytes() {
-    for (n, bytes) in [("5", &b"a\x05"[..]), ("300", b"a\x01\x2c")] {
+    for (n, bytes) in [
+        ("5", &b"a\x05"[..]),
+        ("42", b"a\x2a"),
+        ("300", b"a\x01\x2c"),
+    ] {
         assert_eq!(
             discards(&format!(
                 "import text;\nlet x = text::concat(\"a\", {n});\nx;"
@@ -163,6 +167,15 @@ fn run_untyped_int_as_bytes() {
             [(Loc::new(3, 1), Val::str(bytes))]
         );
     }
+}
+
+/// An encoder whose parameter is a `u64` keeps the low bits of a value too wide for its field
+#[test]
+fn run_wide_encoder_arg_truncated() {
+    assert_eq!(
+        discards("import std;\nimport text;\nlet x = text::concat(\"a\", std::be16(70000));\nx;"),
+        [(Loc::new(4, 1), Val::str(b"a\x11\x70"))]
+    );
 }
 
 /// The code in each ```resynth block of a doc comment, joined into one program

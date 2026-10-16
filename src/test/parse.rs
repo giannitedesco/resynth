@@ -135,6 +135,21 @@ fn parse_named_args() {
     assert_eq!(sexpr("f(a: 1.2.3.4:80);"), "(call f (: a 1.2.3.4:80))");
     assert_eq!(sexpr("f(a: b);"), "(call f (: a b))");
     assert_eq!(sexpr("f(a::b);"), "(call f a::b)");
+    assert_eq!(sexpr("f(x : 1);"), "(call f (: x 0x1))");
+    // only a lone identifier names an argument
+    assert_eq!(
+        parse_err("f(x.y: 1);"),
+        unexpected(1, 6, &["`(`", "`.`", "`/`", "`,`", "`)`"], Tok::Colon)
+    );
+    assert_eq!(
+        parse_err("f(a / b: 1);"),
+        unexpected(
+            1,
+            8,
+            &["`::`", "`(`", "`.`", "`/`", "`,`", "`)`"],
+            Tok::Colon
+        )
+    );
     assert_eq!(
         parse_err("f(a:);"),
         unexpected(1, 5, &["expression"], Tok::RParen)
@@ -152,6 +167,12 @@ fn parse_paths() {
         parse_err("a::;"),
         unexpected(1, 4, &["identifier"], Tok::SemiColon)
     );
+}
+
+/// Trivia may appear between any two tokens
+#[test]
+fn parse_trivia_between_tokens() {
+    assert_eq!(sexpr("std :: be16 ( 1 );"), "(call std::be16 0x1)");
 }
 
 #[test]
@@ -219,6 +240,7 @@ fn parse_stmt_start_errors() {
     let stmt_start = &["eof", "`import`", "`let`", "expression"];
     assert_eq!(parse_err("(1);"), unexpected(1, 1, stmt_start, Tok::LParen));
     assert_eq!(parse_err(");"), unexpected(1, 1, stmt_start, Tok::RParen));
+    assert_eq!(parse_err(";"), unexpected(1, 1, stmt_start, Tok::SemiColon));
     assert_eq!(
         parse_err(");").to_string(),
         "1:1: expected one of eof, `import`, `let` or expression, found `)`"

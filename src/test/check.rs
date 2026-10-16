@@ -361,6 +361,25 @@ fn check_arg_type() {
     );
 }
 
+/// Each argument is converted as soon as it's bound, so a bad argument is the error even when
+/// a later one would be too many
+#[test]
+fn check_arg_type_before_too_many() {
+    let err = error("import std;\nstd::u8(\"x\", 1);");
+    assert!(
+        matches!(
+            &err.kind,
+            ArgType {
+                func: "u8",
+                arg: "val",
+                expected: ValType::U8,
+                found: Found::Ty(Ty::Bytes)
+            }
+        ) && err.loc == Loc::new(2, 9),
+        "{err:?}"
+    );
+}
+
 /// Functions with no use for extra arguments reject them.
 #[test]
 fn check_extra_args_rejected() {
@@ -686,6 +705,36 @@ fn check_untyped_arg_as_bytes() {
         lower("import text;\nlet x = text::concat(\"a\", 5, 300);"),
         "(let $0 (call func:concat (* \"a\" u8:0x5 u16:0x12c)))"
     );
+}
+
+/// The narrowing example in docs/grammar.md §8.2 gives exactly one warning per line
+#[test]
+fn check_narrowing_doc_example() {
+    let (_, warnings) = checked(
+        "import std;\n\
+         import text;\n\
+         let a = std::u8(300);\n\
+         let b = 1.2.3.4 / 65536;\n\
+         let c = 1.2.3.4 / text::len(\"ab\");",
+    );
+    assert_eq!(
+        warnings,
+        [
+            (Loc::new(3, 17), "integer 300 truncated to u8".to_owned()),
+            (Loc::new(4, 19), "integer 65536 truncated to u16".to_owned()),
+            (
+                Loc::new(5, 19),
+                "value of type u64 may be truncated to u16".to_owned()
+            ),
+        ]
+    );
+}
+
+/// An encoder whose parameter is a `u64` keeps the low bits itself, when it runs, so the checker
+/// doesn't warn
+#[test]
+fn check_wide_encoder_arg_not_truncated() {
+    assert_eq!(warning_locs("import std;\nlet x = std::be16(70000);"), []);
 }
 
 /// An argument whose type is wider than its parameter's may be truncated when it runs

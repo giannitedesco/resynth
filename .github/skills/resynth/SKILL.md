@@ -59,7 +59,7 @@ the desired behaviour.
      segments that arrive without a prior handshake.
    - For both: identify transport (TCP/UDP) and port(s).
 
-2. **Run `resynth --output-stdlib-json`** to discover available stdlib symbols.
+4. **Run `resynth --output-stdlib-json`** to discover available stdlib symbols.
    If a dedicated module exists for the protocol you are writing (e.g. `tls`,
    `dns`, `netbios`), **use it**. Also check for **related** modules: many
    protocols are structurally derived from another (e.g. NBNS is DNS-over-UDP,
@@ -68,7 +68,7 @@ the desired behaviour.
    you would otherwise have to write by hand. Fall back to `std::be*` /
    `std::le*` / `std::len_*` only when no relevant helpers exist.
 
-3. **Write the minimal flow**:
+5. **Write the minimal flow**:
    - Use the **minimum number of packets** needed — often just one. For UDP,
      one packet is almost always sufficient. For TCP, one data segment is
      typical. Only add more packets when prior context is genuinely required
@@ -82,11 +82,11 @@ the desired behaviour.
      *test case*, not a full protocol implementation.
    - Use the correct port(s) — engines often use port as a pre-filter.
 
-4. **Encode fields explicitly** using `std::be16()`, `std::le32()`, etc. rather
+6. **Encode fields explicitly** using `std::be16()`, `std::le32()`, etc. rather
    than raw hex blobs. This documents the intent and makes the test case
    maintainable when field values need to change.
 
-5. **Validate the output**:
+7. **Validate the output**:
 
    Always compile and inspect the pcap before considering the task done.
 
@@ -126,7 +126,7 @@ the desired behaviour.
    means the program is syntactically valid; it does not mean the wire format
    is still correct.
 
-6. **Deliver the `.rsyn` file**:
+8. **Deliver the `.rsyn` file**:
 
    The `.rsyn` source file is the deliverable — not the pcap. Ask the user
    where to write it if not specified. Do not leave it in `/tmp`. Typical
@@ -134,7 +134,7 @@ the desired behaviour.
    `tests/data/proto-name/`) or `examples/`. Present the final file path and a
    one-line summary of what tshark decoded it as.
 
-7. **Report stdlib gaps**:
+9. **Report stdlib gaps**:
 
    After delivering the `.rsyn` file, review it and identify any places where
    the code is fragile, repetitive, or opaque due to missing stdlib helpers.
@@ -148,7 +148,9 @@ the desired behaviour.
    helpers" is not useful; "add `netbios::ns::name_entry(name, suffix, flags)`
    to replace the manual 15-byte space-padding in the NBSTAT name table" is.
 
+### Example
 
+A minimal test case, with each field encoded explicitly:
 
 ```resynth
 import ipv4;
@@ -168,7 +170,7 @@ flow.client_message(
 );
 ```
 
-## Step 2: Discover the Stdlib
+## Discovering the Stdlib
 
 **Before writing any code**, run:
 
@@ -218,8 +220,8 @@ req;    # then request — useful for reorder testing
 | Form | Example | Type |
 |------|---------|------|
 | Boolean | `true`, `false` | `bool` |
-| Decimal integer | `42` | `u64` |
-| Hex integer | `0xdeadbeef` | `u64` |
+| Decimal integer | `42` | untyped integer (see below) |
+| Hex integer | `0xdeadbeef` | untyped integer (see below) |
 | IPv4 address | `1.2.3.4` | `Ip4` |
 | Socket address (literal) | `1.2.3.4:80` | `Sock4` |
 | Socket address (operator) | `1.2.3.4/80` or `ip/port` | `Sock4` |
@@ -277,12 +279,11 @@ Adjacent string literals are concatenated by the lexer — no operator needed:
 > neighbours.
 >
 > ```resynth
-> # WRONG — std::be16() silently becomes a new collect arg;
-> #          the preceding string is a separate (shorter) arg
+> # WRONG — parse error: expected one of `(`, `.`, `/`, `,` or `)`, found `std`
 > flow.client_dgram(
 >   "|21 12 a4 42|"   // magic
 >   "SOpCii5Jfc1z"    // transaction id
->   std::be16(0x0001) // attr type  ← parse error or wrong payload
+>   std::be16(0x0001) // attr type  ← no comma before it
 >   "|00 08|"         // attr len
 > );
 >
@@ -309,6 +310,9 @@ let server = 10.0.0.1;
 let flow = ipv4::tcp::flow(10.0.0.2/5000, server/80);
 ```
 
+`//` always starts a comment, so `server //80` is `server` followed by a
+comment. Write `server/80` or `server / 80`.
+
 ### Object References
 
 - `::` navigates the **module** hierarchy (determines the `import`)
@@ -323,30 +327,57 @@ flow.client_message(...)   # method on a runtime object
 
 | Type | Coerces to bytes as |
 |------|---------------------|
+| `bool` | 1 byte, `00` or `01` |
 | `u8` | 1 byte |
 | `u16` | 2 bytes, big-endian |
 | `u32` | 4 bytes, big-endian |
 | `u64` | 8 bytes, big-endian |
 | `Ip4` | 4 bytes, big-endian (network order) |
+| `Pkt` | the packet's bytes |
 | `bytes` | as-is |
 
+An integer literal is an **untyped integer**: it has no width until the place
+it is used gives it one.
+
+- Passed for an integer parameter, or used as a port on the right of `/`, it
+  takes that type. If it doesn't fit, it keeps its low bits and resynth warns:
+  `std::u8(300)` gives `integer 300 truncated to u8`.
+- Passed as `bytes`, it takes the **narrowest** of `u8`, `u16`, `u32` and
+  `u64` that holds it. A bare `42` is the single byte `2a`, and `300` is
+  `01 2c`.
+- A typed integer keeps its full width. `text::len(...)` returns a `u64`, so
+  passed as bytes it is 8 bytes.
+
 > [!WARNING]
-> All integer literals are `u64`. Passing a bare `42` where `bytes` is expected
-> produces **8 big-endian bytes** (`|00 00 00 00 00 00 00 2a|`). Always use
-> `std::u8()`, `std::be16()`, `std::be32()`, `std::le32()` etc. to specify
-> both width and endianness explicitly.
+> Never pass bare integers as protocol fields: their width depends on their
+> value. Always use `std::u8()`, `std::be16()`, `std::be32()`, `std::le32()`
+> etc. to specify both width and endianness explicitly.
+>
+> Only `std::u8()` warns about a value too wide for its field. `std::be16()`,
+> `std::be32()`, `std::le16()` and `std::le32()` take a `u64` and silently
+> keep its low bits: `std::be16(70000)` writes `11 70`, with no warning.
 
 ### Calling Conventions
 
-Functions have three parameter sections, separated by `=>` in their signature:
+Functions have up to three kinds of parameter. This is how a signature appears
+in `--output-stdlib-json`:
 
 ```
-resynth fn example(src: Ip4, dst: Ip4, => ttl: U8 = 64, id: U16 = 0, => Str) -> Pkt
-                   ─────────────────    ────────────────────────────    ───
-                   positional (req'd)   optional+defaults               collect-type
+resynth fn example (
+    src: Ip4,                 ← positional: no default, must be given
+    dst: Ip4,
+    ttl: u8 = 0x40,           ← optional: has a default
+    id: u16 = 0x0000,
+    =>
+    *collect_args: bytes,     ← collect type: any number of extra args
+) -> Pkt;
 ```
 
-The calling rules all exist to prevent ambiguity — the parser must always be
+A function without collect args has no `=>` line. Some optional parameters
+have no default value. They currently print oddly, as `seq: type = U32`: read
+that as an optional `u32` that is left unset if not given.
+
+The calling rules all exist to prevent ambiguity — resynth must always be
 able to tell unambiguously which slot each argument fills.
 
 **Positional args may be anonymous or named:**
@@ -357,8 +388,9 @@ example(dst: 10.0.0.2, src: 10.0.0.1)     # named — order doesn't matter
 example(10.0.0.1, dst: 10.0.0.2)          # mix: anonymous first, then named
 ```
 
-**Don't use anonymous args after named args** — the parser can't tell which
-slot the anonymous arg fills:
+**Don't use anonymous args after named args** — once one arg is named, an
+anonymous arg is taken as a collect arg, or is an error if the function has
+none:
 
 ```resynth
 # Don't do this:
@@ -376,9 +408,10 @@ example(10.0.0.1, 10.0.0.2, id: 7)            # skip ttl, set id by name
 example(10.0.0.1, 10.0.0.2, id: 7, ttl: 128)  # both named, any order
 ```
 
-**With collect args, don't pass optional args anonymously** — the parser can't
-tell whether an anonymous value is an optional arg or the start of the collect
-payload. Instead, name them:
+**With collect args, don't pass optional args anonymously** — an anonymous
+value after the positional args is always the start of the collect payload.
+Below, `128` becomes the payload byte `80` and `ttl` keeps its default, with no
+error. Instead, name them:
 
 ```resynth
 # Don't do this:
@@ -388,7 +421,7 @@ example(10.0.0.1, 10.0.0.2, ttl: 128, "payload")
 ```
 
 **With collect args, don't put named optional args after the collect payload**
-— once the parser starts consuming collect args it can't go back. Instead, put
+— once resynth starts consuming collect args it can't go back. Instead, put
 named optional args before the payload:
 
 ```resynth
@@ -402,8 +435,8 @@ netbios::ns::name_entry("BILLG", suffix: 0x03)   # Don't do this
 netbios::ns::name_entry(suffix: 0x03, "BILLG")   # Instead, do this
 ```
 
-If you get an "Unexpected named argument" error, this ordering is almost always
-the cause.
+If you get an error such as `name_entry: unexpected named argument: "suffix"`,
+this ordering is almost always the cause.
 
 ---
 
@@ -429,7 +462,7 @@ let flow = ipv4::tcp::flow(
 flow.open();                              # 3-way handshake (SYN/SYN-ACK/ACK)
 flow.client_message("GET / HTTP/1.1" "|0d 0a 0d 0a|");
 flow.server_message("HTTP/1.1 200 OK" "|0d 0a 0d 0a|");
-flow.close();                             # FIN/FIN-ACK/ACK
+flow.client_close();                      # FIN/FIN-ACK/ACK
 ```
 
 Key methods on `TcpFlow`:
@@ -441,7 +474,8 @@ Key methods on `TcpFlow`:
 | `server_message(...)` | `PktGen` | Data segment + ACK from client |
 | `client_segment(...)` | `Pkt` | Single segment, no ACK emitted |
 | `server_segment(...)` | `Pkt` | Single segment, no ACK emitted |
-| `close()` | `PktGen` | Client-initiated FIN/ACK teardown |
+| `client_close()` | `PktGen` | Client-initiated FIN/ACK teardown |
+| `server_close()` | `PktGen` | Server-initiated FIN/ACK teardown |
 
 `client_message` and `server_message` accept optional named args before the
 collect payload:
@@ -598,7 +632,7 @@ dns::host(10.0.0.1, "www.example.com", ttl: 300, ns: 8.8.8.8);
 ### Line Length
 
 Keep all lines to **100 columns or fewer**. Break long argument lists by
-putting each argument on its own line, indented by 4 spaces:
+putting each argument on its own line, indented by 2 spaces:
 
 ```resynth
 # Too long
@@ -721,7 +755,7 @@ flow.server_message(
   "<html></html>",
 );
 
-flow.close();
+flow.client_close();
 ```
 
 #### TCP (binary protocol)
@@ -754,6 +788,7 @@ flow.client_message(
 
 ```resynth
 import ipv4;
+import std;
 
 ipv4::udp::unicast(10.0.0.1/5000, 10.0.0.2/53,
   "|00 01|"                # transaction ID
