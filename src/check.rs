@@ -634,7 +634,7 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
             });
         }
 
-        Ok(Program::new(out.into(), self.slots.into()))
+        Ok(Program::new(out.into(), self.slots.into()).eliminate_dead_lets())
     }
 
     fn error(&mut self, err: SemanticError) {

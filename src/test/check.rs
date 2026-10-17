@@ -598,7 +598,7 @@ fn check_slash_port_overflow() {
     let (prog, warnings) = checked("import text;\nlet s = 1.2.3.4 / text::len(\"ab\");");
     assert_eq!(
         prog.to_string(),
-        "(let $0 (/ 1.2.3.4 (call func:len (* \"ab\"))))"
+        "(eval (/ 1.2.3.4 (call func:len (* \"ab\"))))"
     );
     assert_eq!(
         warnings,
@@ -703,7 +703,7 @@ fn check_untyped_arg_as_bool() {
 fn check_untyped_arg_as_bytes() {
     assert_eq!(
         lower("import text;\nlet x = text::concat(\"a\", 5, 300);"),
-        "(let $0 (call func:concat (* \"a\" u8:0x5 u16:0x12c)))"
+        "(eval (call func:concat (* \"a\" u8:0x5 u16:0x12c)))"
     );
 }
 
@@ -918,10 +918,10 @@ fn check_error_summary_display() {
 /// FuncDef assigned to a local is a const and that gets folded without wasting a local slot
 #[test]
 fn lower_call_through_local() {
-    let (prog, _) = checked("import std;\nlet f = std::be16;\nlet x = f(1);");
+    let (prog, _) = checked("import std;\nlet f = std::be16;\nlet x = f(1);\nx;");
     assert_eq!(
         prog.to_string(),
-        "(let $0 (call func:be16 (: val u16:0x1)))"
+        "(let $0 (call func:be16 (: val u16:0x1)))\n(discard $0)"
     );
     assert!(
         matches!(
@@ -1076,7 +1076,7 @@ fn lower_property_of_local() {
             &object::ROOT,
             "import obj;\nlet t = obj::tcp();\nt.client_message;"
         ),
-        "(let $0 (call func:tcp))\n(discard u64:0x1)"
+        "(eval (call func:tcp))\n(discard u64:0x1)"
     );
 }
 
@@ -1097,7 +1097,7 @@ fn lower_slash_port_property_of_local() {
             &object::ROOT,
             "import obj;\nlet t = obj::tcp();\nlet s = 1.2.3.4 / t.client_message;\ns;"
         ),
-        "(let $0 (call func:tcp))\n(discard 1.2.3.4:1)"
+        "(eval (call func:tcp))\n(discard 1.2.3.4:1)"
     );
 }
 
@@ -1125,7 +1125,7 @@ fn lower_slash_keeps_effect_order() {
             &object::ROOT,
             "import obj;\nlet s = obj::ip() / obj::tcp().client_message;"
         ),
-        "(let $0 (/ (call func:ip) (seq (call func:tcp) u16:0x1)))"
+        "(eval (/ (call func:ip) (seq (call func:tcp) u16:0x1)))"
     );
 }
 
@@ -1142,4 +1142,77 @@ fn lower_arg_property_of_call() {
         "(eval (call func:u8 (: val (seq (call func:tcp) u8:0x1))))"
     );
     assert!(diags.is_empty(), "{diags:?}");
+}
+
+// Dead `let`s
+
+/// A dead `let` whose value is impure is evaluated for its effects
+#[test]
+fn lower_dead_impure_let() {
+    assert_eq!(
+        lower("import std;\nlet x = std::be16(1);"),
+        "(eval (call func:be16 (: val u16:0x1)))"
+    );
+}
+
+/// A dead `let` that is evaluated still reads its slots, so they stay live
+#[test]
+fn lower_dead_impure_let_keeps_reads() {
+    assert_eq!(
+        lower(&format!("{FLOW}let h = c.client_hdr(bytes: 5);")),
+        "(let $0 (call func:flow (: cl 1.2.3.4:1) (: sv 5.6.7.8:2) (: cl_seq u32:0x1) (: sv_seq u32:0x1) (: raw false)))\n\
+         (eval (call (. $0 client_hdr) (: bytes u32:0x5) (: csum u16:0x0)))"
+    );
+}
+
+/// A dead `let` whose value is pure is removed, and its reads don't count, so the flow it read
+/// is dead too
+#[test]
+fn lower_dead_pure_let_cascades() {
+    assert_eq!(
+        lower(&format!("{FLOW}let m = c.open;")),
+        "(eval (call func:flow (: cl 1.2.3.4:1) (: sv 5.6.7.8:2) (: cl_seq u32:0x1) (: sv_seq u32:0x1) (: raw false)))"
+    );
+}
+
+/// A dead alias is removed, and so is what it aliased
+#[test]
+fn lower_dead_alias_cascades() {
+    assert_eq!(
+        lower_in(
+            &object::ROOT,
+            "import obj;\nlet a = obj::tcp();\nlet b = a;"
+        ),
+        "(eval (call func:tcp))"
+    );
+}
+
+/// An alias that is read keeps its slot, and so does what it aliased
+#[test]
+fn lower_read_alias_kept() {
+    assert_eq!(
+        lower_in(
+            &object::ROOT,
+            "import obj;\nlet a = obj::tcp();\nlet b = a;\nb;"
+        ),
+        "(let $0 (call func:tcp))\n(let $1 $0)\n(discard $1)"
+    );
+}
+
+/// A dead `let` frees its slot, and the `let` after it is renumbered into it
+#[test]
+fn lower_dead_let_renumbers() {
+    let (prog, _) = checked(
+        "import ipv4;\n\
+         let a = ipv4::tcp::flow(1.2.3.4:1, 5.6.7.8:2);\n\
+         let b = ipv4::tcp::flow(1.2.3.4:3, 5.6.7.8:4);\n\
+         b.open();",
+    );
+    assert_eq!(
+        prog.to_string(),
+        "(eval (call func:flow (: cl 1.2.3.4:1) (: sv 5.6.7.8:2) (: cl_seq u32:0x1) (: sv_seq u32:0x1) (: raw false)))\n\
+         (let $0 (call func:flow (: cl 1.2.3.4:3) (: sv 5.6.7.8:4) (: cl_seq u32:0x1) (: sv_seq u32:0x1) (: raw false)))\n\
+         (emit (call (. $0 open)))"
+    );
+    assert_eq!(prog.slot_name(crate::hir::SlotId(0)), "b");
 }

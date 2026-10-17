@@ -158,11 +158,96 @@ impl Program {
     pub fn slot_name(&self, slot: SlotId) -> &str {
         &self.slots[slot.0]
     }
+
+    fn slots_liveness(&self) -> Box<[bool]> {
+        let mut live = vec![false; self.slots.len()];
+        for stmt in self.stmts.iter().rev() {
+            if let StmtKind::Let { slot, value } = &stmt.kind
+                && !live[slot.0]
+                && !value.impure()
+            {
+                // Dropped by eliminate_dead_lets, so our reads don't count for liveness
+                continue;
+            }
+            stmt.kind.expr().locals(&mut |slot| {
+                live[slot.0] = true;
+            });
+        }
+        live.into_boxed_slice()
+    }
+
+    pub fn eliminate_dead_lets(self) -> Self {
+        let live = self.slots_liveness();
+
+        let mut renumber = vec![None; self.slots.len()];
+        let kept = live
+            .iter()
+            .copied()
+            .enumerate()
+            .filter(|(_, live)| *live)
+            .map(|(old, _)| old);
+        for (new, old) in kept.enumerate() {
+            renumber[old] = Some(SlotId(new));
+        }
+
+        let Self { stmts, slots } = self;
+
+        let stmts = stmts
+            .into_iter()
+            .filter_map(|Stmt { loc, kind }| {
+                let kind = match kind {
+                    // The same rule as slots_liveness: a dead let is dropped if its value is pure,
+                    // and evaluated for its effects if it isn't
+                    StmtKind::Let { slot, value } if !live[slot.0] => {
+                        if !value.impure() {
+                            return None;
+                        }
+                        StmtKind::Eval(value)
+                    }
+                    kind => kind,
+                };
+                Some(Stmt::new(loc, kind))
+            })
+            .map(|mut stmt| {
+                if let StmtKind::Let { slot, .. } = &mut stmt.kind {
+                    *slot = renumber[slot.0].expect("a kept let's slot is live");
+                }
+                stmt.kind.expr_mut().locals_mut(&mut |slot| {
+                    *slot = renumber[slot.0].expect("a read slot is live");
+                });
+                stmt
+            })
+            .collect();
+
+        let slots = slots
+            .into_iter()
+            .enumerate()
+            .filter_map(|(old, name)| renumber[old].map(|_| name))
+            .collect();
+
+        Self { stmts, slots }
+    }
 }
 
 impl SlotId {
     pub fn index(self) -> usize {
         self.0
+    }
+}
+
+impl StmtKind {
+    pub(crate) fn expr(&self) -> &Expr {
+        match self {
+            Self::Let { value, .. } => value,
+            Self::Emit(expr) | Self::Wait(expr) | Self::Eval(expr) | Self::Discard(expr) => expr,
+        }
+    }
+
+    pub(crate) fn expr_mut(&mut self) -> &mut Expr {
+        match self {
+            Self::Let { value, .. } => value,
+            Self::Emit(expr) | Self::Wait(expr) | Self::Eval(expr) | Self::Discard(expr) => expr,
+        }
     }
 }
 
@@ -252,6 +337,62 @@ impl Expr {
         match self.kind {
             ExprKind::Seq { effects, value } => (effects, *value),
             _ => (Box::new([]), self),
+        }
+    }
+
+    /// Visit each local slot in this expression, mutably
+    pub fn locals_mut(&mut self, f: &mut impl FnMut(&mut SlotId)) {
+        match &mut self.kind {
+            ExprKind::Local(slot) => f(slot),
+            ExprKind::Method { obj, .. } => obj.locals_mut(f),
+            ExprKind::Seq { effects, value } => {
+                for e in effects.iter_mut() {
+                    e.locals_mut(f);
+                }
+                value.locals_mut(f);
+            }
+            ExprKind::Call(call) => {
+                call.callee.locals_mut(f);
+                for (arg, _) in call.args.iter_mut() {
+                    arg.locals_mut(f);
+                }
+                for arg in call.collect.iter_mut() {
+                    arg.locals_mut(f);
+                }
+            }
+            ExprKind::SockAddr { ip, port } => {
+                ip.locals_mut(f);
+                port.locals_mut(f);
+            }
+            ExprKind::Const(_) => {}
+        }
+    }
+
+    /// Visit each local slot in this expression
+    pub fn locals(&self, f: &mut impl FnMut(SlotId)) {
+        match &self.kind {
+            ExprKind::Local(slot) => f(*slot),
+            ExprKind::Method { obj, .. } => obj.locals(f),
+            ExprKind::Seq { effects, value } => {
+                for e in effects.iter() {
+                    e.locals(f);
+                }
+                value.locals(f);
+            }
+            ExprKind::Call(call) => {
+                call.callee.locals(f);
+                for (arg, _) in call.args.iter() {
+                    arg.locals(f);
+                }
+                for arg in call.collect.iter() {
+                    arg.locals(f);
+                }
+            }
+            ExprKind::SockAddr { ip, port } => {
+                ip.locals(f);
+                port.locals(f);
+            }
+            ExprKind::Const(_) => {}
         }
     }
 }

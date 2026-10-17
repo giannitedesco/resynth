@@ -359,6 +359,30 @@ fn run_discard_still_runs() {
     );
 }
 
+/// A dead `let` is still evaluated, so a header it binds advances the flow
+#[test]
+fn run_dead_let_still_runs() {
+    let pkts = packets(&format!(
+        "{FLOW}let h = c.client_hdr(bytes: 5);\nc.client_segment(\"x\");"
+    ));
+    assert_eq!(
+        hdr::<tcp_hdr>(&pkts[0], TCP_PAYLOAD - size_of::<tcp_hdr>()).get_seq(),
+        6
+    );
+}
+
+/// A `let` renumbered into a dead `let`'s slot binds and reads it
+#[test]
+fn run_dead_let_renumbers() {
+    let pkts = packets(
+        "import ipv4;\n\
+         let a = ipv4::tcp::flow(1.2.3.4:1, 5.6.7.8:2);\n\
+         let b = ipv4::tcp::flow(1.2.3.4:3, 5.6.7.8:4);\n\
+         b.open();",
+    );
+    assert_eq!(pkts.len(), 3);
+}
+
 /// A property's object is evaluated, so its errors stop the program. No stdlib class has a
 /// property, so the HIR the checker lowers it to is built by hand, and its lowering isn't tested:
 /// `io::file("no-such-file.der").prop;`
