@@ -697,8 +697,9 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
         }
     }
 
-    /// A `let` gets a new slot. Its name is in scope from the end of the `let`, so `let x = x;` is
-    /// an error.
+    /// A `let` of a constant binds the constant to the name and emits nothing. A `let` of a local
+    /// binds that local's slot. Any other `let` gets a new slot. Its name is in scope from the end
+    /// of the `let` so `let x = x;` is an error.
     fn let_stmt(
         &mut self,
         target: Ident,
@@ -748,6 +749,14 @@ impl<D: FnMut(Diagnostic)> Checker<D> {
                 },
                 _ty,
             ) => (BindState::Const(c), None),
+            // A local is an alias: bind the name to its slot and emit nothing
+            (
+                Expr {
+                    kind: ExprKind::Local(slot),
+                    ..
+                },
+                ty,
+            ) => (BindState::Slot(slot, ty), None),
             (value, ty) => {
                 let slot = SlotId(self.slots.len());
                 self.slots.push(name.clone());

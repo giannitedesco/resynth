@@ -1155,6 +1155,33 @@ fn lower_dead_impure_let() {
     );
 }
 
+/// An alias of an alias reads the first slot, and emits nothing
+#[test]
+fn lower_alias_chain() {
+    assert_eq!(
+        lower("import text;\nlet a = text::concat(\"yo\", \"foo\");\nlet b = a;\nlet c = b;\nb;"),
+        "(let $0 (call func:concat (* \"yo\" \"foo\")))\n(discard $0)"
+    );
+}
+
+/// An alias of a bound method reads the method's slot
+#[test]
+fn lower_alias_of_method() {
+    assert_eq!(
+        lower(&format!("{FLOW}let m = c.open;\nlet n = m;\nn();")),
+        "(let $0 (call func:flow (: cl 1.2.3.4:1) (: sv 5.6.7.8:2) (: cl_seq u32:0x1) (: sv_seq u32:0x1) (: raw false)))\n\
+         (let $1 (. $0 open))\n\
+         (emit (call $1))"
+    );
+}
+
+/// An aliased slot keeps the name bound first
+#[test]
+fn lower_alias_slot_name() {
+    let (prog, _) = checked("import text;\nlet a = text::concat(\"yo\");\nlet b = a;\nb;");
+    assert_eq!(prog.slot_name(crate::hir::SlotId(0)), "a");
+}
+
 /// A dead `let` that is evaluated still reads its slots, so they stay live
 #[test]
 fn lower_dead_impure_let_keeps_reads() {
@@ -1195,7 +1222,7 @@ fn lower_read_alias_kept() {
             &object::ROOT,
             "import obj;\nlet a = obj::tcp();\nlet b = a;\nb;"
         ),
-        "(let $0 (call func:tcp))\n(let $1 $0)\n(discard $1)"
+        "(let $0 (call func:tcp))\n(discard $0)"
     );
 }
 
