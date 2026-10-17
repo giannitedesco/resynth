@@ -730,11 +730,13 @@ fn check_narrowing_doc_example() {
     );
 }
 
-/// An encoder whose parameter is a `u64` keeps the low bits itself, when it runs, so the checker
-/// doesn't warn
+/// std::be16() takes a u16, it must warn when a const parameter gets truncated
 #[test]
 fn check_wide_encoder_arg_not_truncated() {
-    assert_eq!(warning_locs("import std;\nlet x = std::be16(70000);"), []);
+    assert_eq!(
+        warning_locs("import std;\nlet x = std::be16(70000);"),
+        [Loc::new(2, 19)]
+    );
 }
 
 /// An argument whose type is wider than its parameter's may be truncated when it runs
@@ -919,7 +921,7 @@ fn lower_call_through_local() {
     let (prog, _) = checked("import std;\nlet f = std::be16;\nlet x = f(1);");
     assert_eq!(
         prog.to_string(),
-        "(let $0 (call func:be16 (: val u64:0x1)))"
+        "(let $0 (call func:be16 (: val u16:0x1)))"
     );
     assert!(
         matches!(

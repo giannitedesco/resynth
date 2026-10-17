@@ -28,7 +28,7 @@
 ## be16
 ```resynth
 resynth fn be16 (
-    val: u64,
+    val: u16,
 ) -> bytes;
 ```
 Encode a 16bit integer into 2 big-endian bytes
@@ -37,7 +37,7 @@ Encode a 16bit integer into 2 big-endian bytes
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `val` | `u64` | Integer value to encode |
+| `val` | `u16` | Integer value to encode |
 
 ### Returns
 
@@ -48,7 +48,7 @@ Encode a 16bit integer into 2 big-endian bytes
 ## be32
 ```resynth
 resynth fn be32 (
-    val: u64,
+    val: u32,
 ) -> bytes;
 ```
 Encode a 32bit integer into 4 big-endian bytes
@@ -57,7 +57,7 @@ Encode a 32bit integer into 4 big-endian bytes
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `val` | `u64` | Integer value to encode |
+| `val` | `u32` | Integer value to encode |
 
 ### Returns
 
@@ -88,7 +88,7 @@ Encode a 64bit integer into 8 big-endian bytes
 ## le16
 ```resynth
 resynth fn le16 (
-    val: u64,
+    val: u16,
 ) -> bytes;
 ```
 Encode a 16bit integer into 2 little-endian bytes
@@ -97,7 +97,7 @@ Encode a 16bit integer into 2 little-endian bytes
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `val` | `u64` | Integer value to encode |
+| `val` | `u16` | Integer value to encode |
 
 ### Returns
 
@@ -108,7 +108,7 @@ Encode a 16bit integer into 2 little-endian bytes
 ## le32
 ```resynth
 resynth fn le32 (
-    val: u64,
+    val: u32,
 ) -> bytes;
 ```
 Encode a 32bit integer into 4 little-endian bytes
@@ -117,7 +117,7 @@ Encode a 32bit integer into 4 little-endian bytes
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `val` | `u64` | Integer value to encode |
+| `val` | `u32` | Integer value to encode |
 
 ### Returns
 

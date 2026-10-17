@@ -7,7 +7,7 @@ static BE16: FuncDef = func!(
     /// Encode a 16bit integer into 2 big-endian bytes
     resynth fn be16(
         /// Integer value to encode
-        val: U64,
+        val: U16,
         =>
         =>
         Void
@@ -22,7 +22,7 @@ static BE32: FuncDef = func!(
     /// Encode a 32bit integer into 4 big-endian bytes
     resynth fn be32(
         /// Integer value to encode
-        val: U64,
+        val: U32,
         =>
         =>
         Void
@@ -52,7 +52,7 @@ static LE16: FuncDef = func!(
     /// Encode a 16bit integer into 2 little-endian bytes
     resynth fn le16(
         /// Integer value to encode
-        val: U64,
+        val: U16,
         =>
         =>
         Void
@@ -67,7 +67,7 @@ static LE32: FuncDef = func!(
     /// Encode a 32bit integer into 4 little-endian bytes
     resynth fn le32(
         /// Integer value to encode
-        val: U64,
+        val: U32,
         =>
         =>
         Void
