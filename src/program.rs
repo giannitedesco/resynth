@@ -17,7 +17,7 @@ use std::net::SocketAddrV4;
 
 use RuntimeErrorKind::{
     ImportError, MultipleAssignError, NameError, NotAModule, NotAValue, NotCallable, NotImported,
-    PortOutOfRange, TypeError,
+    TypeError,
 };
 
 /// Why the program could not be run, and where
@@ -52,11 +52,6 @@ pub enum RuntimeErrorKind {
 
     #[display("type error")]
     TypeError,
-
-    /// The right of `ip / port` is more than `u16::MAX`
-    #[display("port {} out of range", _0)]
-    #[error(ignore)]
-    PortOutOfRange(u64),
 
     #[display("unimplemented stdlib call")]
     LibTodo,
@@ -288,9 +283,7 @@ impl Program {
                     return Err(TypeError.at(b_loc));
                 }
                 let port = u64::from(b);
-                let port = u16::try_from(port).map_err(|_| PortOutOfRange(port).at(b_loc))?;
-
-                Val::Sock4(SocketAddrV4::new(a.into(), port))
+                Val::Sock4(SocketAddrV4::new(a.into(), port as u16))
             }
         })
     }
