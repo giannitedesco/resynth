@@ -412,7 +412,7 @@ fn scan_spans_tile_line() {
 
     for line in lines {
         let mut end = 0;
-        for span in Scanner::lexemes(line).map(|lexeme| match lexeme {
+        for span in Scanner::new(line).map(|lexeme| match lexeme {
             Ok(lexeme) => lexeme.span,
             Err(err) => err.span,
         }) {

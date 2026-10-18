@@ -125,7 +125,7 @@ impl Highlight {
     /// or not it lexes.
     fn line(line: &str, out: &mut StyledText) {
         let mut end = 0;
-        for lexeme in Scanner::lexemes(line) {
+        for lexeme in Scanner::new(line) {
             let (span, style) = match lexeme {
                 Ok(Lexeme { span, kind }) => {
                     let style = Self::style(&kind, &line[span.clone()]);
@@ -213,7 +213,7 @@ impl<'a> Snippet<'a> {
             .chars()
             .map(|c| if c == '\t' { '\t' } else { ' ' })
             .collect();
-        let carets = Scanner::lexemes(line)
+        let carets = Scanner::new(line)
             .map(|lexeme| match lexeme {
                 Ok(lexeme) => lexeme.span,
                 Err(err) => err.span,

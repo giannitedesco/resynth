@@ -184,6 +184,10 @@ impl LexErrorKind {
     pub(crate) fn at(self, loc: Loc) -> LexError {
         LexError { loc, kind: self }
     }
+
+    fn within_line(self, span: Range<usize>) -> LexLineError {
+        LexLineError { span, kind: self }
+    }
 }
 
 impl From<ParseIntError> for LexErrorKind {
@@ -223,6 +227,12 @@ pub enum LexemeKind<'a> {
     Tok(Tok),
 }
 
+impl<'a> LexemeKind<'a> {
+    fn at(self, span: Range<usize>) -> Lexeme<'a> {
+        Lexeme { span, kind: self }
+    }
+}
+
 #[derive(Debug)]
 pub struct Lexeme<'a> {
     pub span: Range<usize>,
@@ -238,34 +248,16 @@ pub struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    pub fn lexemes(line: &'a str) -> impl Iterator<Item = Result<Lexeme<'a>, LexLineError>> + 'a {
-        let mut cur = Self::new(line);
-        std::iter::from_fn(move || {
-            let c = cur.peek()?;
-            let start = cur.pos;
-            match cur.lexeme(c) {
-                Ok(kind) => Some(Ok(Lexeme {
-                    span: start..cur.pos,
-                    kind,
-                })),
-                Err(err) => Some(Err(LexLineError {
-                    span: start..cur.pos,
-                    kind: err,
-                })),
-            }
-        })
-    }
-
-    fn new(line: &'a str) -> Self {
+    pub const fn new(line: &'a str) -> Self {
         Self { line, pos: 0 }
     }
 
     /// `\n` is not whitespace, because it's not allowed in a line
-    fn is_space(c: char) -> bool {
+    const fn is_space(c: char) -> bool {
         c.is_whitespace() && c != '\n'
     }
 
-    fn is_word(c: char) -> bool {
+    const fn is_word(c: char) -> bool {
         c.is_ascii_alphanumeric() || c == '_'
     }
 
@@ -372,6 +364,19 @@ impl<'a> Scanner<'a> {
     }
 }
 
+impl<'a> Iterator for Scanner<'a> {
+    type Item = Result<Lexeme<'a>, LexLineError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let start = self.pos;
+        let c = self.peek()?;
+        Some(match self.lexeme(c) {
+            Ok(kind) => Ok(kind.at(start..self.pos)),
+            Err(err) => Err(err.within_line(start..self.pos)),
+        })
+    }
+}
+
 /// The lexer is fed a [line at a time](Lexer::line), and appends the [tokens](Token) to a
 /// [queue](VecDeque) which is returned by [Lexer::finish]. Each [LexError] carries the location
 /// of the offending character.
@@ -399,7 +404,7 @@ impl Lexer {
     pub fn line(&mut self, line: &str) -> Result<(), LexError> {
         self.lno += 1;
 
-        for lexeme in Scanner::lexemes(line) {
+        for lexeme in Scanner::new(line) {
             let lexeme = lexeme.map_err(|err| err.locate(self.lno))?;
             let loc = Loc::new(self.lno, lexeme.span.start + 1);
             match lexeme.kind {
