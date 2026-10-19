@@ -102,7 +102,7 @@ fn test_encode_thing() {
 }
 ```
 
-Run with `cargo test --all` or just `cargo test -p pkt`.
+Run with `scripts/check.sh`
 
 ## File Layout
 
@@ -119,9 +119,12 @@ src/stdlib/
   ...
 ```
 
-Each file declares `FuncDef` constants, `Module` constants, and (for OOP
+Each file declares `static FuncDef` values, `Module` constants, and (for OOP
 types) `static ClassDef` values. A `pub const MODULE: Module` (or similar
 name) is the entry point imported in `mod.rs`.
+
+`FuncDef` and `ClassDef` must be `static`, never `const`. They are compared
+by pointer identity, and only a `static` has a stable address.
 
 To add a new top-level module:
 
@@ -135,7 +138,7 @@ To add a new top-level module:
 Every stdlib function is declared with the `func!` macro:
 
 ```rust
-const MY_FUNC: FuncDef = func!(
+static MY_FUNC: FuncDef = func!(
     /// Doc comment shown in `docs/` and `--output-stdlib-json`
     resynth fn my_func(
         // ── section 1: positional (required) args ──
@@ -188,11 +191,15 @@ Use these DSL type names in the `func!` signature:
 | `Bool` | `bool` |
 | `Ip4` | `Ipv4Addr` |
 | `Sock4` | `SocketAddrV4` |
-| `Str` | `Buf` (via `args.join_extra(b"")`) |
+| `Str` | `Buf` (collect args: `args.join_extra(b"")`) |
 | `Void` | — (collect section only; means no collect args) |
 
 Read args in **declaration order** with `args.next().into()`. Read collect
-args last with `args.join_extra(b"")`.
+args last with `args.join_extra(b"")`. In a method, call `args.take_this()`
+first to get the object.
+
+Optional arg defaults are `ValDef` expressions, the const counterpart of the
+runtime `Val`.
 
 ### Return Values
 
@@ -308,7 +315,7 @@ type (usually `U16`), default it to `0`, and OR it into the result without
 masking:
 
 ```rust
-const MY_FLAGS: FuncDef = func!(
+static MY_FLAGS: FuncDef = func!(
     /// Build the FLAGS field.
     ///
     /// Flags layout (MSB first): A(1) B(2) reserved(13)
@@ -360,21 +367,11 @@ Rules:
 ### After adding or changing stdlib symbols
 
 ```sh
-# 1. Build and lint
-cargo clippy -- -D warnings
+# Format check, lints, tests, rustdoc, and regenerate docs/
+scripts/check.sh
 
-# 2. Run tests
-cargo test --all
-
-# 3. Regenerate docs (always do this — docs/ is committed)
-cargo run -- --output-docs docs
+# docs/ is committed, so commit the regenerated files with the change
 git add docs/
-```
-
-Or run all of the above at once:
-
-```sh
-bash pre-commit.sh
 ```
 
 ### Validate with test cases
