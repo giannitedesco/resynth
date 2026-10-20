@@ -18,7 +18,7 @@ static JUMP_SECS: FuncDef = func!(
     |mut args| {
         let secs: u32 = args.next().into();
 
-        Ok(Val::TimeJump((secs as u64) * HZ))
+        Ok(Val::TimeJump((secs as u64).saturating_mul(HZ)))
     }
 );
 
@@ -34,7 +34,7 @@ static JUMP_MILLIS: FuncDef = func!(
     |mut args| {
         let ms: u64 = args.next().into();
 
-        Ok(Val::TimeJump(ms * KHZ))
+        Ok(Val::TimeJump(ms.saturating_mul(KHZ)))
     }
 );
 
@@ -50,7 +50,7 @@ static JUMP_MICROS: FuncDef = func!(
     |mut args| {
         let us: u64 = args.next().into();
 
-        Ok(Val::TimeJump(us * MHZ))
+        Ok(Val::TimeJump(us.saturating_mul(MHZ)))
     }
 );
 

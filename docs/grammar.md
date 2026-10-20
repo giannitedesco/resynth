@@ -629,9 +629,18 @@ value once.
 The clock saturates rather than wrapping: advancing it past the largest 64-bit
 value leaves it there.
 
+> [!NOTE]
+> The clock is a 64-bit count of nanoseconds since the Unix epoch, but a pcap
+> file stores each timestamp as 32-bit seconds and a separate nanosecond part.
+> The nanoseconds are written exactly. The seconds are written modulo
+> 2<sup>32</sup>, so after 2106-02-07 06:28:15 UTC the written dates start
+> again from 1970. A saturated clock, which is in 2554, is written as
+> 2010-02-22 21:41:29.709551615 UTC, after four wraps. This is a limit of the
+> pcap format, and resynth doesn't warn about it. pcapng, which a future
+> version may write, can hold the clock's full value.
+
 A local holds a value, not an expression. So after `let p = flow.client_message("x");`,
-the packets are made once, and `p; p;` writes them twice, with two
-timestamps.
+the packets are made once, and `p; p;` writes them twice, with two timestamps.
 
 ### 11.3 Expressions
 
