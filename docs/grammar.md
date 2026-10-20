@@ -76,15 +76,15 @@ token         = punct / word / number / string
 punct         = "::" / ":" / "(" / ")" / "." / ";" / "=" / "," / "/"
 ```
 
-A comment runs to the end of its line. There are no block comments. A `#!`
-line at the start of a file is an ordinary `#` comment.
+A comment runs to the end of its line. There are no block comments. A `#!` line
+at the start of a file is an ordinary `#` comment.
 
-Because `//` always starts a comment, `ip //80` is `ip` followed by a
-comment, not a division. Write `ip / 80`.
+Because `//` outside of a string literal always starts a comment, `ip //80` is
+`ip` followed by a comment, not a division. Write `ip / 80`.
 
 No lexeme spans two lines, so neither does any token except a joined string
-(§3.4). Trivia may appear between any two tokens, so
-`std :: be16 ( 1 )` and `1.2.3.4 : 80` are both valid.
+(§3.4). Trivia may appear between any two tokens, so `std :: be16 ( 1 )` and
+`1.2.3.4 : 80` are both valid.
 
 A character that can't start any lexeme is an error.
 
@@ -283,15 +283,14 @@ submodule of the one before it, and `x` must be a constant or a function in
 the last module. A path naming a module or a class is an error, because
 neither is a value.
 
-**Locals.** `let x = e;` binds `x` from the end of that statement to the end
-of the program. So `let x = x;` is always an error, since `x` is not yet bound
-on its right. Binding a name that is already bound is an error: there is no
-shadowing.
+**Locals.** `let x = e;` binds `x` from the end of that statement to the end of
+the program. So `let x = x;` is an error, since `x` is not yet bound on its
+right. Binding a name that is already bound is also an error ("x already
+bound"): there is no shadowing.
 
 **Members.** In `e.x`, `x` is looked up in the class of `e`'s value (§7.4).
 
-The program is the body of one implicit procedure. Its locals are not
-globals.
+The program is the body of one implicit procedure. Its locals are not globals.
 
 ## 6. Types
 
@@ -412,15 +411,16 @@ let b = 10.0.0.2:8080;      # the same, as a literal
 
 ### 8.1 Untyped integers
 
-An integer literal is an untyped integer `n`, with 0 ≤ n < 2<sup>127</sup>.
-It has no width until the place it is used gives it one. There are four
-kinds of place:
+An integer literal is an untyped integer `n`, with 0 ≤ n < 2<sup>127</sup>. It
+has no width until the place it is used gives it one. There are four kinds of
+place:
 
 | Where | What it becomes |
 |-------|-----------------|
-| an integer parameter, or the right of `/` | that type, by narrowing (§8.2) |
+| an integer typed parameter | that type, by narrowing (§8.2) |
+| a port to the right of ip4 `/`  | `u16`, by narrowing (§8.2) |
 | a `bool` parameter | `n ≠ 0` |
-| a `bytes` parameter or collect argument, or an expression statement | the **narrowest** of `u8`, `u16`, `u32`, `u64` that holds `n` |
+| a argument of type `bytes`, or an expression statement | the **narrowest** of `u8`, `u16`, `u32`, `u64` that holds `n` |
 | any other parameter | an error |
 
 If no type holds `n` in the third case, because n ≥ 2<sup>64</sup>, it is an
@@ -428,8 +428,8 @@ error. So `5;` is a `u8` and `300;` a `u16`, and each is a discarded value
 (§10). `text::concat("a", 300)` is the three bytes `61 01 2c`.
 
 `let x = n;` doesn't give `n` a type. Each use of `x` is narrowed as if `n`
-were written there, so after `let p = 80;`, both `std::u8(p)` and
-`1.2.3.4 / p` are fine.
+were written there, so after `let p = 80;`, both `std::u8(p)` and `1.2.3.4 / p`
+are fine.
 
 ### 8.2 Narrowing to an integer type
 
@@ -481,12 +481,6 @@ type. An untyped integer has the narrowest width that holds it, but a typed
 one keeps its full width, so a `u64` such as the result of `text::len(..)` is
 8 bytes. To get a given width and byte order, use a standard library function
 such as `std::u8()`, `std::be16()` or `std::le32()`.
-
-Narrowing only warns about the parameter's declared type (§8.2), and the
-parameter of `std::be16()`, `std::be32()`, `std::le16()` and `std::le32()` is
-a `u64`. Each of those functions keeps the low bits of its argument itself,
-when it runs, so a value too wide for the field loses its high bits without a
-warning. `std::u8()` declares a `u8` parameter, so it does warn.
 
 ## 9. Calls
 
@@ -614,8 +608,8 @@ greeting;
 A running program has:
 
 - a **frame**, holding the value bound to each local;
-- a **clock**, in nanoseconds since the Unix epoch, held in 64 bits. It
-  starts at a time the program is given (for the `resynth` command, its
+- a **clock**, in nanoseconds since the Unix epoch, held in 64 bits. It starts
+  at a time the program is given (for the `resynth` command, its
   `--start-time`);
 - an output sequence of packets, each with a timestamp.
 
@@ -632,8 +626,8 @@ value once.
 - **wait** `e`: evaluate `e`, and advance the clock by its `TimeJump`.
 - **evaluate** and **discard** `e`: evaluate `e`.
 
-The clock never wraps: advancing it past the largest 64-bit value leaves it
-there.
+The clock saturates rather than wrapping: advancing it past the largest 64-bit
+value leaves it there.
 
 A local holds a value, not an expression. So after `let p = flow.client_message("x");`,
 the packets are made once, and `p; p;` writes them twice, with two
@@ -673,13 +667,19 @@ A program stops at the first run-time error. Packets already written stay
 written, though the `resynth` command deletes its output file on error unless
 given `--keep`. A run-time error is one of:
 
-- a standard library function failing, such as `io::file` being unable to
-  read its file;
+- a standard library function failing, such as `io::file` being unable to read
+  its file;
 - a standard library function that isn't implemented;
 - a packet failing to be written.
 
 An error from a function is located at the called name. An error writing a
 packet is located at the statement.
+
+> [!NOTE]
+> Packets being output are buffered. So if a packet fails to write, it does not
+> mean that the previous packets were written: they may be buffered and not yet
+> written. The `resynth` command deletes its output file on error unless given
+> `--keep`.
 
 ## 12. Diagnostics (informative)
 
@@ -739,8 +739,7 @@ In these messages an untyped integer's type is written `integer`.
 
 ## 13. Standard library conventions (informative)
 
-These are conventions the standard library follows, not rules of the
-language.
+These are conventions the standard library follows, not rules of the language.
 
 **Payloads are collect arguments.** A function that takes arbitrary payload
 data usually has a collect type of `bytes`, and joins its collect arguments
@@ -759,9 +758,7 @@ flow.client_message(std::be16(0x0001), std::be16(42), "data");
 flow.client_message(text::concat(std::be16(0x0001), std::be16(42), "data"));
 ```
 
-**Encoding functions fix width and byte order.** Since a typed integer
-passed as bytes keeps the width of its type, and an untyped one gets the
-narrowest width, protocol fields are written with `std::u8()`,
-`std::be16()`, `std::be32()`, `std::le32()` and so on, never as bare
-integers. Apart from `std::u8()`, these take a `u64`, so the checker doesn't
-warn when a value is too wide for the field (§8.4).
+**Encoding functions fix width and byte order.** Since a typed integer passed
+as bytes keeps the width of its type, and an untyped one gets the narrowest
+width, protocol fields are written with `std::u8()`, `std::be16()`,
+`std::be32()`, `std::le32()` and so on, never as bare integers.
