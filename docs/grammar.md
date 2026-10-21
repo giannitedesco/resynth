@@ -412,24 +412,24 @@ let b = 10.0.0.2:8080;      # the same, as a literal
 ### 8.1 Untyped integers
 
 An integer literal is an untyped integer `n`, with 0 ≤ n < 2<sup>127</sup>. It
-has no width until the place it is used gives it one. There are four kinds of
+has no width until the place it is used gives it one. There are five kinds of
 place:
 
 | Where | What it becomes |
 |-------|-----------------|
-| an integer typed parameter | that type, by narrowing (§8.2) |
+| a parameter of integer type | that type, by narrowing (§8.2) |
+| a parameter of type `bool` | `n ≠ 0` |
+| a parameter of type `bytes`, or an expression statement | the **narrowest** of `u8`, `u16`, `u32`, `u64` that holds `n` |
 | a port to the right of ip4 `/`  | `u16`, by narrowing (§8.2) |
-| a `bool` parameter | `n ≠ 0` |
-| a argument of type `bytes`, or an expression statement | the **narrowest** of `u8`, `u16`, `u32`, `u64` that holds `n` |
 | any other parameter | an error |
 
-If no type holds `n` in the third case, because n ≥ 2<sup>64</sup>, it is an
+If no type holds `n` in the first case, because n ≥ 2<sup>64</sup>, it is an
 error. So `5;` is a `u8` and `300;` a `u16`, and each is a discarded value
 (§10). `text::concat("a", 300)` is the three bytes `61 01 2c`.
 
 `let x = n;` doesn't give `n` a type. Each use of `x` is narrowed as if `n`
 were written there, so after `let p = 80;`, both `std::u8(p)` and `1.2.3.4 / p`
-are fine.
+are fine, narrowing to `u8` and `u16` respectively.
 
 ### 8.2 Narrowing to an integer type
 
@@ -685,10 +685,12 @@ An error from a function is located at the called name. An error writing a
 packet is located at the statement.
 
 > [!NOTE]
-> Packets being output are buffered. So if a packet fails to write, it does not
-> mean that the previous packets were written: they may be buffered and not yet
-> written. The `resynth` command deletes its output file on error unless given
-> `--keep`.
+> The `resynth` command buffers its output. A packet that fails to be written
+> is reported when the buffer is flushed, not when it was emitted, so the error
+> is located at the later statement whose packet triggered the flush. If the
+> final flush at the end of the run fails, the error is an `io error` with no
+> location. Packets emitted before the error may never have reached the file,
+> even with `--keep`.
 
 ## 12. Diagnostics (informative)
 
