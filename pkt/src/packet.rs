@@ -428,8 +428,6 @@ impl Packet {
 
     /// Return the entire packet as a slice handle
     pub fn as_slice(&self) -> PktSlice {
-        assert!(self.len() >= self.headroom);
-
         PktSlice::new(self.headroom, self.len())
     }
 
