@@ -204,10 +204,6 @@ struct Cli {
     #[arg(short, long)]
     verbose: bool,
 
-    /// Keep pcap files on error
-    #[arg(short, long)]
-    keep: bool,
-
     /// Start time for pcap files (unix seconds, RFC 3339: YYYY-MM-DDTHH:MM:SSZ)
     #[arg(long, default_value = "1981-08-15T00:00:00Z")]
     start_time: StartTime,
@@ -384,13 +380,12 @@ impl Job {
         self.write_pcap(prog, start_time, verbose)
     }
 
-    /// Compiles the job and reports how it went. On failure, the output is deleted unless `keep`.
+    /// Compiles the job and reports how it went.
     fn run(
         &self,
         stdout: &mut StandardStream,
         start_time: StartTime,
         verbose: bool,
-        keep: bool,
     ) -> Result<(), ()> {
         let Err(error) = self.compile(stdout, start_time, verbose) else {
             print!("{} -> {} ", self.input, self.output.display());
@@ -400,23 +395,6 @@ impl Job {
         };
 
         error.print(stdout, &self.input);
-
-        // By default, if the file failed for any reason, regardless of whether we created it or
-        // not, we delete it. This behaviour can be overridden with the `--keep` flag.
-        //
-        // This is basically because we anticipate that we're translating source files to e.g.
-        // test cases, and we want the test cases to fail with "no file", rather than producing
-        // weird or spurious output.
-        //
-        // Maybe we readdress this and only delete things we actually created in future.
-        if !keep
-            && let Err(rm_err) = fs::remove_file(&self.output)
-            && rm_err.kind() != io::ErrorKind::NotFound
-        {
-            print!("{}: ", self.input);
-            error!(stdout, "error");
-            println!(": delete: {}", rm_err);
-        }
 
         Err(())
     }
@@ -482,7 +460,7 @@ fn resynth() -> Result<(), ()> {
         // Not short-circuiting: every job runs, even after one fails
         Plan::Compile(jobs) => jobs
             .iter()
-            .map(|job| job.run(&mut stdout, argv.start_time, argv.verbose, argv.keep))
+            .map(|job| job.run(&mut stdout, argv.start_time, argv.verbose))
             .fold(Ok(()), Result::and),
     }
 }

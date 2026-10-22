@@ -43,56 +43,6 @@ fn stdin_is_written_to_output() {
     assert!(out.exists());
 }
 
-#[test]
-fn stdin_error_deletes_output() {
-    let out = out_path("stdin_error_deletes_output", "out.pcap");
-
-    let result = resynth_with_stdin(&["-o", out.to_str().unwrap()], "nope();\n");
-
-    assert!(!result.status.success(), "{result:?}");
-    assert!(
-        String::from_utf8_lossy(&result.stdout).starts_with("<stdin>:1:1: "),
-        "{result:?}",
-    );
-    assert!(!out.exists());
-}
-
-/// A runtime error comes after the pcap file is created, so `-k` has a file to keep
-#[test]
-fn stdin_error_keeps_output_with_keep() {
-    let out = out_path("stdin_error_keeps_output_with_keep", "out.pcap");
-
-    let result = resynth_with_stdin(
-        &["-k", "-o", out.to_str().unwrap()],
-        "import netbios; netbios::name::encode(\"ABCDEF0123456789MORE\");\n",
-    );
-
-    assert!(!result.status.success(), "{result:?}");
-    assert!(
-        String::from_utf8_lossy(&result.stdout).contains("runtime error"),
-        "{result:?}",
-    );
-    assert!(out.exists());
-}
-
-/// A program that doesn't check never creates the pcap file, even with `-k`
-#[test]
-fn stdin_semantic_error_creates_no_output_with_keep() {
-    let out = out_path(
-        "stdin_semantic_error_creates_no_output_with_keep",
-        "out.pcap",
-    );
-
-    let result = resynth_with_stdin(&["-k", "-o", out.to_str().unwrap()], "nope();\n");
-
-    assert!(!result.status.success(), "{result:?}");
-    assert!(
-        String::from_utf8_lossy(&result.stdout).contains("semantic error"),
-        "{result:?}",
-    );
-    assert!(!out.exists());
-}
-
 /// Each diagnostic is printed as the checker finds it, in source order, and the error summary is
 /// printed under them
 #[test]
